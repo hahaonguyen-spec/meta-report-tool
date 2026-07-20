@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
-import pptxgen from "pptxgenjs";
-import { TrendingUp, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Image as ImageIcon, ArrowRight, Presentation, UsersRound } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Image as ImageIcon, ArrowRight, UsersRound } from 'lucide-react';
 
 const MOCK_DATA = [
   { campaign_id: '101', campaign_name: 'VN_LeadGen_Campaign1', account_name: 'CPT Indonesia', spend: 1250.5, impressions: 55000, clicks: 3450, leads: 145, start_time: '2026-04-15T08:00:00+0000' },
@@ -228,67 +227,7 @@ export default function App() {
     }
   };
 
-  const exportPPTX = () => {
-    setIsExporting(true);
-    try {
-      let pres = new pptxgen();
 
-      // Slide 1: Title
-      let slide1 = pres.addSlide();
-      slide1.background = { color: "070B14" };
-      slide1.addText("Meta Ads Performance Report", { x: 1, y: 2, w: '80%', color: "33CCFF", fontSize: 32, bold: true });
-      slide1.addText(`Generated on: ${new Date().toLocaleDateString()}`, { x: 1, y: 3, w: '80%', color: "9CA3AF", fontSize: 14 });
-
-      // Slide 2: Executive Summary
-      const totalSpend = data.reduce((acc, curr) => acc + curr.spend, 0);
-      const totalClicks = data.reduce((acc, curr) => acc + curr.clicks, 0);
-      const totalLeads = data.reduce((acc, curr) => acc + curr.leads, 0);
-      const averageCpl = totalLeads > 0 ? totalSpend / totalLeads : 0;
-      
-      let slide2 = pres.addSlide();
-      slide2.background = { color: "070B14" };
-      slide2.addText("Executive Summary", { x: 0.5, y: 0.5, w: '90%', color: "0AE5D5", fontSize: 24, bold: true });
-      slide2.addText(`Total Spend: $${totalSpend.toFixed(2)}`, { x: 0.5, y: 1.5, color: "FFFFFF", fontSize: 18 });
-      slide2.addText(`Total Clicks: ${totalClicks}`, { x: 0.5, y: 2.0, color: "FFFFFF", fontSize: 18 });
-      slide2.addText(`Total Leads: ${totalLeads}`, { x: 0.5, y: 2.5, color: "FFFFFF", fontSize: 18 });
-      slide2.addText(`Average CPL: $${averageCpl.toFixed(2)}`, { x: 0.5, y: 3.0, color: "FFFFFF", fontSize: 18 });
-
-      // Slide 3: Campaign Performance
-      let slide3 = pres.addSlide();
-      slide3.background = { color: "070B14" };
-      slide3.addText("Campaign Performance", { x: 0.5, y: 0.5, w: '90%', color: "0AE5D5", fontSize: 24, bold: true });
-      
-      let tableRows = [
-        [
-          { text: "Campaign", options: { bold: true, color: "33CCFF", fill: "1A202C" } },
-          { text: "Spend", options: { bold: true, color: "33CCFF", fill: "1A202C" } },
-          { text: "Leads", options: { bold: true, color: "33CCFF", fill: "1A202C" } },
-          { text: "CPL", options: { bold: true, color: "33CCFF", fill: "1A202C" } }
-        ]
-      ];
-
-      // Max 10 campaigns to fit slide
-      const sortedData = [...data].sort((a, b) => b.spend - a.spend).slice(0, 10);
-      sortedData.forEach(item => {
-        const cpl = item.leads > 0 ? item.spend / item.leads : 0;
-        tableRows.push([
-          { text: item.campaign_name.substring(0, 30), options: { color: "FFFFFF" } },
-          { text: `$${item.spend.toFixed(2)}`, options: { color: "FFFFFF" } },
-          { text: `${item.leads}`, options: { color: "FFFFFF" } },
-          { text: `$${cpl.toFixed(2)}`, options: { color: "FFFFFF" } }
-        ]);
-      });
-
-      slide3.addTable(tableRows, { x: 0.5, y: 1.2, w: 9, fill: "0A0F1C", color: "FFFFFF", border: { type: 'solid', color: "333333", pt: 1 } });
-
-      pres.writeFile({ fileName: "Meta_Ads_Report.pptx" });
-    } catch (error) {
-      console.error("Failed to generate PPTX", error);
-      alert("Failed to export PPTX.");
-    } finally {
-      setIsExporting(false);
-    }
-  };
 
   const fetchFacebookPages = async () => {
     setLoadingPages(true);
@@ -787,14 +726,7 @@ export default function App() {
               <Printer className={`w-4 h-4 ${isExporting ? 'animate-pulse' : ''}`} />
               {isExporting ? 'Exporting...' : 'Export PDF'}
             </button>
-            <button 
-              onClick={exportPPTX}
-              disabled={loading || loadingAccounts || isExporting}
-              className="flex items-center gap-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/30 transition-all px-4 py-2 rounded-lg text-sm text-amber-300 disabled:opacity-50 h-[38px]"
-            >
-              <Presentation className={`w-4 h-4 ${isExporting ? 'animate-pulse' : ''}`} />
-              Export PPTX
-            </button>
+
           </div>
         </div>
 
