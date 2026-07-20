@@ -722,12 +722,23 @@ export default function App() {
                 <div className="absolute top-full right-0 lg:left-0 mt-2 w-[300px] max-h-80 overflow-y-auto bg-[#0a0f1c] border border-[#33CCFF]/30 rounded-xl shadow-2xl z-50 p-2">
                   <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 mb-2">
                     <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Select Ad Accounts</span>
-                    <button 
-                      onClick={() => setSelectedAccountIds(adAccounts.map(a => a.account_id))}
-                      className="text-xs text-[#33CCFF] hover:text-white transition-colors"
-                    >
-                      Select All
-                    </button>
+                    {(() => {
+                      const areAllSelected = adAccounts.length > 0 && selectedAccountIds.length === adAccounts.length;
+                      return (
+                        <button 
+                          onClick={() => {
+                            if (areAllSelected) {
+                              setSelectedAccountIds([]);
+                            } else {
+                              setSelectedAccountIds(adAccounts.map(a => a.account_id));
+                            }
+                          }}
+                          className="text-xs text-[#33CCFF] hover:text-white transition-colors font-medium"
+                        >
+                          {areAllSelected ? 'Deselect All' : 'Select All'}
+                        </button>
+                      );
+                    })()}
                   </div>
                   {adAccounts.map(acc => {
                     const isSelected = selectedAccountIds.includes(acc.account_id);
