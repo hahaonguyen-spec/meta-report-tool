@@ -3,7 +3,7 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 import pptxgen from "pptxgenjs";
-import { TrendingUp, TrendingDown, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Filter, Image as ImageIcon, PieChart as PieChartIcon, ArrowRight, Presentation, UsersRound } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Image as ImageIcon, ArrowRight, Presentation, UsersRound } from 'lucide-react';
 
 const MOCK_DATA = [
   { campaign_id: '101', campaign_name: 'VN_LeadGen_Campaign1', account_name: 'CPT Indonesia', spend: 1250.5, impressions: 55000, clicks: 3450, leads: 145, start_time: '2026-04-15T08:00:00+0000' },
@@ -1040,28 +1040,30 @@ export default function App() {
 }
 
 // =====================================================================
-// ==================== AGENCY REPORT MODULES ==========================
+// ======================== REPORT MODULES =============================
 // =====================================================================
 
 function ReportManager({ data, manualData, handleManualChange, activeReportTab, setActiveReportTab }) {
   const tabs = [
-    { id: 'daily', name: 'Daily Performance', icon: Target },
-    { id: 'funnel', name: 'Funnel Metrics', icon: Filter },
+    { id: 'overview', name: 'Campaign Overview', icon: Target },
     { id: 'breakdown', name: 'Market Breakdown', icon: Globe },
-    { id: 'creative', name: 'Creative Analysis', icon: ImageIcon },
-    { id: 'roi', name: 'Executive ROI', icon: TrendingDown } // We'll use TrendingUp inside
+    { id: 'roi', name: 'ROI & P&L', icon: DollarSign },
   ];
+
+  // Reset to 'overview' if current tab no longer exists (e.g. after removing old tabs)
+  const validTabIds = tabs.map(t => t.id);
+  const currentTab = validTabIds.includes(activeReportTab) ? activeReportTab : 'overview';
 
   return (
     <div className="flex flex-col xl:flex-row gap-6">
-      {/* Settings / Reports Sidebar */}
+      {/* Sidebar */}
       <div className="xl:w-64 flex-shrink-0 print:hidden pdf-hide">
         <div className="bg-white/5 border border-white/10 rounded-2xl p-4 sticky top-6">
-          <h3 className="text-sm font-semibold text-gray-400 mb-4 px-2 uppercase tracking-widest">Report Models</h3>
+          <h3 className="text-sm font-semibold text-gray-400 mb-4 px-2 uppercase tracking-widest">Report</h3>
           <div className="flex flex-col gap-1">
             {tabs.map(tab => {
               const Icon = tab.icon;
-              const isActive = activeReportTab === tab.id;
+              const isActive = currentTab === tab.id;
               return (
                 <button
                   key={tab.id}
@@ -1081,62 +1083,147 @@ function ReportManager({ data, manualData, handleManualChange, activeReportTab, 
       <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-6 shadow-xl relative overflow-hidden group print:bg-white print:border-none print:shadow-none print:p-0">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#0AE5D5] to-[#33CCFF] opacity-50 print:hidden"></div>
         
-        {activeReportTab === 'daily' && <DailyPerformanceReport data={data} />}
-        {activeReportTab === 'funnel' && <FunnelReport data={data} manualData={manualData} handleManualChange={handleManualChange} />}
-        {activeReportTab === 'breakdown' && <BreakdownReport data={data} manualData={manualData} />}
-        {activeReportTab === 'creative' && <CreativePerformanceReport />}
-        {activeReportTab === 'roi' && <ROIRevenueReport data={data} manualData={manualData} />}
+        {currentTab === 'overview' && <CampaignOverviewReport data={data} />}
+        {currentTab === 'breakdown' && <BreakdownReport data={data} manualData={manualData} />}
+        {currentTab === 'roi' && <ROIRevenueReport data={data} manualData={manualData} />}
       </div>
     </div>
   );
 }
 
-// ======== 1. DAILY PERFORMANCE REPORT ========
-function DailyPerformanceReport({ data }) {
-  // Sort by Spend descending
-  const sortedData = [...data].sort((a,b) => b.spend - a.spend);
+// ======== 1. CAMPAIGN OVERVIEW REPORT ========
+function CampaignOverviewReport({ data }) {
+  const sortedData = [...data].sort((a, b) => b.spend - a.spend);
+
+  // Summary stats
+  const totalSpend = data.reduce((acc, c) => acc + c.spend, 0);
+  const totalClicks = data.reduce((acc, c) => acc + c.clicks, 0);
+  const totalImpressions = data.reduce((acc, c) => acc + c.impressions, 0);
+  const totalLeads = data.reduce((acc, c) => acc + c.leads, 0);
+  const avgCpl = totalLeads > 0 ? totalSpend / totalLeads : 0;
+  const avgCtr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
+
+  // Chart data — top 10 by spend
+  const barChartData = sortedData.slice(0, 10).map(item => {
+    const cpl = item.leads > 0 ? item.spend / item.leads : 0;
+    return {
+      name: item.campaign_name.length > 18 ? item.campaign_name.substring(0, 18) + '…' : item.campaign_name,
+      Spend: Number(item.spend.toFixed(2)),
+      CPL: Number(cpl.toFixed(2)),
+    };
+  });
 
   return (
     <div>
       <h2 className="text-xl font-bold flex items-center gap-2 mb-2 print:text-[#070b14]">
-        <Target className="w-6 h-6 text-[#0AE5D5]" /> Daily Performance Report (Optimize View)
+        <Target className="w-6 h-6 text-[#0AE5D5]" /> Campaign Overview
       </h2>
-      <p className="text-gray-400 text-sm mb-6 print:text-gray-600">Actionable insights to KILL underperforming ads or SCALE winning campaigns within 24h.</p>
-      
-      <div className="overflow-x-auto">
+      <p className="text-gray-400 text-sm mb-6 print:text-gray-600">
+        Tổng quan hiệu suất tất cả chiến dịch quảng cáo — Spend, Clicks, Leads & CPL.
+      </p>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+          <p className="text-gray-400 text-xs uppercase tracking-widest mb-1">Total Spend</p>
+          <p className="text-2xl font-bold text-white">${totalSpend.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+          <p className="text-gray-400 text-xs uppercase tracking-widest mb-1">Total Clicks</p>
+          <p className="text-2xl font-bold text-white">{totalClicks.toLocaleString()}</p>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+          <p className="text-gray-400 text-xs uppercase tracking-widest mb-1">Total Leads</p>
+          <p className="text-2xl font-bold text-[#33CCFF]">{totalLeads.toLocaleString()}</p>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+          <p className="text-gray-400 text-xs uppercase tracking-widest mb-1">Avg. CPL</p>
+          <p className="text-2xl font-bold text-[#0AE5D5]">${avgCpl.toFixed(2)}</p>
+        </div>
+      </div>
+
+      {/* Bar Chart — Spend vs CPL */}
+      <div className="bg-black/20 border border-white/5 rounded-xl p-5 mb-8">
+        <h3 className="text-gray-300 font-semibold mb-4 text-sm">Spend vs CPL — Top 10 Campaigns</h3>
+        <div className="h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={barChartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+              <XAxis dataKey="name" stroke="#9ca3af" fontSize={11} tickLine={false} axisLine={false} angle={-20} textAnchor="end" height={60} />
+              <YAxis yAxisId="left" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
+              <YAxis yAxisId="right" orientation="right" stroke="#0AE5D5" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
+              <Tooltip 
+                contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+              />
+              <Legend wrapperStyle={{ paddingTop: '10px' }} />
+              <Bar yAxisId="left" dataKey="Spend" name="Spend ($)" fill="#33CCFF" radius={[4, 4, 0, 0]} />
+              <Bar yAxisId="right" dataKey="CPL" name="CPL ($)" fill="#0AE5D5" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Campaign Detail Table */}
+      <div className="overflow-x-auto bg-black/20 border border-white/5 rounded-xl">
         <table className="w-full text-sm text-left whitespace-nowrap">
-          <thead className="text-[10px] uppercase bg-black/40 text-gray-300 border-b border-white/10">
+          <thead className="text-[10px] uppercase bg-black/60 text-gray-400 border-b border-white/10">
             <tr>
               <th className="px-4 py-3">Campaign</th>
-              <th className="px-4 py-3">Spend</th>
-              <th className="px-4 py-3">CTR</th>
-              <th className="px-4 py-3">CPC</th>
-              <th className="px-4 py-3">CPL</th>
-              <th className="px-4 py-3 text-center">AI Decision</th>
+              <th className="px-4 py-3">Account</th>
+              <th className="px-4 py-3 text-right">Spend</th>
+              <th className="px-4 py-3 text-right">Impressions</th>
+              <th className="px-4 py-3 text-right">Clicks</th>
+              <th className="px-4 py-3 text-right">CTR</th>
+              <th className="px-4 py-3 text-right">CPC</th>
+              <th className="px-4 py-3 text-right">CPM</th>
+              <th className="px-4 py-3 text-right">Leads</th>
+              <th className="px-4 py-3 text-right">CPL</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
+          <tbody className="divide-y divide-white/5 text-xs">
             {sortedData.map(item => {
               const ctr = item.impressions > 0 ? (item.clicks / item.impressions) * 100 : 0;
               const cpc = item.clicks > 0 ? item.spend / item.clicks : 0;
+              const cpm = item.impressions > 0 ? (item.spend / item.impressions) * 1000 : 0;
               const cpl = item.leads > 0 ? item.spend / item.leads : 0;
 
-              // Simple logic: if CPL > 15, KILL. If CPL < 5 and spend > 10, SCALE.
-              let decision = <span className="px-2 py-1 bg-gray-500/10 text-gray-400 rounded text-xs">MONITOR</span>;
-              if (cpl > 15 || (item.spend > 20 && item.leads === 0)) decision = <span className="px-2 py-1 bg-red-500/20 border border-red-500/30 text-red-400 font-bold rounded text-xs flex justify-center items-center gap-1 w-20 mx-auto">KILL <AlertCircle className="w-3 h-3"/></span>;
-              else if (cpl > 0 && cpl <= 5 && item.spend > 10) decision = <span className="px-2 py-1 bg-green-500/20 border border-green-500/30 text-green-400 font-bold rounded text-xs flex justify-center items-center gap-1 w-20 mx-auto">SCALE <TrendingUp className="w-3 h-3"/></span>;
-
               return (
-                <tr key={item.campaign_id} className="hover:bg-white/[0.04]">
-                  <td className="px-4 py-3 font-medium text-gray-200 print:text-[#070b14] truncate max-w-[200px]">{item.campaign_name}</td>
-                  <td className="px-4 py-3">${item.spend.toFixed(2)}</td>
-                  <td className="px-4 py-3">{ctr.toFixed(2)}%</td>
-                  <td className="px-4 py-3">${cpc.toFixed(2)}</td>
-                  <td className={`px-4 py-3 font-bold ${cpl > 15 ? 'text-red-400' : 'text-[#0AE5D5]'}`}>${cpl.toFixed(2)}</td>
-                  <td className="px-4 py-3">{decision}</td>
+                <tr key={item.campaign_id} className="hover:bg-white/[0.04] transition-colors">
+                  <td className="px-4 py-3 font-medium text-gray-200 max-w-[200px] truncate" title={item.campaign_name}>{item.campaign_name}</td>
+                  <td className="px-4 py-3 text-gray-500">
+                    <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded uppercase tracking-wider">{item.account_name || '—'}</span>
+                  </td>
+                  <td className="px-4 py-3 text-right text-gray-300 font-medium">${item.spend.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-right text-gray-400">{item.impressions.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-right text-gray-400">{item.clicks.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-right text-[#0AE5D5]">{ctr.toFixed(2)}%</td>
+                  <td className="px-4 py-3 text-right text-gray-300">${cpc.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-right text-gray-400">${cpm.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-right text-white font-medium">{item.leads}</td>
+                  <td className={`px-4 py-3 text-right font-bold ${cpl > 0 ? 'text-[#0AE5D5]' : 'text-gray-500'}`}>{cpl > 0 ? `$${cpl.toFixed(2)}` : '—'}</td>
                 </tr>
               );
             })}
+            {/* Total Row */}
+            {data.length > 0 && (() => {
+              const totalCtr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
+              const totalCpc = totalClicks > 0 ? totalSpend / totalClicks : 0;
+              const totalCpm = totalImpressions > 0 ? (totalSpend / totalImpressions) * 1000 : 0;
+              return (
+                <tr className="bg-white/[0.06] border-t-2 border-[#0AE5D5]/30 font-semibold text-white">
+                  <td className="px-4 py-3" colSpan={2}>TOTAL ({data.length} campaigns)</td>
+                  <td className="px-4 py-3 text-right text-[#33CCFF]">${totalSpend.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-right">{totalImpressions.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-right">{totalClicks.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-right text-[#0AE5D5]">{totalCtr.toFixed(2)}%</td>
+                  <td className="px-4 py-3 text-right">${totalCpc.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-right">${totalCpm.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-right text-[#33CCFF]">{totalLeads}</td>
+                  <td className="px-4 py-3 text-right text-[#0AE5D5]">{avgCpl > 0 ? `$${avgCpl.toFixed(2)}` : '—'}</td>
+                </tr>
+              );
+            })()}
           </tbody>
         </table>
       </div>
@@ -1144,77 +1231,8 @@ function DailyPerformanceReport({ data }) {
   );
 }
 
-// ======== 2. FUNNEL REPORT ========
-function FunnelReport({ data, manualData, handleManualChange }) {
-  return (
-    <div>
-      <h2 className="text-xl font-bold flex items-center gap-2 mb-2 print:text-[#070b14]">
-        <Filter className="w-6 h-6 text-[#33CCFF]" /> Funnel Conversion Report
-      </h2>
-      <p className="text-gray-400 text-sm mb-6 print:text-gray-600">Track drop-offs across Webinar / Forex acquisition steps: Leads → Attend → Open → Deposit.</p>
-      
-      <div className="space-y-6">
-        {data.map(item => {
-          const mData = manualData[item.campaign_id] || {};
-          const attend = parseFloat(mData.attend) || 0;
-          const acct = parseFloat(mData.accountOpen) || 0;
-          const fund = parseFloat(mData.fundedAccounts) || 0;
-          
-          const attendRate = item.leads > 0 ? (attend / item.leads) * 100 : 0;
-          const openRate = attend > 0 ? (acct / attend) * 100 : (item.leads > 0 ? (acct / item.leads) * 100 : 0);
-          const fundRate = acct > 0 ? (fund / acct) * 100 : 0;
-
-          return (
-            <div key={item.campaign_id} className="bg-black/20 p-4 border border-white/5 rounded-xl print:bg-gray-50 print:border-gray-200">
-              <h4 className="font-semibold text-[#0AE5D5] mb-4 print:text-blue-700">{item.campaign_name}</h4>
-              
-              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 text-sm relative">
-                {/* Arrow lines between cols (hidden on small screens) */}
-                <div className="hidden lg:block absolute top-[45%] left-0 w-full h-[1px] bg-white/10 z-0"></div>
-
-                <div className="bg-[#0a0f1c] p-3 rounded-lg border border-white/10 z-10 flex flex-col items-center">
-                  <span className="text-gray-400 text-xs mb-1">1. Meta Leads</span>
-                  <span className="text-xl font-bold text-white print:text-black">{item.leads}</span>
-                </div>
-                
-                <div className="bg-[#0a0f1c] p-3 rounded-lg border border-white/10 z-10 flex flex-col items-center">
-                  <span className="text-gray-400 text-xs mb-1">2. Attendance</span>
-                  <input type="number" 
-                    className="w-16 bg-white/5 border border-white/20 rounded px-2 py-1 text-center text-white text-sm mb-1 pdf-hide print:hidden"
-                    placeholder="0" value={mData.attend || ''} onChange={(e) => handleManualChange(item.campaign_id, 'attend', e.target.value)}
-                  />
-                  <span className="hidden print:block text-xl font-bold text-black">{attend}</span>
-                  <span className={`text-xs ${attendRate >= 30 ? 'text-green-400' : 'text-orange-400'}`}>{attendRate.toFixed(1)}% drop</span>
-                </div>
-
-                <div className="bg-[#0a0f1c] p-3 rounded-lg border border-white/10 z-10 flex flex-col items-center">
-                  <span className="text-gray-400 text-xs mb-1">3. Acct Open</span>
-                  <span className="text-xl font-bold text-[#33CCFF] print:text-blue-600">{acct}</span>
-                  <span className="text-xs text-gray-500">{openRate.toFixed(1)}% cvr</span>
-                </div>
-
-                <div className="bg-[#0a0f1c] p-3 rounded-lg border border-white/10 z-10 flex flex-col items-center">
-                  <span className="text-gray-400 text-xs mb-1">4. Funded</span>
-                  <span className="text-xl font-bold text-[#0AE5D5] print:text-teal-600">{fund}</span>
-                  <span className="text-xs text-gray-500">{fundRate.toFixed(1)}% cvr</span>
-                </div>
-
-                <div className="bg-indigo-900/30 p-3 rounded-lg border border-indigo-500/30 z-10 flex flex-col items-center">
-                  <span className="text-indigo-300 text-xs mb-1">5. Final CPA (Funded)</span>
-                  <span className="text-xl font-bold text-indigo-400">${fund > 0 ? (item.spend / fund).toFixed(2) : '0.00'}</span>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ======== 3. BREAKDOWN REPORT ========
+// ======== 2. MARKET BREAKDOWN REPORT ========
 function BreakdownReport({ data, manualData }) {
-  // Parsing logic for country code
   const marketRegex = /^(VN|TH|MY|PH|IND|ID)/i;
   let breakdown = {};
   
@@ -1223,12 +1241,14 @@ function BreakdownReport({ data, manualData }) {
     const match = item.campaign_name.match(marketRegex);
     if(match) country = match[1].toUpperCase();
 
-    if(!breakdown[country]) breakdown[country] = { spend: 0, leads: 0, acct: 0, fund: 0, deposit: 0 };
+    if(!breakdown[country]) breakdown[country] = { spend: 0, leads: 0, impressions: 0, clicks: 0, acct: 0, fund: 0, deposit: 0 };
     
     const mData = manualData[item.campaign_id] || {};
     
     breakdown[country].spend += item.spend;
     breakdown[country].leads += item.leads;
+    breakdown[country].impressions += item.impressions;
+    breakdown[country].clicks += item.clicks;
     breakdown[country].acct += parseFloat(mData.accountOpen) || 0;
     breakdown[country].fund += parseFloat(mData.fundedAccounts) || 0;
     breakdown[country].deposit += parseFloat(mData.deposit) || 0;
@@ -1241,16 +1261,27 @@ function BreakdownReport({ data, manualData }) {
 
   const COLORS = ['#33CCFF', '#0AE5D5', '#818cf8', '#f472b6', '#34d399', '#fcd34d'];
 
+  // Totals for Total Row
+  const grandTotal = Object.values(breakdown).reduce((acc, b) => ({
+    spend: acc.spend + b.spend,
+    leads: acc.leads + b.leads,
+    impressions: acc.impressions + b.impressions,
+    clicks: acc.clicks + b.clicks,
+    acct: acc.acct + b.acct,
+    fund: acc.fund + b.fund,
+    deposit: acc.deposit + b.deposit,
+  }), { spend: 0, leads: 0, impressions: 0, clicks: 0, acct: 0, fund: 0, deposit: 0 });
+
   return (
     <div>
       <h2 className="text-xl font-bold flex items-center gap-2 mb-2 print:text-[#070b14]">
-        <Globe className="w-6 h-6 text-indigo-400" /> Breakdown Report (Multi-Market Deep Analysis)
+        <Globe className="w-6 h-6 text-indigo-400" /> Market Breakdown
       </h2>
-      <p className="text-gray-400 text-sm mb-6 print:text-gray-600">Cross-referencing Spend, Funnel conversion, and Final ROI by geographical region.</p>
+      <p className="text-gray-400 text-sm mb-6 print:text-gray-600">Phân tích chi tiêu, hiệu suất và ROI theo từng thị trường.</p>
       
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <div className="h-[300px] flex flex-col items-center xl:col-span-1">
-          <h3 className="font-semibold text-gray-300 mb-2">Budget Allocation by Region</h3>
+          <h3 className="font-semibold text-gray-300 mb-2">Budget Allocation</h3>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={5} dataKey="value" label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`}>
@@ -1262,17 +1293,18 @@ function BreakdownReport({ data, manualData }) {
         </div>
 
         <div className="xl:col-span-2 overflow-x-auto">
-          <h3 className="font-semibold text-gray-300 mb-4">Regional Business Performance</h3>
+          <h3 className="font-semibold text-gray-300 mb-4">Regional Performance</h3>
           <table className="w-full text-sm text-left whitespace-nowrap">
             <thead className="text-[10px] uppercase bg-white/5 text-gray-400">
               <tr>
                 <th className="px-4 py-3">Region</th>
-                <th className="px-4 py-3">Total Spend</th>
-                <th className="px-4 py-3">Avg CPL</th>
-                <th className="px-4 py-3 text-[#33CCFF]">Acct Open / CPA</th>
-                <th className="px-4 py-3 text-[#0AE5D5]">Funded / CPFA</th>
-                <th className="px-4 py-3 text-indigo-300">Total Deposit</th>
-                <th className="px-4 py-3">ROI</th>
+                <th className="px-4 py-3 text-right">Spend</th>
+                <th className="px-4 py-3 text-right">Leads</th>
+                <th className="px-4 py-3 text-right">Avg CPL</th>
+                <th className="px-4 py-3 text-right text-[#33CCFF]">Acct Open / CPA</th>
+                <th className="px-4 py-3 text-right text-[#0AE5D5]">Funded / CPFA</th>
+                <th className="px-4 py-3 text-right text-indigo-300">Deposit</th>
+                <th className="px-4 py-3 text-right">ROI</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -1286,23 +1318,45 @@ function BreakdownReport({ data, manualData }) {
                 return (
                   <tr key={key} className="hover:bg-white/5">
                     <td className="px-4 py-3 font-bold flex items-center gap-2">
-                       <span className="w-3 h-3 rounded-full" style={{backgroundColor: COLORS[i % COLORS.length]}}></span> {key}
+                       <span className="w-3 h-3 rounded-full flex-shrink-0" style={{backgroundColor: COLORS[i % COLORS.length]}}></span> {key}
                     </td>
-                    <td className="px-4 py-3">${b.spend.toFixed(2)}</td>
-                    <td className="px-4 py-3">${cpl.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-[#33CCFF]">
+                    <td className="px-4 py-3 text-right">${b.spend.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right">{b.leads}</td>
+                    <td className="px-4 py-3 text-right">${cpl.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right text-[#33CCFF]">
                       <span className="text-white font-medium">{b.acct}</span> <span className="text-gray-500">/ ${cpa.toFixed(2)}</span>
                     </td>
-                    <td className="px-4 py-3 text-[#0AE5D5]">
+                    <td className="px-4 py-3 text-right text-[#0AE5D5]">
                       <span className="text-white font-medium">{b.fund}</span> <span className="text-gray-500">/ ${cpfa.toFixed(2)}</span>
                     </td>
-                    <td className="px-4 py-3 font-medium text-indigo-300">${b.deposit.toFixed(2)}</td>
-                    <td className={`px-4 py-3 font-bold ${roi > 0 ? 'text-green-400' : roi < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                    <td className="px-4 py-3 text-right font-medium text-indigo-300">${b.deposit.toFixed(2)}</td>
+                    <td className={`px-4 py-3 text-right font-bold ${roi > 0 ? 'text-green-400' : roi < 0 ? 'text-red-400' : 'text-gray-400'}`}>
                       {roi > 0 ? '+' : ''}{roi.toFixed(1)}%
                     </td>
                   </tr>
                 )
               })}
+              {/* Total Row */}
+              {Object.keys(breakdown).length > 0 && (() => {
+                const tCpl = grandTotal.leads > 0 ? grandTotal.spend / grandTotal.leads : 0;
+                const tCpa = grandTotal.acct > 0 ? grandTotal.spend / grandTotal.acct : 0;
+                const tCpfa = grandTotal.fund > 0 ? grandTotal.spend / grandTotal.fund : 0;
+                const tRoi = grandTotal.spend > 0 ? ((grandTotal.deposit - grandTotal.spend) / grandTotal.spend) * 100 : 0;
+                return (
+                  <tr className="bg-white/[0.06] border-t-2 border-indigo-500/30 font-semibold text-white">
+                    <td className="px-4 py-3">TOTAL</td>
+                    <td className="px-4 py-3 text-right text-[#33CCFF]">${grandTotal.spend.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right">{grandTotal.leads}</td>
+                    <td className="px-4 py-3 text-right">${tCpl.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right text-[#33CCFF]">{grandTotal.acct} <span className="text-gray-500">/ ${tCpa.toFixed(2)}</span></td>
+                    <td className="px-4 py-3 text-right text-[#0AE5D5]">{grandTotal.fund} <span className="text-gray-500">/ ${tCpfa.toFixed(2)}</span></td>
+                    <td className="px-4 py-3 text-right text-indigo-300">${grandTotal.deposit.toFixed(2)}</td>
+                    <td className={`px-4 py-3 text-right font-bold ${tRoi > 0 ? 'text-green-400' : tRoi < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                      {tRoi > 0 ? '+' : ''}{tRoi.toFixed(1)}%
+                    </td>
+                  </tr>
+                );
+              })()}
             </tbody>
           </table>
         </div>
@@ -1311,29 +1365,10 @@ function BreakdownReport({ data, manualData }) {
   );
 }
 
-// ======== 4. CREATIVE PERFORMANCE REPORT ========
-function CreativePerformanceReport() {
-  return (
-    <div>
-      <h2 className="text-xl font-bold flex items-center gap-2 mb-2 print:text-[#070b14]">
-        <ImageIcon className="w-6 h-6 text-pink-400" /> Creative Performance Report
-      </h2>
-      <p className="text-gray-400 text-sm mb-6 print:text-gray-600">Track Hook formats, 3s view-rate, and visual efficiency. (Ad-level tracking template)</p>
-      
-      <div className="bg-pink-500/10 border border-pink-500/20 rounded-xl p-8 flex flex-col items-center justify-center text-center">
-        <PieChartIcon className="w-16 h-16 text-pink-400 mb-4 opacity-50" />
-        <h3 className="text-lg font-semibold text-pink-300 mb-2">Ad-Level Insights Required</h3>
-        <p className="max-w-md text-gray-400 text-sm">To populate this view, the Meta API mapping must be expanded to pull from the <code>/ads</code> endpoint including `creative` fields. This blueprint reserves the architecture for Phase 2.</p>
-        <button className="mt-4 bg-pink-500/20 hover:bg-pink-500/30 border border-pink-400/30 text-pink-300 px-4 py-2 rounded-lg transition-all text-sm pointer-events-none opacity-50">Sync Ad Creatives (Coming Soon)</button>
-      </div>
-    </div>
-  );
-}
-
-// ======== 5. ROI / REVENUE REPORT ========
+// ======== 3. ROI & P&L REPORT ========
 function ROIRevenueReport({ data, manualData }) {
-  const totalSpend = data.reduce((a,b) => a + b.spend, 0);
-  const totalDeposit = data.reduce((a,b) => {
+  const totalSpend = data.reduce((a, b) => a + b.spend, 0);
+  const totalDeposit = data.reduce((a, b) => {
     const m = manualData[b.campaign_id];
     return a + (m && m.deposit ? parseFloat(m.deposit) : 0);
   }, 0);
@@ -1342,13 +1377,25 @@ function ROIRevenueReport({ data, manualData }) {
   const netProfit = totalDeposit - totalSpend;
   const roiPerc = totalSpend > 0 ? ((netProfit / totalSpend) * 100).toFixed(1) : 0;
 
+  // Per-campaign ROI data
+  const campaignRoi = [...data].map(item => {
+    const m = manualData[item.campaign_id] || {};
+    const deposit = parseFloat(m.deposit) || 0;
+    const acct = parseFloat(m.accountOpen) || 0;
+    const fund = parseFloat(m.fundedAccounts) || 0;
+    const roi = item.spend > 0 ? ((deposit - item.spend) / item.spend) * 100 : 0;
+    const cpa = acct > 0 ? item.spend / acct : 0;
+    return { ...item, deposit, acct, fund, roi, cpa };
+  }).sort((a, b) => b.roi - a.roi);
+
   return (
     <div>
       <h2 className="text-xl font-bold flex items-center gap-2 mb-2 print:text-[#070b14]">
-        <TrendingUp className="w-6 h-6 text-green-400" /> Executive ROI & Revenue
+        <TrendingUp className="w-6 h-6 text-green-400" /> ROI & P&L
       </h2>
-      <p className="text-gray-400 text-sm mb-6 print:text-gray-600">High-level P&L tracking for leadership and investors.</p>
+      <p className="text-gray-400 text-sm mb-6 print:text-gray-600">Tổng quan lợi nhuận — theo dõi P&L và ROAS tổng thể cũng như chi tiết từng chiến dịch.</p>
       
+      {/* Executive Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white/5 border border-white/10 rounded-xl p-6 text-center print:bg-white print:border-gray-200">
           <p className="text-gray-400 uppercase tracking-widest text-xs font-semibold mb-2 print:text-gray-500">Total Spend</p>
@@ -1367,7 +1414,8 @@ function ROIRevenueReport({ data, manualData }) {
         </div>
       </div>
 
-      <div className="bg-black/20 rounded-xl p-6 border border-white/5 flex justify-between items-center print:hidden">
+      {/* ROAS Indicator */}
+      <div className="bg-black/20 rounded-xl p-6 border border-white/5 flex justify-between items-center mb-8 print:hidden">
         <div>
            <h3 className="text-2xl font-bold text-white mb-1"><span className="text-[#0AE5D5]">ROAS:</span> {roas}x</h3>
            <p className="text-gray-400 text-sm">For every $1 spent, you earn ${roas} back in deposits.</p>
@@ -1375,6 +1423,59 @@ function ROIRevenueReport({ data, manualData }) {
         <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-[#33CCFF] to-[#0AE5D5] flex items-center justify-center shadow-lg">
            <DollarSign className="text-[#070b14] w-8 h-8" strokeWidth={3} />
         </div>
+      </div>
+
+      {/* Per-Campaign ROI Table */}
+      <div className="overflow-x-auto bg-black/20 border border-white/5 rounded-xl">
+        <div className="px-5 py-4 border-b border-white/5">
+          <h3 className="text-sm font-semibold text-gray-300">ROI by Campaign</h3>
+          <p className="text-xs text-gray-500 mt-1">Sorted by ROI descending. Data from manual inputs on Dashboard.</p>
+        </div>
+        <table className="w-full text-sm text-left whitespace-nowrap">
+          <thead className="text-[10px] uppercase bg-black/60 text-gray-400 border-b border-white/10">
+            <tr>
+              <th className="px-4 py-3">Campaign</th>
+              <th className="px-4 py-3 text-right">Spend</th>
+              <th className="px-4 py-3 text-right">Leads</th>
+              <th className="px-4 py-3 text-right text-[#33CCFF]">Acct Open</th>
+              <th className="px-4 py-3 text-right text-[#33CCFF]">CPA</th>
+              <th className="px-4 py-3 text-right text-[#0AE5D5]">Funded</th>
+              <th className="px-4 py-3 text-right text-indigo-300">Deposit</th>
+              <th className="px-4 py-3 text-right">ROI</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5 text-xs">
+            {campaignRoi.map(item => (
+              <tr key={item.campaign_id} className="hover:bg-white/[0.04] transition-colors">
+                <td className="px-4 py-3 font-medium text-gray-200 max-w-[200px] truncate" title={item.campaign_name}>{item.campaign_name}</td>
+                <td className="px-4 py-3 text-right text-gray-300">${item.spend.toFixed(2)}</td>
+                <td className="px-4 py-3 text-right text-gray-400">{item.leads}</td>
+                <td className="px-4 py-3 text-right text-[#33CCFF] font-medium">{item.acct || '—'}</td>
+                <td className="px-4 py-3 text-right text-gray-300">{item.cpa > 0 ? `$${item.cpa.toFixed(2)}` : '—'}</td>
+                <td className="px-4 py-3 text-right text-[#0AE5D5] font-medium">{item.fund || '—'}</td>
+                <td className="px-4 py-3 text-right text-indigo-300 font-medium">{item.deposit > 0 ? `$${item.deposit.toFixed(2)}` : '—'}</td>
+                <td className={`px-4 py-3 text-right font-bold ${item.roi > 0 ? 'text-green-400' : item.roi < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                  {item.deposit > 0 || item.spend > 0 ? `${item.roi > 0 ? '+' : ''}${item.roi.toFixed(1)}%` : '—'}
+                </td>
+              </tr>
+            ))}
+            {/* Total Row */}
+            {data.length > 0 && (
+              <tr className="bg-white/[0.06] border-t-2 border-green-500/30 font-semibold text-white">
+                <td className="px-4 py-3">TOTAL</td>
+                <td className="px-4 py-3 text-right text-red-400">${totalSpend.toFixed(2)}</td>
+                <td className="px-4 py-3 text-right">{data.reduce((a, b) => a + b.leads, 0)}</td>
+                <td className="px-4 py-3 text-right text-[#33CCFF]">{campaignRoi.reduce((a, b) => a + b.acct, 0)}</td>
+                <td className="px-4 py-3 text-right">—</td>
+                <td className="px-4 py-3 text-right text-[#0AE5D5]">{campaignRoi.reduce((a, b) => a + b.fund, 0)}</td>
+                <td className="px-4 py-3 text-right text-indigo-300">${totalDeposit.toFixed(2)}</td>
+                <td className={`px-4 py-3 text-right font-bold ${netProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {roiPerc}%
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
