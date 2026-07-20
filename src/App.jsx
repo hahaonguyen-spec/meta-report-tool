@@ -639,7 +639,7 @@ export default function App() {
             onClick={() => setActiveTab('reports')} 
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${activeTab === 'reports' ? 'bg-[#0AE5D5]/20 text-[#0AE5D5] font-semibold' : 'text-gray-400 hover:text-white'}`}
           >
-            <FileText className="w-5 h-5"/> Agency Reports
+            <FileText className="w-5 h-5"/> Report
           </button>
           <button 
             onClick={() => setActiveTab('organic')} 
