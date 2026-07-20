@@ -168,9 +168,19 @@ export default function App() {
       }
 
       if (result.data && result.data.length > 0) {
-        setAdAccounts(result.data);
-        // Default to selecting the first account, but keep as array
-        setSelectedAccountIds([result.data[0].account_id]);
+        // Lọc: Chỉ lấy các tài khoản có chứa 'CPT' và không chứa 'cpt markets vietnam'
+        const filteredAccounts = result.data.filter(acc => {
+          const name = (acc.name || '').toLowerCase();
+          return name.includes('cpt') && !name.includes('cpt markets vietnam');
+        });
+
+        if (filteredAccounts.length > 0) {
+          setAdAccounts(filteredAccounts);
+          // Tự động chọn tất cả tài khoản CPT hợp lệ
+          setSelectedAccountIds(filteredAccounts.map(a => a.account_id));
+        } else {
+          throw new Error("Không tìm thấy tài khoản quảng cáo CPT hợp lệ (đã loại trừ CPT Markets Vietnam).");
+        }
       } else {
         throw new Error("No Ad Accounts found for this user.");
       }
