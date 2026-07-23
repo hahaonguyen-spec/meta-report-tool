@@ -73,11 +73,62 @@ const filterMockByDate = (mockList, preset, customStart, customEnd) => {
   return filtered;
 };
 
+const getDaysCount = (preset, customStart, customEnd) => {
+  const now = new Date("2026-06-10T08:29:51");
+  if (preset === 'today') return 1;
+  if (preset === 'yesterday') return 1;
+  if (preset === 'last_7d') return 7;
+  if (preset === 'last_14d') return 14;
+  if (preset === 'last_30d') return 30;
+  if (preset === 'this_month') {
+    return now.getDate(); // June 10th is day 10
+  }
+  if (preset === 'last_month') {
+    return new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+  }
+  if (preset === 'custom' && customStart && customEnd) {
+    const start = new Date(customStart + 'T00:00:00');
+    const end = new Date(customEnd + 'T23:59:59');
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays || 1;
+  }
+  return 30;
+};
+
+const getDefaultBudget = (campaignName) => {
+  if (!campaignName) return 15;
+  const match = campaignName.match(/^(VN|TH|MY|PH|IND|ID)/i);
+  if (match) {
+    const market = match[1].toUpperCase();
+    if (market === 'VN') return 20;
+    if (market === 'PH') return 10;
+  }
+  return 15;
+};
+
 export default function App() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [manualData, setManualData] = useState({});
+  const [manualData, setManualData] = useState(() => {
+    try {
+      const saved = localStorage.getItem('meta_report_manual_data');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      console.error("Error reading manualData from localStorage:", e);
+      return {};
+    }
+  });
+  
+  useEffect(() => {
+    try {
+      localStorage.setItem('meta_report_manual_data', JSON.stringify(manualData));
+    } catch (e) {
+      console.error("Error saving manualData to localStorage:", e);
+    }
+  }, [manualData]);
+
   const [isUsingMock, setIsUsingMock] = useState(false);
   const [exchangeRates, setExchangeRates] = useState(null);
   
@@ -548,6 +599,31 @@ export default function App() {
   const totalLeads = data.reduce((acc, curr) => acc + curr.leads, 0);
   const averageCpl = totalLeads > 0 ? totalSpend / totalLeads : 0;
 
+  // Budget & Conversion Health metrics
+  const daysCount = getDaysCount(datePreset, customStartDate, customEndDate);
+  
+  const totalDailyBudget = data.reduce((acc, curr) => {
+    const m = manualData[curr.campaign_id] || {};
+    const budget = m.dailyBudget !== undefined && m.dailyBudget !== '' ? parseFloat(m.dailyBudget) : getDefaultBudget(curr.campaign_name);
+    return acc + (isNaN(budget) ? 0 : budget);
+  }, 0);
+
+  const expectedTotalSpend = totalDailyBudget * daysCount;
+  const overallPacing = expectedTotalSpend > 0 ? (totalSpend / expectedTotalSpend) * 100 : 0;
+
+  const totalAccountOpen = data.reduce((acc, curr) => {
+    const m = manualData[curr.campaign_id] || {};
+    return acc + (parseFloat(m.accountOpen) || 0);
+  }, 0);
+
+  const totalFunded = data.reduce((acc, curr) => {
+    const m = manualData[curr.campaign_id] || {};
+    return acc + (parseFloat(m.fundedAccounts) || 0);
+  }, 0);
+
+  const overallLeadToAcctCvr = totalLeads > 0 ? (totalAccountOpen / totalLeads) * 100 : 0;
+  const overallLeadToFundCvr = totalLeads > 0 ? (totalFunded / totalLeads) * 100 : 0;
+
   // Compute Chart Data (Spend vs CPL)
   const chartData = data.map(item => {
     const cpl = item.leads > 0 ? (item.spend / item.leads) : 0;
@@ -748,12 +824,25 @@ export default function App() {
         {activeTab === 'dashboard' ? (
           <>
             {/* Top Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+              <StatCard title="Total Spend" value={`$${totalSpend.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`} icon={DollarSign} color="#33CCFF" />
+              <StatCard title="Total Clicks" value={totalClicks.toLocaleString()} icon={MousePointerClick} color="#0AE5D5" />
+              <StatCard title="Total Leads" value={totalLeads.toLocaleString()} icon={Users} color="#33CCFF" />
+              <StatCard title="Avg. CPL" value={`$${averageCpl.toFixed(2)}`} icon={TrendingUp} color="#0AE5D5" />
+            </div>
+
+            {/* Budget & Conversion Health Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <StatCard title="Total Spend" value={`$${totalSpend.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`} icon={DollarSign} color="#33CCFF" />
-          <StatCard title="Total Clicks" value={totalClicks.toLocaleString()} icon={MousePointerClick} color="#0AE5D5" />
-          <StatCard title="Total Leads" value={totalLeads.toLocaleString()} icon={Users} color="#33CCFF" />
-          <StatCard title="Avg. CPL" value={`$${averageCpl.toFixed(2)}`} icon={TrendingUp} color="#0AE5D5" />
-        </div>
+              <StatCard title="Daily Budget limit" value={`$${totalDailyBudget.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}/day`} icon={Briefcase} color="#33CCFF" />
+              <StatCard 
+                title="Daily Spend Pace" 
+                value={`${overallPacing.toFixed(1)}%`} 
+                icon={Activity} 
+                color={overallPacing > 110 ? "#f87171" : overallPacing < 80 ? "#fbbf24" : "#34d399"} 
+              />
+              <StatCard title="CRM Conv. Rate (L→A)" value={`${overallLeadToAcctCvr.toFixed(1)}%`} icon={UsersRound} color="#33CCFF" />
+              <StatCard title="Funded Rate (L→F)" value={`${overallLeadToFundCvr.toFixed(1)}%`} icon={Target} color="#0AE5D5" />
+            </div>
 
         {/* Chart & Table container */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -804,10 +893,13 @@ export default function App() {
                 <thead className="text-[10px] uppercase bg-black/40 text-gray-400 border-b border-white/10 border-t border-white/5">
                   <tr>
                     <th className="px-4 py-3 font-medium tracking-wider align-bottom" rowSpan={2}>Campaign Name</th>
+                    <th className="px-4 py-2 font-medium tracking-wider text-center bg-indigo-500/10 border-l border-b border-white/5 text-indigo-300" colSpan={2}>Budget Control</th>
                     <th className="px-4 py-2 font-medium tracking-wider text-center border-b border-white/5" colSpan={7}>Meta Insights (Auto)</th>
                     <th className="px-4 py-2 font-medium tracking-wider text-center bg-blue-500/5 border-l border-b border-white/5 text-blue-300" colSpan={6}>Business Conversion (Manual Input limits)</th>
                   </tr>
                   <tr>
+                    <th className="px-4 py-2 font-medium tracking-wider bg-indigo-500/20 text-indigo-300 border-l border-white/5">Daily Budget</th>
+                    <th className="px-4 py-2 font-medium tracking-wider bg-indigo-500/10 text-indigo-300">Pacing</th>
                     <th className="px-4 py-2 font-medium tracking-wider bg-black/20">Spend</th>
                     <th className="px-4 py-2 font-medium tracking-wider bg-black/20">Impr</th>
                     <th className="px-4 py-2 font-medium tracking-wider bg-black/20">Clicks</th>
@@ -826,7 +918,7 @@ export default function App() {
                 <tbody className="divide-y divide-white/5 text-xs">
                   {loading ? (
                     <tr>
-                      <td colSpan={14} className="px-6 py-8 text-center text-gray-500">
+                      <td colSpan={16} className="px-6 py-8 text-center text-gray-500">
                         Loading campaign data...
                       </td>
                     </tr>
@@ -836,16 +928,26 @@ export default function App() {
                     const manualFundedAccounts = parseFloat(mData.fundedAccounts) || 0;
                     const manualDeposit = parseFloat(mData.deposit) || 0;
 
+                    // Calc Budget & Pacing
+                    const dailyBudget = mData.dailyBudget !== undefined && mData.dailyBudget !== '' ? parseFloat(mData.dailyBudget) : getDefaultBudget(item.campaign_name);
+                    const expectedSpend = dailyBudget * daysCount;
+                    const pacing = expectedSpend > 0 ? (item.spend / expectedSpend) * 100 : 0;
+
                     // Calc Meta
                     const ctr = item.impressions > 0 ? (item.clicks / item.impressions) * 100 : 0;
                     const cpc = item.clicks > 0 ? item.spend / item.clicks : 0;
                     const cpm = item.impressions > 0 ? (item.spend / item.impressions) * 1000 : 0;
                     const cpl = item.leads > 0 ? item.spend / item.leads : 0;
+                    const leadCvr = item.clicks > 0 ? (item.leads / item.clicks) * 100 : 0;
                     
                     // Calc Business
                     const cpa = manualAccountOpen > 0 ? item.spend / manualAccountOpen : 0;
                     const cpfa = manualFundedAccounts > 0 ? item.spend / manualFundedAccounts : 0;
                     const roi = item.spend > 0 ? ((manualDeposit - item.spend) / item.spend) * 100 : 0;
+
+                    const leadToAcct = item.leads > 0 ? (manualAccountOpen / item.leads) * 100 : 0;
+                    const leadToFund = item.leads > 0 ? (manualFundedAccounts / item.leads) * 100 : 0;
+                    const acctToFund = manualAccountOpen > 0 ? (manualFundedAccounts / manualAccountOpen) * 100 : 0;
 
                     return (
                       <tr key={item.campaign_id} className="hover:bg-white/[0.04] transition-colors print:border-b print:border-gray-200">
@@ -869,6 +971,33 @@ export default function App() {
                             )}
                           </div>
                         </td>
+
+                        {/* Budget Control */}
+                        <td className="px-4 py-2 border-l border-white/5 bg-indigo-500/[0.05] print:bg-transparent">
+                          <div className="relative">
+                            <span className="absolute left-2 top-1.5 text-gray-500 pdf-hide print:hidden">$</span>
+                            <input 
+                              type="number" 
+                              className="w-20 bg-black/40 border border-white/10 rounded pl-5 pr-2 py-1.5 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 text-white text-xs transition-all pdf-hide print:hidden"
+                              placeholder={getDefaultBudget(item.campaign_name).toString()}
+                              value={mData.dailyBudget !== undefined ? mData.dailyBudget : ''}
+                              onChange={(e) => handleManualChange(item.campaign_id, 'dailyBudget', e.target.value)}
+                            />
+                            <span className="hidden print:inline-block font-medium text-[#070b14]">${dailyBudget.toFixed(2)}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 bg-indigo-500/[0.02]">
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase ${
+                            pacing > 110 
+                              ? "bg-red-500/10 text-red-400 border border-red-500/20" 
+                              : pacing < 80 
+                                ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20" 
+                                : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                          }`} title={`Expected Spend: $${expectedSpend.toFixed(2)} for ${daysCount} days`}>
+                            {pacing.toFixed(0)}%
+                          </span>
+                        </td>
+
                         <td className="px-4 py-3 text-gray-300 font-medium">
                           ${item.spend.toFixed(2)}
                         </td>
@@ -885,7 +1014,8 @@ export default function App() {
                           ${cpm.toFixed(2)}
                         </td>
                         <td className="px-4 py-3 text-white font-medium">
-                          {item.leads}
+                          <div>{item.leads}</div>
+                          {leadCvr > 0 && <div className="text-[10px] text-gray-400 font-normal">CVR: {leadCvr.toFixed(1)}%</div>}
                         </td>
                         <td className="px-4 py-3 text-gray-300">
                           ${cpl.toFixed(2)}
@@ -901,6 +1031,11 @@ export default function App() {
                             onChange={(e) => handleManualChange(item.campaign_id, 'accountOpen', e.target.value)}
                           />
                           <span className="hidden print:inline-block font-medium text-[#070b14]">{mData.accountOpen || '0'}</span>
+                          {item.leads > 0 && manualAccountOpen > 0 && (
+                            <div className="text-[10px] text-[#33CCFF]/80 mt-0.5" title="Lead to Account Open CVR">
+                              L→A: {leadToAcct.toFixed(1)}%
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-3 font-medium text-[#33CCFF] bg-[#33CCFF]/[0.02] print:text-blue-600 print:bg-transparent">
                           ${cpa.toFixed(2)}
@@ -915,6 +1050,12 @@ export default function App() {
                             onChange={(e) => handleManualChange(item.campaign_id, 'fundedAccounts', e.target.value)}
                           />
                           <span className="hidden print:inline-block font-medium text-[#070b14]">{mData.fundedAccounts || '0'}</span>
+                          {item.leads > 0 && manualFundedAccounts > 0 && (
+                            <div className="text-[10px] text-[#0AE5D5]/80 mt-0.5 space-y-0.5" title="Conversion Funnel Rates">
+                              <div>L→F: {leadToFund.toFixed(1)}%</div>
+                              {manualAccountOpen > 0 && <div>A→F: {acctToFund.toFixed(1)}%</div>}
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-3 font-medium text-[#0AE5D5] bg-[#0AE5D5]/[0.02] print:text-teal-600 print:bg-transparent">
                           ${cpfa.toFixed(2)}
@@ -1247,19 +1388,36 @@ function BreakdownReport({ data, manualData }) {
                 const cpfa = b.fund > 0 ? b.spend / b.fund : 0;
                 const roi = b.spend > 0 ? ((b.deposit - b.spend) / b.spend) * 100 : 0;
                 
+                const leadCvr = b.clicks > 0 ? (b.leads / b.clicks) * 100 : 0;
+                const lToA = b.leads > 0 ? (b.acct / b.leads) * 100 : 0;
+                const lToF = b.leads > 0 ? (b.fund / b.leads) * 100 : 0;
+
                 return (
                   <tr key={key} className="hover:bg-white/5">
                     <td className="px-4 py-3 font-bold flex items-center gap-2">
                        <span className="w-3 h-3 rounded-full flex-shrink-0" style={{backgroundColor: COLORS[i % COLORS.length]}}></span> {key}
                     </td>
                     <td className="px-4 py-3 text-right">${b.spend.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-right">{b.leads}</td>
+                    <td className="px-4 py-3 text-right">
+                      <div>{b.leads}</div>
+                      {leadCvr > 0 && <div className="text-[10px] text-gray-500">CVR: {leadCvr.toFixed(1)}%</div>}
+                    </td>
                     <td className="px-4 py-3 text-right">${cpl.toFixed(2)}</td>
                     <td className="px-4 py-3 text-right text-[#33CCFF]">
-                      <span className="text-white font-medium">{b.acct}</span> <span className="text-gray-500">/ ${cpa.toFixed(2)}</span>
+                      <div>
+                        <span className="text-white font-medium">{b.acct}</span> <span className="text-gray-500">/ ${cpa.toFixed(2)}</span>
+                      </div>
+                      {b.leads > 0 && b.acct > 0 && (
+                        <div className="text-[10px] text-[#33CCFF]/70">L→A: {lToA.toFixed(1)}%</div>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-right text-[#0AE5D5]">
-                      <span className="text-white font-medium">{b.fund}</span> <span className="text-gray-500">/ ${cpfa.toFixed(2)}</span>
+                      <div>
+                        <span className="text-white font-medium">{b.fund}</span> <span className="text-gray-500">/ ${cpfa.toFixed(2)}</span>
+                      </div>
+                      {b.leads > 0 && b.fund > 0 && (
+                        <div className="text-[10px] text-[#0AE5D5]/70">L→F: {lToF.toFixed(1)}%</div>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-right font-medium text-indigo-300">${b.deposit.toFixed(2)}</td>
                     <td className={`px-4 py-3 text-right font-bold ${roi > 0 ? 'text-green-400' : roi < 0 ? 'text-red-400' : 'text-gray-400'}`}>
@@ -1274,14 +1432,36 @@ function BreakdownReport({ data, manualData }) {
                 const tCpa = grandTotal.acct > 0 ? grandTotal.spend / grandTotal.acct : 0;
                 const tCpfa = grandTotal.fund > 0 ? grandTotal.spend / grandTotal.fund : 0;
                 const tRoi = grandTotal.spend > 0 ? ((grandTotal.deposit - grandTotal.spend) / grandTotal.spend) * 100 : 0;
+                
+                const tLeadCvr = grandTotal.clicks > 0 ? (grandTotal.leads / grandTotal.clicks) * 100 : 0;
+                const tLToA = grandTotal.leads > 0 ? (grandTotal.acct / grandTotal.leads) * 100 : 0;
+                const tLToF = grandTotal.leads > 0 ? (grandTotal.fund / grandTotal.leads) * 100 : 0;
+
                 return (
                   <tr className="bg-white/[0.06] border-t-2 border-indigo-500/30 font-semibold text-white">
                     <td className="px-4 py-3">TOTAL</td>
                     <td className="px-4 py-3 text-right text-[#33CCFF]">${grandTotal.spend.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-right">{grandTotal.leads}</td>
+                    <td className="px-4 py-3 text-right">
+                      <div>{grandTotal.leads}</div>
+                      {tLeadCvr > 0 && <div className="text-[10px] text-gray-400 font-normal">CVR: {tLeadCvr.toFixed(1)}%</div>}
+                    </td>
                     <td className="px-4 py-3 text-right">${tCpl.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-right text-[#33CCFF]">{grandTotal.acct} <span className="text-gray-500">/ ${tCpa.toFixed(2)}</span></td>
-                    <td className="px-4 py-3 text-right text-[#0AE5D5]">{grandTotal.fund} <span className="text-gray-500">/ ${tCpfa.toFixed(2)}</span></td>
+                    <td className="px-4 py-3 text-right text-[#33CCFF]">
+                      <div>
+                        {grandTotal.acct} <span className="text-gray-500">/ ${tCpa.toFixed(2)}</span>
+                      </div>
+                      {grandTotal.leads > 0 && grandTotal.acct > 0 && (
+                        <div className="text-[10px] text-[#33CCFF]/70 font-normal">L→A: {tLToA.toFixed(1)}%</div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right text-[#0AE5D5]">
+                      <div>
+                        {grandTotal.fund} <span className="text-gray-500">/ ${tCpfa.toFixed(2)}</span>
+                      </div>
+                      {grandTotal.leads > 0 && grandTotal.fund > 0 && (
+                        <div className="text-[10px] text-[#0AE5D5]/70 font-normal">L→F: {tLToF.toFixed(1)}%</div>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-right text-indigo-300">${grandTotal.deposit.toFixed(2)}</td>
                     <td className={`px-4 py-3 text-right font-bold ${tRoi > 0 ? 'text-green-400' : tRoi < 0 ? 'text-red-400' : 'text-gray-400'}`}>
                       {tRoi > 0 ? '+' : ''}{tRoi.toFixed(1)}%
