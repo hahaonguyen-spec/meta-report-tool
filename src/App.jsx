@@ -96,7 +96,10 @@ const getDaysCount = (preset, customStart, customEnd) => {
   return 30;
 };
 
-const getDefaultBudget = (campaignName) => {
+const getDefaultBudget = (campaignName, apiDailyBudget) => {
+  if (apiDailyBudget !== undefined && apiDailyBudget !== null && apiDailyBudget > 0) {
+    return apiDailyBudget;
+  }
   if (!campaignName) return 15;
   const match = campaignName.match(/^(VN|TH|MY|PH|IND|ID)/i);
   if (match) {
@@ -472,7 +475,7 @@ export default function App() {
         }
         
         const url = `https://graph.facebook.com/${fbVersion}/${fetchAccountId}/insights?fields=campaign_name,spend,impressions,clicks,actions&level=campaign&${dateQuery}&access_token=${token}`;
-        const campaignUrl = `https://graph.facebook.com/${fbVersion}/${fetchAccountId}/campaigns?fields=id,start_time&access_token=${token}`;
+        const campaignUrl = `https://graph.facebook.com/${fbVersion}/${fetchAccountId}/campaigns?fields=id,start_time,daily_budget,lifetime_budget&access_token=${token}`;
         
         const [response, campaignResponse] = await Promise.all([
           fetch(url),
@@ -484,13 +487,6 @@ export default function App() {
         
         if (result.error) {
           throw new Error(`Account ${accId}: ${result.error.message}`);
-        }
-        
-        const startTimesMap = {};
-        if (campaignResult.data) {
-           campaignResult.data.forEach(c => {
-             startTimesMap[c.id] = c.start_time;
-           });
         }
 
         const accountObj = adAccounts.find(a => a.account_id === accId);
@@ -508,12 +504,25 @@ export default function App() {
           }
         }
         
+        const campaignInfoMap = {};
+        if (campaignResult.data) {
+           campaignResult.data.forEach(c => {
+             const rawBudget = c.daily_budget ? (parseFloat(c.daily_budget) / 100) : null;
+             campaignInfoMap[c.id] = {
+               start_time: c.start_time,
+               api_daily_budget: rawBudget ? (rawBudget * rateToUsd) : null
+             };
+           });
+        }
+        
         return (result.data || []).map(campaign => {
           const originalSpend = parseFloat(campaign.spend) || 0;
+          const info = campaignInfoMap[campaign.campaign_id] || {};
           return {
             ...campaign,
             account_name: accountName,
-            start_time: startTimesMap[campaign.campaign_id] || null,
+            start_time: info.start_time || null,
+            api_daily_budget: info.api_daily_budget || null,
             spend: originalSpend * rateToUsd, // Convert to USD
             original_currency: currency,
             original_spend: originalSpend
@@ -551,6 +560,7 @@ export default function App() {
           account_name: item.account_name || 'Unknown Account',
           original_currency: item.original_currency || 'USD',
           start_time: item.start_time || null,
+          api_daily_budget: item.api_daily_budget || null,
           spend: parseFloat(item.spend) || 0,
           original_spend: parseFloat(item.original_spend) || 0,
           impressions: parseInt(item.impressions) || 0,
@@ -604,7 +614,7 @@ export default function App() {
   
   const totalDailyBudget = data.reduce((acc, curr) => {
     const m = manualData[curr.campaign_id] || {};
-    const budget = m.dailyBudget !== undefined && m.dailyBudget !== '' ? parseFloat(m.dailyBudget) : getDefaultBudget(curr.campaign_name);
+    const budget = m.dailyBudget !== undefined && m.dailyBudget !== '' ? parseFloat(m.dailyBudget) : getDefaultBudget(curr.campaign_name, curr.api_daily_budget);
     return acc + (isNaN(budget) ? 0 : budget);
   }, 0);
 
@@ -929,7 +939,7 @@ export default function App() {
                     const manualDeposit = parseFloat(mData.deposit) || 0;
 
                     // Calc Budget & Pacing
-                    const dailyBudget = mData.dailyBudget !== undefined && mData.dailyBudget !== '' ? parseFloat(mData.dailyBudget) : getDefaultBudget(item.campaign_name);
+                    const dailyBudget = mData.dailyBudget !== undefined && mData.dailyBudget !== '' ? parseFloat(mData.dailyBudget) : getDefaultBudget(item.campaign_name, item.api_daily_budget);
                     const expectedSpend = dailyBudget * daysCount;
                     const pacing = expectedSpend > 0 ? (item.spend / expectedSpend) * 100 : 0;
 
@@ -979,7 +989,7 @@ export default function App() {
                             <input 
                               type="number" 
                               className="w-20 bg-black/40 border border-white/10 rounded pl-5 pr-2 py-1.5 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 text-white text-xs transition-all pdf-hide print:hidden"
-                              placeholder={getDefaultBudget(item.campaign_name).toString()}
+                              placeholder={getDefaultBudget(item.campaign_name, item.api_daily_budget).toString()}
                               value={mData.dailyBudget !== undefined ? mData.dailyBudget : ''}
                               onChange={(e) => handleManualChange(item.campaign_id, 'dailyBudget', e.target.value)}
                             />
