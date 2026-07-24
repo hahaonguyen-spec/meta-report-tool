@@ -1131,6 +1131,7 @@ function ReportManager({ data, manualData, handleManualChange, activeReportTab, 
     { id: 'overview', name: 'Campaign Overview', icon: Target },
     { id: 'breakdown', name: 'Market Breakdown', icon: Globe },
     { id: 'roi', name: 'ROI & P&L', icon: DollarSign },
+    { id: 'funnel', name: 'Funnel & Health', icon: Activity },
   ];
 
   // Reset to 'overview' if current tab no longer exists (e.g. after removing old tabs)
@@ -1169,6 +1170,7 @@ function ReportManager({ data, manualData, handleManualChange, activeReportTab, 
         {currentTab === 'overview' && <CampaignOverviewReport data={data} />}
         {currentTab === 'breakdown' && <BreakdownReport data={data} manualData={manualData} />}
         {currentTab === 'roi' && <ROIRevenueReport data={data} manualData={manualData} />}
+        {currentTab === 'funnel' && <FunnelHealthReport data={data} manualData={manualData} />}
       </div>
     </div>
   );
@@ -1898,6 +1900,182 @@ function PageContentAnalyzer({ page, data, loading, onBack }) {
                   </td>
                   <td className={`px-4 py-3 text-right ${rateColor}`}>
                     {post.reach > 0 ? `${engRate.toFixed(2)}%` : <span className="text-gray-600 italic">-</span>}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ======== 4. FUNNEL & HEALTH ANALYSIS REPORT ========
+function FunnelHealthReport({ data, manualData }) {
+  const totalImpressions = data.reduce((a, b) => a + b.impressions, 0);
+  const totalClicks = data.reduce((a, b) => a + b.clicks, 0);
+  const totalLeads = data.reduce((a, b) => a + b.leads, 0);
+  const totalSpend = data.reduce((a, b) => a + b.spend, 0);
+
+  const totalAcct = data.reduce((a, b) => {
+    const m = manualData[b.campaign_id] || {};
+    return a + (parseFloat(m.accountOpen) || 0);
+  }, 0);
+
+  const totalFunded = data.reduce((a, b) => {
+    const m = manualData[b.campaign_id] || {};
+    return a + (parseFloat(m.fundedAccounts) || 0);
+  }, 0);
+
+  const totalDeposit = data.reduce((a, b) => {
+    const m = manualData[b.campaign_id] || {};
+    return a + (parseFloat(m.deposit) || 0);
+  }, 0);
+
+  const ctr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
+  const clickToLead = totalClicks > 0 ? (totalLeads / totalClicks) * 100 : 0;
+  const leadToAcct = totalLeads > 0 ? (totalAcct / totalLeads) * 100 : 0;
+  const acctToFund = totalAcct > 0 ? (totalFunded / totalAcct) * 100 : 0;
+  const leadToFund = totalLeads > 0 ? (totalFunded / totalLeads) * 100 : 0;
+  const roi = totalSpend > 0 ? ((totalDeposit - totalSpend) / totalSpend) * 100 : 0;
+
+  // Recommendations / Diagnostic rules
+  const diagnostics = [];
+  if (ctr < 1.2 && totalImpressions > 1000) {
+    diagnostics.push({ type: 'warning', title: 'Ad Creative Fatigue (CTR < 1.2%)', desc: `Overall CTR is ${ctr.toFixed(2)}%. Consider refreshing ad creative images, video hooks, or testing new ad copy.` });
+  } else {
+    diagnostics.push({ type: 'success', title: 'Ad Appeal Healthy (CTR >= 1.2%)', desc: `CTR is ${ctr.toFixed(2)}%, indicating strong initial audience interest and ad relevance.` });
+  }
+
+  if (leadToAcct < 18 && totalLeads > 10) {
+    diagnostics.push({ type: 'danger', title: 'Low Lead Quality Alert (Lead→Account < 18%)', desc: `Only ${leadToAcct.toFixed(1)}% of Meta leads convert to Open Accounts in CRM. Review lead form qualifying questions or target audience intent.` });
+  } else if (leadToAcct >= 22) {
+    diagnostics.push({ type: 'success', title: 'High CRM Conversion Quality (Lead→Account >= 22%)', desc: `Strong lead qualification with ${leadToAcct.toFixed(1)}% converting to Account Open. Ready for budget scaling.` });
+  }
+
+  if (roi > 50) {
+    diagnostics.push({ type: 'success', title: 'High Profitability (ROI > +50%)', desc: `Campaign net profit is strong at +${roi.toFixed(1)}% ROI. Consider scaling top campaigns.` });
+  } else if (roi < 0 && totalSpend > 100) {
+    diagnostics.push({ type: 'danger', title: 'Negative Campaign ROI (ROI < 0%)', desc: `Current campaigns show a net loss of ${roi.toFixed(1)}%. Audit low-performing campaigns for budget reallocation.` });
+  }
+
+  return (
+    <div>
+      <h2 className="text-xl font-bold flex items-center gap-2 mb-2 print:text-[#070b14]">
+        <Activity className="w-6 h-6 text-[#0AE5D5]" /> Funnel & Health Analysis
+      </h2>
+      <p className="text-gray-400 text-sm mb-6 print:text-gray-600">Phân tích phễu chuyển đổi 4 bước và chẩn đoán sức khỏe chiến dịch cho Marketing Manager.</p>
+
+      {/* 4-Step Visual Funnel */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-black/30 border border-white/10 rounded-xl p-4 text-center relative">
+          <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider block mb-1">Step 1: Traffic</span>
+          <p className="text-xl font-bold text-white">{totalClicks.toLocaleString()} Clicks</p>
+          <p className="text-xs text-gray-400 mt-1">CTR: <span className="text-[#33CCFF] font-semibold">{ctr.toFixed(2)}%</span></p>
+          <div className="hidden md:block absolute -right-3 top-1/2 -translate-y-1/2 z-10 bg-[#33CCFF] text-[#070b14] rounded-full p-1 shadow">
+            <ArrowRight className="w-3 h-3" />
+          </div>
+        </div>
+
+        <div className="bg-black/30 border border-white/10 rounded-xl p-4 text-center relative">
+          <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider block mb-1">Step 2: Lead Gen</span>
+          <p className="text-xl font-bold text-[#33CCFF]">{totalLeads.toLocaleString()} Leads</p>
+          <p className="text-xs text-gray-400 mt-1">Click-to-Lead: <span className="text-[#0AE5D5] font-semibold">{clickToLead.toFixed(1)}%</span></p>
+          <div className="hidden md:block absolute -right-3 top-1/2 -translate-y-1/2 z-10 bg-[#0AE5D5] text-[#070b14] rounded-full p-1 shadow">
+            <ArrowRight className="w-3 h-3" />
+          </div>
+        </div>
+
+        <div className="bg-black/30 border border-white/10 rounded-xl p-4 text-center relative">
+          <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider block mb-1">Step 3: CRM Acct Open</span>
+          <p className="text-xl font-bold text-[#0AE5D5]">{totalAcct.toLocaleString()} Accts</p>
+          <p className="text-xs text-gray-400 mt-1">Lead-to-Acct: <span className="text-indigo-300 font-semibold">{leadToAcct.toFixed(1)}%</span></p>
+          <div className="hidden md:block absolute -right-3 top-1/2 -translate-y-1/2 z-10 bg-indigo-400 text-[#070b14] rounded-full p-1 shadow">
+            <ArrowRight className="w-3 h-3" />
+          </div>
+        </div>
+
+        <div className="bg-black/30 border border-white/10 rounded-xl p-4 text-center">
+          <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider block mb-1">Step 4: Funded Client</span>
+          <p className="text-xl font-bold text-emerald-400">{totalFunded.toLocaleString()} Funded</p>
+          <p className="text-xs text-gray-400 mt-1">Lead-to-Funded: <span className="text-emerald-400 font-semibold">{leadToFund.toFixed(1)}%</span></p>
+        </div>
+      </div>
+
+      {/* Automated Diagnostic Cards */}
+      <h3 className="font-semibold text-gray-300 mb-3 text-sm flex items-center gap-2">
+        <Target className="w-4 h-4 text-[#33CCFF]" /> Automated Campaign Health Diagnostics
+      </h3>
+      <div className="space-y-3 mb-8">
+        {diagnostics.map((d, i) => (
+          <div key={i} className={`p-4 rounded-xl border backdrop-blur-sm flex items-start gap-3 ${
+            d.type === 'danger' 
+              ? 'bg-red-500/10 border-red-500/20 text-red-300' 
+              : d.type === 'warning' 
+                ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-300' 
+                : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
+          }`}>
+            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-sm">{d.title}</p>
+              <p className="text-xs opacity-90 mt-0.5">{d.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Campaign Health Evaluation Table */}
+      <h3 className="font-semibold text-gray-300 mb-3 text-sm">Campaign Health Evaluation Matrix</h3>
+      <div className="overflow-x-auto bg-black/20 border border-white/5 rounded-xl">
+        <table className="w-full text-sm text-left whitespace-nowrap">
+          <thead className="text-[10px] uppercase bg-white/5 text-gray-400">
+            <tr>
+              <th className="px-4 py-3">Campaign</th>
+              <th className="px-4 py-3 text-center">Status Badge</th>
+              <th className="px-4 py-3 text-right">Spend</th>
+              <th className="px-4 py-3 text-right">Leads</th>
+              <th className="px-4 py-3 text-right">L→A CVR</th>
+              <th className="px-4 py-3 text-right">L→F CVR</th>
+              <th className="px-4 py-3 text-right">ROI</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5 text-xs">
+            {data.map(item => {
+              const m = manualData[item.campaign_id] || {};
+              const acct = parseFloat(m.accountOpen) || 0;
+              const fund = parseFloat(m.fundedAccounts) || 0;
+              const dep = parseFloat(m.deposit) || 0;
+
+              const cLToA = item.leads > 0 ? (acct / item.leads) * 100 : 0;
+              const cLToF = item.leads > 0 ? (fund / item.leads) * 100 : 0;
+              const cRoi = item.spend > 0 ? ((dep - item.spend) / item.spend) * 100 : 0;
+
+              let badgeText = '🟢 Healthy';
+              let badgeStyle = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+
+              if (cRoi < 0 && item.spend > 100) {
+                badgeText = '🔴 Action Needed';
+                badgeStyle = 'bg-red-500/10 text-red-400 border-red-500/20';
+              } else if (item.leads > 0 && cLToA < 15) {
+                badgeText = '🟡 Check Funnel';
+                badgeStyle = 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20';
+              }
+
+              return (
+                <tr key={item.campaign_id} className="hover:bg-white/5">
+                  <td className="px-4 py-3 font-medium text-gray-200">{item.campaign_name}</td>
+                  <td className="px-4 py-3 text-center">
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${badgeStyle}`}>
+                      {badgeText}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right text-gray-300">${item.spend.toFixed(2)}</td>
+                  <td className="px-4 py-3 text-right font-medium text-white">{item.leads}</td>
+                  <td className="px-4 py-3 text-right text-[#33CCFF]">{cLToA.toFixed(1)}%</td>
+                  <td className="px-4 py-3 text-right text-[#0AE5D5]">{cLToF.toFixed(1)}%</td>
+                  <td className={`px-4 py-3 text-right font-bold ${cRoi > 0 ? 'text-green-400' : cRoi < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                    {cRoi > 0 ? '+' : ''}{cRoi.toFixed(1)}%
                   </td>
                 </tr>
               );
