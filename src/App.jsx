@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
-import { TrendingUp, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Image as ImageIcon, ArrowRight, UsersRound } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Image as ImageIcon, ArrowRight, UsersRound, Save, Download, Upload, RotateCcw, CheckCircle2 } from 'lucide-react';
 
 const MOCK_DATA = [
   { campaign_id: '101', campaign_name: 'VN_LeadGen_Campaign1', account_name: 'CPT Indonesia', spend: 1250.5, impressions: 55000, clicks: 3450, leads: 145, start_time: '2026-04-15T08:00:00+0000' },
@@ -603,6 +603,42 @@ export default function App() {
     }));
   };
 
+  const handleExportManualData = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(manualData, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `meta_report_manual_inputs_${new Date().toISOString().slice(0,10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  const handleImportManualData = (e) => {
+    const fileReader = new FileReader();
+    if (e.target.files && e.target.files[0]) {
+      fileReader.readAsText(e.target.files[0], "UTF-8");
+      fileReader.onload = (event) => {
+        try {
+          const parsed = JSON.parse(event.target.result);
+          if (typeof parsed === 'object' && parsed !== null) {
+            setManualData(parsed);
+            alert("Manual input data imported successfully!");
+          }
+        } catch (err) {
+          alert("Failed to parse JSON file.");
+        }
+      };
+    }
+  };
+
+  const handleClearManualData = () => {
+    if (window.confirm("Are you sure you want to clear all saved manual inputs (Account Open, Deposit, Daily Budget)?")) {
+      setManualData({});
+      localStorage.removeItem('meta_report_manual_data');
+    }
+  };
+
+
   // Compute stats for Header Cards
   const totalSpend = data.reduce((acc, curr) => acc + curr.spend, 0);
   const totalClicks = data.reduce((acc, curr) => acc + curr.clicks, 0);
@@ -890,12 +926,43 @@ export default function App() {
 
           {/* Data Table */}
           <div className="xl:col-span-3 bg-white/5 border border-white/10 backdrop-blur-md rounded-2xl shadow-xl overflow-hidden mt-6">
-            <div className="p-6 border-b border-white/5">
-              <h2 className="text-lg font-semibold flex items-center gap-2 mb-2">
-                <Briefcase className="w-5 h-5 text-[#0AE5D5]" />
-                Advanced Marketing Analysis
-              </h2>
-              <p className="text-xs text-gray-400">Custom inputs affect Business Conversion calcs. Positive ROI renders in green, negative down in red.</p>
+            <div className="p-6 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold flex items-center gap-2 mb-1 flex-wrap">
+                  <Briefcase className="w-5 h-5 text-[#0AE5D5]" />
+                  Advanced Marketing Analysis
+                  <span className="inline-flex items-center gap-1 text-[11px] font-normal bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full" title="All manual inputs (Account Open, Funded Accounts, Deposit, Daily Budget) are automatically saved to LocalStorage for future reports">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Saved for future reports
+                  </span>
+                </h2>
+                <p className="text-xs text-gray-400">Manual inputs (Account Open, Deposit, Funded Accounts & Budget) are automatically saved in local storage for future updates and reports.</p>
+              </div>
+
+              <div className="flex items-center gap-2 pdf-hide print:hidden flex-wrap">
+                <button
+                  onClick={handleExportManualData}
+                  className="px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg text-xs flex items-center gap-1.5 transition-all border border-white/10"
+                  title="Export saved manual inputs (Account Open, Deposit, Budget) to JSON file"
+                >
+                  <Download className="w-3.5 h-3.5" /> Export Inputs
+                </button>
+                <label 
+                  className="px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg text-xs flex items-center gap-1.5 transition-all border border-white/10 cursor-pointer"
+                  title="Import previously saved manual inputs from JSON file"
+                >
+                  <Upload className="w-3.5 h-3.5" /> Import Inputs
+                  <input type="file" accept=".json" onChange={handleImportManualData} className="hidden" />
+                </label>
+                {Object.keys(manualData).length > 0 && (
+                  <button
+                    onClick={handleClearManualData}
+                    className="px-2.5 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-xs flex items-center gap-1.5 transition-all border border-red-500/20"
+                    title="Clear all saved manual inputs"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" /> Clear Inputs
+                  </button>
+                )}
+              </div>
             </div>
             
             <div className="overflow-x-auto">
