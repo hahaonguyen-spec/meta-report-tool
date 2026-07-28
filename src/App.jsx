@@ -474,7 +474,7 @@ export default function App() {
           }
         }
         
-        const url = `https://graph.facebook.com/${fbVersion}/${fetchAccountId}/insights?fields=campaign_name,spend,impressions,clicks,actions&level=campaign&${dateQuery}&access_token=${token}`;
+        const url = `https://graph.facebook.com/${fbVersion}/${fetchAccountId}/insights?fields=campaign_name,campaign_id,spend,impressions,clicks,actions&level=campaign&${dateQuery}&access_token=${token}`;
         const campaignUrl = `https://graph.facebook.com/${fbVersion}/${fetchAccountId}/campaigns?fields=id,start_time,daily_budget,lifetime_budget&access_token=${token}`;
         
         const [response, campaignResponse] = await Promise.all([
@@ -547,15 +547,17 @@ export default function App() {
         throw new Error("All accounts failed: " + fetchErrors[0]);
       }
 
-      const formattedData = allCampaigns.map(item => {
+      const formattedData = allCampaigns.map((item, idx) => {
         let fetchLeads = 0;
         if (item.actions) {
           const leadAction = item.actions.find(a => a.action_type === 'lead' || a.action_type === 'offsite_conversion.fb_pixel_lead');
           if (leadAction) fetchLeads = parseInt(leadAction.value);
         }
         
+        const stableCampaignId = item.campaign_id || item.campaign_name || `campaign_${idx}`;
+
         return {
-          campaign_id: item.campaign_id || Math.random().toString(),
+          campaign_id: stableCampaignId,
           campaign_name: item.campaign_name || 'Unknown Campaign',
           account_name: item.account_name || 'Unknown Account',
           original_currency: item.original_currency || 'USD',
