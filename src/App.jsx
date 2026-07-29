@@ -5,11 +5,11 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { TrendingUp, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Image as ImageIcon, ArrowRight, UsersRound, Save, Download, Upload, RotateCcw, CheckCircle2 } from 'lucide-react';
 
 const MOCK_DATA = [
-  { campaign_id: '101', campaign_name: 'VN_LeadGen_Campaign1', account_name: 'CPT Indonesia', spend: 1250.5, impressions: 55000, clicks: 3450, leads: 145, start_time: '2026-04-15T08:00:00+0000' },
-  { campaign_id: '102', campaign_name: 'TH_IBAcquisition_April', account_name: 'CPT Malaysia', spend: 850.0, impressions: 42000, clicks: 2200, leads: 85, start_time: '2026-04-01T10:30:00+0000' },
-  { campaign_id: '103', campaign_name: 'PH_Awareness_Q1', account_name: 'CPT Global', spend: 430.2, impressions: 21000, clicks: 1100, leads: 32, start_time: '2026-04-10T14:15:00+0000' },
-  { campaign_id: '104', campaign_name: 'IND_Webinar_Promo', account_name: 'CPT Global', spend: 960.0, impressions: 88000, clicks: 2800, leads: 95, start_time: '2026-04-20T09:00:00+0000' },
-  { campaign_id: '105', campaign_name: 'VN_IBAcquisition_Gold', account_name: 'CPT Indonesia', spend: 650.8, impressions: 32000, clicks: 1750, leads: 0, start_time: '2026-04-05T16:45:00+0000' },
+  { campaign_id: '101', campaign_name: 'VN_LeadGen_Campaign1', account_name: 'CPT Indonesia', spend: 1250.5, impressions: 55000, clicks: 3450, leads: 145, start_time: '2026-04-15T08:00:00+0000', api_budget: 20, api_budget_type: 'daily' },
+  { campaign_id: '102', campaign_name: 'TH_IBAcquisition_April', account_name: 'CPT Malaysia', spend: 850.0, impressions: 42000, clicks: 2200, leads: 85, start_time: '2026-04-01T10:30:00+0000', api_budget: 1000, api_budget_type: 'lifetime' },
+  { campaign_id: '103', campaign_name: 'PH_Awareness_Q1', account_name: 'CPT Global', spend: 430.2, impressions: 21000, clicks: 1100, leads: 32, start_time: '2026-04-10T14:15:00+0000', api_budget: 10, api_budget_type: 'daily' },
+  { campaign_id: '104', campaign_name: 'IND_Webinar_Promo', account_name: 'CPT Global', spend: 960.0, impressions: 88000, clicks: 2800, leads: 95, start_time: '2026-04-20T09:00:00+0000', api_budget: 1200, api_budget_type: 'lifetime' },
+  { campaign_id: '105', campaign_name: 'VN_IBAcquisition_Gold', account_name: 'CPT Indonesia', spend: 650.8, impressions: 32000, clicks: 1750, leads: 0, start_time: '2026-04-05T16:45:00+0000', api_budget: 20, api_budget_type: 'daily' },
 ];
 
 const MOCK_PAGES_DATA = [
@@ -96,10 +96,11 @@ const getDaysCount = (preset, customStart, customEnd) => {
   return 30;
 };
 
-const getDefaultBudget = (campaignName, apiDailyBudget) => {
-  if (apiDailyBudget !== undefined && apiDailyBudget !== null && apiDailyBudget > 0) {
-    return apiDailyBudget;
+const getDefaultBudget = (campaignName, apiBudget, budgetType = 'daily') => {
+  if (apiBudget !== undefined && apiBudget !== null && apiBudget > 0) {
+    return apiBudget;
   }
+  if (budgetType === 'lifetime') return 500;
   if (!campaignName) return 15;
   const match = campaignName.match(/^(VN|TH|MY|PH|IND|ID)/i);
   if (match) {
@@ -108,6 +109,33 @@ const getDefaultBudget = (campaignName, apiDailyBudget) => {
     if (market === 'PH') return 10;
   }
   return 15;
+};
+
+const getCampaignBudgetInfo = (item, manualData) => {
+  const m = manualData[item.campaign_id] || {};
+  
+  const budgetType = m.budgetType !== undefined && m.budgetType !== '' 
+    ? m.budgetType 
+    : (item.api_budget_type || (item.api_lifetime_budget ? 'lifetime' : 'daily'));
+
+  let budgetAmount = null;
+  if (m.budget !== undefined && m.budget !== '') {
+    budgetAmount = parseFloat(m.budget);
+  } else if (m.dailyBudget !== undefined && m.dailyBudget !== '') {
+    budgetAmount = parseFloat(m.dailyBudget);
+  } else if (budgetType === 'lifetime' && item.api_lifetime_budget) {
+    budgetAmount = item.api_lifetime_budget;
+  } else if (budgetType === 'daily' && item.api_daily_budget) {
+    budgetAmount = item.api_daily_budget;
+  } else if (item.api_budget) {
+    budgetAmount = item.api_budget;
+  } else {
+    budgetAmount = getDefaultBudget(item.campaign_name, null, budgetType);
+  }
+
+  if (isNaN(budgetAmount)) budgetAmount = 0;
+
+  return { budgetAmount, budgetType };
 };
 
 export default function App() {
@@ -507,10 +535,22 @@ export default function App() {
         const campaignInfoMap = {};
         if (campaignResult.data) {
            campaignResult.data.forEach(c => {
-             const rawBudget = c.daily_budget ? (parseFloat(c.daily_budget) / 100) : null;
+             let apiBudget = null;
+             let apiBudgetType = 'daily';
+             if (c.daily_budget) {
+               apiBudget = (parseFloat(c.daily_budget) / 100) * rateToUsd;
+               apiBudgetType = 'daily';
+             } else if (c.lifetime_budget) {
+               apiBudget = (parseFloat(c.lifetime_budget) / 100) * rateToUsd;
+               apiBudgetType = 'lifetime';
+             }
+
              campaignInfoMap[c.id] = {
                start_time: c.start_time,
-               api_daily_budget: rawBudget ? (rawBudget * rateToUsd) : null
+               api_budget: apiBudget,
+               api_budget_type: apiBudgetType,
+               api_daily_budget: c.daily_budget ? ((parseFloat(c.daily_budget) / 100) * rateToUsd) : null,
+               api_lifetime_budget: c.lifetime_budget ? ((parseFloat(c.lifetime_budget) / 100) * rateToUsd) : null,
              };
            });
         }
@@ -522,7 +562,10 @@ export default function App() {
             ...campaign,
             account_name: accountName,
             start_time: info.start_time || null,
+            api_budget: info.api_budget || null,
+            api_budget_type: info.api_budget_type || 'daily',
             api_daily_budget: info.api_daily_budget || null,
+            api_lifetime_budget: info.api_lifetime_budget || null,
             spend: originalSpend * rateToUsd, // Convert to USD
             original_currency: currency,
             original_spend: originalSpend
@@ -562,7 +605,10 @@ export default function App() {
           account_name: item.account_name || 'Unknown Account',
           original_currency: item.original_currency || 'USD',
           start_time: item.start_time || null,
+          api_budget: item.api_budget || null,
+          api_budget_type: item.api_budget_type || 'daily',
           api_daily_budget: item.api_daily_budget || null,
+          api_lifetime_budget: item.api_lifetime_budget || null,
           spend: parseFloat(item.spend) || 0,
           original_spend: parseFloat(item.original_spend) || 0,
           impressions: parseInt(item.impressions) || 0,
@@ -634,7 +680,7 @@ export default function App() {
   };
 
   const handleClearManualData = () => {
-    if (window.confirm("Are you sure you want to clear all saved manual inputs (Account Open, Deposit, Daily Budget)?")) {
+    if (window.confirm("Are you sure you want to clear all saved manual inputs (Account Open, Deposit, Budget & Type)?")) {
       setManualData({});
       localStorage.removeItem('meta_report_manual_data');
     }
@@ -650,13 +696,21 @@ export default function App() {
   // Budget & Conversion Health metrics
   const daysCount = getDaysCount(datePreset, customStartDate, customEndDate);
   
-  const totalDailyBudget = data.reduce((acc, curr) => {
-    const m = manualData[curr.campaign_id] || {};
-    const budget = m.dailyBudget !== undefined && m.dailyBudget !== '' ? parseFloat(m.dailyBudget) : getDefaultBudget(curr.campaign_name, curr.api_daily_budget);
-    return acc + (isNaN(budget) ? 0 : budget);
-  }, 0);
+  let totalDailyBudget = 0;
+  let totalLifetimeBudget = 0;
+  let expectedTotalSpend = 0;
 
-  const expectedTotalSpend = totalDailyBudget * daysCount;
+  data.forEach(curr => {
+    const { budgetAmount, budgetType } = getCampaignBudgetInfo(curr, manualData);
+    if (budgetType === 'lifetime') {
+      totalLifetimeBudget += budgetAmount;
+      expectedTotalSpend += budgetAmount;
+    } else {
+      totalDailyBudget += budgetAmount;
+      expectedTotalSpend += budgetAmount * daysCount;
+    }
+  });
+
   const overallPacing = expectedTotalSpend > 0 ? (totalSpend / expectedTotalSpend) * 100 : 0;
 
   const totalAccountOpen = data.reduce((acc, curr) => {
@@ -881,9 +935,20 @@ export default function App() {
 
             {/* Budget & Conversion Health Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-              <StatCard title="Daily Budget limit" value={`$${totalDailyBudget.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}/day`} icon={Briefcase} color="#33CCFF" />
               <StatCard 
-                title="Daily Spend Pace" 
+                title="Budget Limit" 
+                value={
+                  totalDailyBudget > 0 && totalLifetimeBudget > 0
+                    ? `$${totalDailyBudget.toFixed(0)}/d + $${totalLifetimeBudget.toFixed(0)} LT`
+                    : totalLifetimeBudget > 0
+                      ? `$${totalLifetimeBudget.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} Lifetime`
+                      : `$${totalDailyBudget.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}/day`
+                } 
+                icon={Briefcase} 
+                color="#33CCFF" 
+              />
+              <StatCard 
+                title="Spend Pace" 
                 value={`${overallPacing.toFixed(1)}%`} 
                 icon={Activity} 
                 color={overallPacing > 110 ? "#f87171" : overallPacing < 80 ? "#fbbf24" : "#34d399"} 
@@ -977,7 +1042,7 @@ export default function App() {
                     <th className="px-4 py-2 font-medium tracking-wider text-center bg-blue-500/5 border-l border-b border-white/5 text-blue-300" colSpan={6}>Business Conversion (Manual Input limits)</th>
                   </tr>
                   <tr>
-                    <th className="px-4 py-2 font-medium tracking-wider bg-indigo-500/20 text-indigo-300 border-l border-white/5">Daily Budget</th>
+                    <th className="px-4 py-2 font-medium tracking-wider bg-indigo-500/20 text-indigo-300 border-l border-white/5">Budget Limit</th>
                     <th className="px-4 py-2 font-medium tracking-wider bg-indigo-500/10 text-indigo-300">Pacing</th>
                     <th className="px-4 py-2 font-medium tracking-wider bg-black/20">Spend</th>
                     <th className="px-4 py-2 font-medium tracking-wider bg-black/20">Impr</th>
@@ -1008,8 +1073,8 @@ export default function App() {
                     const manualDeposit = parseFloat(mData.deposit) || 0;
 
                     // Calc Budget & Pacing
-                    const dailyBudget = mData.dailyBudget !== undefined && mData.dailyBudget !== '' ? parseFloat(mData.dailyBudget) : getDefaultBudget(item.campaign_name, item.api_daily_budget);
-                    const expectedSpend = dailyBudget * daysCount;
+                    const { budgetAmount, budgetType } = getCampaignBudgetInfo(item, manualData);
+                    const expectedSpend = budgetType === 'lifetime' ? budgetAmount : budgetAmount * daysCount;
                     const pacing = expectedSpend > 0 ? (item.spend / expectedSpend) * 100 : 0;
 
                     // Calc Meta
@@ -1053,28 +1118,56 @@ export default function App() {
 
                         {/* Budget Control */}
                         <td className="px-4 py-2 border-l border-white/5 bg-indigo-500/[0.05] print:bg-transparent">
-                          <div className="relative">
-                            <span className="absolute left-2 top-1.5 text-gray-500 pdf-hide print:hidden">$</span>
-                            <input 
-                              type="number" 
-                              className="w-20 bg-black/40 border border-white/10 rounded pl-5 pr-2 py-1.5 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 text-white text-xs transition-all pdf-hide print:hidden"
-                              placeholder={getDefaultBudget(item.campaign_name, item.api_daily_budget).toString()}
-                              value={mData.dailyBudget !== undefined ? mData.dailyBudget : ''}
-                              onChange={(e) => handleManualChange(item.campaign_id, 'dailyBudget', e.target.value)}
-                            />
-                            <span className="hidden print:inline-block font-medium text-[#070b14]">${dailyBudget.toFixed(2)}</span>
+                          <div className="flex items-center gap-1.5 pdf-hide print:hidden">
+                            <div className="relative flex-1">
+                              <span className="absolute left-2 top-1.5 text-gray-500">$</span>
+                              <input 
+                                type="number" 
+                                className="w-20 bg-black/40 border border-white/10 rounded pl-5 pr-2 py-1.5 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 text-white text-xs transition-all"
+                                placeholder={budgetAmount.toString()}
+                                value={mData.budget !== undefined ? mData.budget : (mData.dailyBudget !== undefined ? mData.dailyBudget : '')}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  handleManualChange(item.campaign_id, 'budget', val);
+                                  handleManualChange(item.campaign_id, 'dailyBudget', val);
+                                }}
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newType = budgetType === 'daily' ? 'lifetime' : 'daily';
+                                handleManualChange(item.campaign_id, 'budgetType', newType);
+                              }}
+                              className={`px-1.5 py-1 rounded text-[10px] font-bold uppercase transition-all border ${
+                                budgetType === 'lifetime' 
+                                  ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 hover:bg-purple-500/30' 
+                                  : 'bg-[#33CCFF]/20 text-[#33CCFF] border-[#33CCFF]/40 hover:bg-[#33CCFF]/30'
+                              }`}
+                              title={`Current: ${budgetType === 'lifetime' ? 'Lifetime Budget' : 'Daily Budget'}. Click to toggle.`}
+                            >
+                              {budgetType === 'lifetime' ? 'LT' : 'Daily'}
+                            </button>
                           </div>
+                          <span className="hidden print:inline-block font-medium text-[#070b14]">
+                            ${budgetAmount.toFixed(2)} {budgetType === 'lifetime' ? '(Lifetime)' : '/day'}
+                          </span>
                         </td>
                         <td className="px-4 py-3 bg-indigo-500/[0.02]">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase ${
-                            pacing > 110 
-                              ? "bg-red-500/10 text-red-400 border border-red-500/20" 
-                              : pacing < 80 
-                                ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20" 
-                                : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                          }`} title={`Expected Spend: $${expectedSpend.toFixed(2)} for ${daysCount} days`}>
-                            {pacing.toFixed(0)}%
-                          </span>
+                          <div className="flex flex-col items-start gap-0.5">
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase ${
+                              pacing > 110 
+                                ? "bg-red-500/10 text-red-400 border border-red-500/20" 
+                                : pacing < 80 
+                                  ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20" 
+                                  : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                            }`} title={`Spend: $${item.spend.toFixed(2)} / Target: $${expectedSpend.toFixed(2)} (${budgetType === 'lifetime' ? 'Lifetime Budget' : `${daysCount} days @ $${budgetAmount}/day`})`}>
+                              {pacing.toFixed(0)}%
+                            </span>
+                            <span className="text-[9px] text-gray-500 uppercase tracking-tight">
+                              {budgetType === 'lifetime' ? 'Lifetime' : `${daysCount}d Daily`}
+                            </span>
+                          </div>
                         </td>
 
                         <td className="px-4 py-3 text-gray-300 font-medium">
