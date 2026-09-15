@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
-import { TrendingUp, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Image as ImageIcon, ArrowRight, UsersRound, Save, Download, Upload, RotateCcw, CheckCircle2 } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Image as ImageIcon, ArrowRight, UsersRound, Save, Download, Upload, RotateCcw, CheckCircle2, Settings, BookOpen } from 'lucide-react';
 
 const MOCK_DATA = [
   { campaign_id: '101', campaign_name: 'VN_LeadGen_Campaign1', account_name: 'CPT Indonesia', spend: 1250.5, impressions: 55000, clicks: 3450, leads: 145, start_time: '2026-04-15T08:00:00+0000', api_budget: 20, api_budget_type: 'daily' },
@@ -162,7 +162,28 @@ export default function App() {
 
   const [isUsingMock, setIsUsingMock] = useState(false);
   const [exchangeRates, setExchangeRates] = useState(null);
+
+  // --- NEW: Personal Settings (Token, Webhook) ---
+  const [settings, setSettings] = useState(() => {
+    try {
+      const saved = localStorage.getItem('meta_report_settings');
+      return saved ? JSON.parse(saved) : { metaToken: '', sheetWebhook: '' };
+    } catch (e) {
+      return { metaToken: '', sheetWebhook: '' };
+    }
+  });
   
+  useEffect(() => {
+    try {
+      localStorage.setItem('meta_report_settings', JSON.stringify(settings));
+    } catch (e) {}
+  }, [settings]);
+  
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState(null);
+  // ---------------------------------------------
   const [adAccounts, setAdAccounts] = useState([]);
   const [selectedAccountIds, setSelectedAccountIds] = useState([]);
   const [loadingAccounts, setLoadingAccounts] = useState(true);
@@ -229,7 +250,7 @@ export default function App() {
 
   const fetchAdAccounts = async () => {
     setLoadingAccounts(true);
-    const token = import.meta.env.VITE_META_TOKEN;
+    const token = settings.metaToken || import.meta.env.VITE_META_TOKEN;
     if (!token || token === 'your_facebook_graph_api_access_token_here') {
       console.warn("Meta API token not set. Using mock mode.");
       setIsUsingMock(true);
@@ -275,6 +296,66 @@ export default function App() {
     }
   };
 
+  const handleSyncToSheets = async () => {
+    if (!settings.sheetWebhook) {
+      alert("Please configure your Google Sheets Webhook URL in Settings first.");
+      setIsSettingsOpen(true);
+      return;
+    }
+    
+    setIsSyncing(true);
+    setSyncStatus(null);
+    try {
+      // Build the payload from aggregated totals
+      const payload = {
+        timestamp: new Date().toISOString(),
+        dateRange: datePreset,
+        customStart: customStartDate,
+        customEnd: customEndDate,
+        totals: {
+          spend: totals.spend,
+          leads: totals.leads,
+          accountOpens: totals.accountOpen,
+          fundedAccounts: totals.fundedAccounts,
+          deposit: totals.deposit,
+          cpa: totals.cpa,
+          cpfa: totals.cpfa,
+          roi: totals.roi
+        },
+        campaigns: data.map(campaign => {
+          const m = manualData[campaign.campaign_id] || {};
+          return {
+            campaignName: campaign.campaign_name,
+            spend: campaign.spend,
+            leads: campaign.leads,
+            accountOpens: parseFloat(m.accountOpen) || 0,
+            fundedAccounts: parseFloat(m.fundedAccounts) || 0,
+            deposit: parseFloat(m.deposit) || 0
+          };
+        })
+      };
+
+      const response = await fetch(settings.sheetWebhook, {
+        method: 'POST',
+        mode: 'no-cors', // Google Apps Script webhooks often require no-cors if not returning JSON headers properly, but we won't get a readable response. It's safer to use it to avoid CORS blocking.
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      // Since no-cors hides the response status, we just assume success if it didn't throw
+      setSyncStatus('success');
+      setTimeout(() => setSyncStatus(null), 3000);
+    } catch (err) {
+      console.error("Sync error:", err);
+      setSyncStatus('error');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+
   const exportPDF = async () => {
     setIsExporting(true);
     try {
@@ -314,7 +395,7 @@ export default function App() {
   const fetchFacebookPages = async () => {
     setLoadingPages(true);
     setPagesError(null);
-    const token = import.meta.env.VITE_META_TOKEN;
+    const token = settings.metaToken || import.meta.env.VITE_META_TOKEN;
 
     if (!token || token === 'your_facebook_graph_api_access_token_here') {
       setPagesData(MOCK_PAGES_DATA);
@@ -477,7 +558,7 @@ export default function App() {
     setError(null);
     setIsUsingMock(false);
 
-    const token = import.meta.env.VITE_META_TOKEN;
+    const token = settings.metaToken || import.meta.env.VITE_META_TOKEN;
 
     if (!token || token === 'your_facebook_graph_api_access_token_here') {
       console.warn("Meta API credentials not set. Using mock data.");
@@ -778,6 +859,33 @@ export default function App() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3 print:hidden pdf-hide">
+            <button
+              onClick={() => setIsGuideOpen(true)}
+              className="flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500/20 to-purple-600/20 hover:from-purple-500/30 hover:to-purple-600/30 border border-purple-500/30 text-purple-300 text-sm rounded-lg transition-all h-[38px]"
+            >
+              <BookOpen className="w-4 h-4" />
+              Guide
+            </button>
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="flex items-center justify-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-sm rounded-lg transition-all h-[38px]"
+            >
+              <Settings className="w-4 h-4" />
+              Settings
+            </button>
+            <button
+              onClick={handleSyncToSheets}
+              disabled={isSyncing}
+              className={`flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-lg transition-all h-[38px] ${
+                syncStatus === 'success' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                syncStatus === 'error' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+                'bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-blue-300'
+              }`}
+            >
+              <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+              {syncStatus === 'success' ? 'Synced!' : syncStatus === 'error' ? 'Error' : isSyncing ? 'Syncing...' : 'Sync to Sheets'}
+            </button>
+            
             {/* Date Preset Selector */}
             <div className="relative flex items-center bg-white/5 border border-white/10 hover:border-white/20 rounded-lg pr-4 pl-3 py-2 text-sm transition-all h-[38px]">
                <Calendar className="w-4 h-4 text-[#33CCFF] mr-2" />
@@ -2245,6 +2353,134 @@ function FunnelHealthReport({ data, manualData }) {
           </tbody>
         </table>
       </div>
+      
+      {/* --- MODALS --- */}
+
+      {/* Settings Modal */}
+      {isSettingsOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#0a0f1c] border border-white/10 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-6">
+              <Settings className="w-5 h-5 text-[#33CCFF]" />
+              Personal Settings
+            </h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Meta Graph API Access Token</label>
+                <input 
+                  type="password"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#33CCFF]"
+                  placeholder="EAA..."
+                  value={settings.metaToken}
+                  onChange={(e) => setSettings({...settings, metaToken: e.target.value})}
+                />
+                <p className="text-[11px] text-gray-500 mt-1">Leave empty to use mock data or `.env` fallback.</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Google Sheets Webhook URL (Apps Script)</label>
+                <input 
+                  type="url"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#33CCFF]"
+                  placeholder="https://script.google.com/macros/s/.../exec"
+                  value={settings.sheetWebhook}
+                  onChange={(e) => setSettings({...settings, sheetWebhook: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="mt-8 flex justify-end gap-3">
+              <button 
+                onClick={() => setIsSettingsOpen(false)}
+                className="px-4 py-2 rounded-lg text-sm bg-white/5 hover:bg-white/10 text-gray-300 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Setup Guide Modal */}
+      {isGuideOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#0a0f1c] border border-white/10 rounded-2xl w-full max-w-2xl p-6 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-6">
+              <BookOpen className="w-5 h-5 text-purple-400" />
+              Setup Guide
+            </h2>
+            
+            <div className="space-y-6 text-sm text-gray-300">
+              <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
+                <h3 className="font-semibold text-white mb-2 text-base flex items-center gap-2">
+                  <span className="bg-[#33CCFF]/20 text-[#33CCFF] w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
+                  Getting Meta Access Token
+                </h3>
+                <ul className="list-disc list-inside space-y-1 ml-1 text-gray-400">
+                  <li>Go to <strong>Meta For Developers</strong> &gt; My Apps.</li>
+                  <li>Select your app or create a new "Business" app.</li>
+                  <li>Add <strong>Marketing API</strong> to your app.</li>
+                  <li>Go to Tools &gt; <strong>Graph API Explorer</strong>.</li>
+                  <li>Select your app, get a Page Access Token or User Token with permissions: <code className="bg-black/50 px-1 py-0.5 rounded text-pink-300">ads_read</code>, <code className="bg-black/50 px-1 py-0.5 rounded text-pink-300">read_insights</code>, <code className="bg-black/50 px-1 py-0.5 rounded text-pink-300">pages_read_engagement</code>.</li>
+                  <li>Copy the token and paste it into the <strong>Settings</strong> modal of this tool.</li>
+                </ul>
+              </div>
+
+              <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
+                <h3 className="font-semibold text-white mb-2 text-base flex items-center gap-2">
+                  <span className="bg-green-500/20 text-green-400 w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
+                  Setting up Google Sheets Sync
+                </h3>
+                <ol className="list-decimal list-inside space-y-2 ml-1 text-gray-400">
+                  <li>Create a new <strong>Google Sheet</strong>.</li>
+                  <li>Go to <strong>Extensions &gt; Apps Script</strong>.</li>
+                  <li>Delete any code there, and paste the code below.</li>
+                  <li>Click <strong>Deploy &gt; New deployment</strong>.</li>
+                  <li>Select type: <strong>Web app</strong>. Execute as: <strong>Me</strong>. Who has access: <strong>Anyone</strong>.</li>
+                  <li>Copy the resulting Web app URL and paste it into the Settings modal.</li>
+                </ol>
+                <div className="mt-3 bg-black/50 p-3 rounded-lg border border-white/5 font-mono text-[11px] text-gray-400 overflow-x-auto">
+<pre>{`function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = JSON.parse(e.postData.contents);
+  
+  // Headers (Run once manually or handle here)
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(["Timestamp", "Date Range", "Campaign Name", "Spend", "Leads", "Account Opens", "Funded Accounts", "Deposit"]);
+  }
+  
+  // Append Campaign Data
+  data.campaigns.forEach(function(c) {
+    sheet.appendRow([
+      data.timestamp,
+      data.dateRange,
+      c.campaignName,
+      c.spend,
+      c.leads,
+      c.accountOpens,
+      c.fundedAccounts,
+      c.deposit
+    ]);
+  });
+  
+  return ContentService.createTextOutput(JSON.stringify({"status": "success"})).setMimeType(ContentService.MimeType.JSON);
+}`}</pre>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 flex justify-end gap-3 sticky bottom-0 bg-[#0a0f1c] pt-4">
+              <button 
+                onClick={() => setIsGuideOpen(false)}
+                className="px-4 py-2 rounded-lg text-sm bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 transition-colors"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
