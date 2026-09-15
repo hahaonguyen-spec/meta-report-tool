@@ -4,17 +4,31 @@ import { jsPDF } from 'jspdf';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 import { TrendingUp, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Image as ImageIcon, ArrowRight, UsersRound, Save, Download, Upload, RotateCcw, CheckCircle2, Settings, BookOpen } from 'lucide-react';
 
+const MOCK_ACCOUNTS = [
+  { account_id: 'mock_1', name: 'Demo Account - Lead Gen Asia', currency: 'USD' },
+  { account_id: 'mock_2', name: 'Demo Account - Retargeting Pro', currency: 'USD' },
+  { account_id: 'mock_3', name: 'Demo Account - Global Awareness', currency: 'USD' },
+];
+
+const DEFAULT_DEMO_MANUAL_DATA = {
+  '101': { accountOpen: '42', fundedAccounts: '18', deposit: '4200' },
+  '102': { accountOpen: '25', fundedAccounts: '10', deposit: '2500' },
+  '103': { accountOpen: '10', fundedAccounts: '4', deposit: '950' },
+  '104': { accountOpen: '32', fundedAccounts: '15', deposit: '3800' },
+  '105': { accountOpen: '14', fundedAccounts: '6', deposit: '1600' },
+};
+
 const MOCK_DATA = [
-  { campaign_id: '101', campaign_name: 'VN_LeadGen_Campaign1', account_name: 'CPT Indonesia', spend: 1250.5, impressions: 55000, clicks: 3450, leads: 145, start_time: '2026-04-15T08:00:00+0000', api_budget: 20, api_budget_type: 'daily' },
-  { campaign_id: '102', campaign_name: 'TH_IBAcquisition_April', account_name: 'CPT Malaysia', spend: 850.0, impressions: 42000, clicks: 2200, leads: 85, start_time: '2026-04-01T10:30:00+0000', api_budget: 1000, api_budget_type: 'lifetime' },
-  { campaign_id: '103', campaign_name: 'PH_Awareness_Q1', account_name: 'CPT Global', spend: 430.2, impressions: 21000, clicks: 1100, leads: 32, start_time: '2026-04-10T14:15:00+0000', api_budget: 10, api_budget_type: 'daily' },
-  { campaign_id: '104', campaign_name: 'IND_Webinar_Promo', account_name: 'CPT Global', spend: 960.0, impressions: 88000, clicks: 2800, leads: 95, start_time: '2026-04-20T09:00:00+0000', api_budget: 1200, api_budget_type: 'lifetime' },
-  { campaign_id: '105', campaign_name: 'VN_IBAcquisition_Gold', account_name: 'CPT Indonesia', spend: 650.8, impressions: 32000, clicks: 1750, leads: 0, start_time: '2026-04-05T16:45:00+0000', api_budget: 20, api_budget_type: 'daily' },
+  { campaign_id: '101', campaign_name: 'VN_LeadGen_Campaign1', account_name: 'Demo Account - Lead Gen Asia', spend: 1250.5, impressions: 55000, clicks: 3450, leads: 145, start_time: '2026-04-15T08:00:00+0000', api_budget: 20, api_budget_type: 'daily' },
+  { campaign_id: '102', campaign_name: 'TH_IBAcquisition_April', account_name: 'Demo Account - Retargeting Pro', spend: 850.0, impressions: 42000, clicks: 2200, leads: 85, start_time: '2026-04-01T10:30:00+0000', api_budget: 1000, api_budget_type: 'lifetime' },
+  { campaign_id: '103', campaign_name: 'PH_Awareness_Q1', account_name: 'Demo Account - Global Awareness', spend: 430.2, impressions: 21000, clicks: 1100, leads: 32, start_time: '2026-04-10T14:15:00+0000', api_budget: 10, api_budget_type: 'daily' },
+  { campaign_id: '104', campaign_name: 'IND_Webinar_Promo', account_name: 'Demo Account - Global Awareness', spend: 960.0, impressions: 88000, clicks: 2800, leads: 95, start_time: '2026-04-20T09:00:00+0000', api_budget: 1200, api_budget_type: 'lifetime' },
+  { campaign_id: '105', campaign_name: 'VN_IBAcquisition_Gold', account_name: 'Demo Account - Lead Gen Asia', spend: 650.8, impressions: 32000, clicks: 1750, leads: 48, start_time: '2026-04-05T16:45:00+0000', api_budget: 20, api_budget_type: 'daily' },
 ];
 
 const MOCK_PAGES_DATA = [
-  { page_id: 'p1', name: 'CPT Global Forex', fans: 15400, impressions: 125000, engaged_users: 8400 },
-  { page_id: 'p2', name: 'Webinar Alerts TH', fans: 3200, impressions: 45000, engaged_users: 3100 },
+  { page_id: 'p1', name: 'Global Forex Official', fans: 15400, impressions: 125000, engaged_users: 8400 },
+  { page_id: 'p2', name: 'Webinar Alerts Asia', fans: 3200, impressions: 45000, engaged_users: 3100 },
 ];
 
 const filterMockByDate = (mockList, preset, customStart, customEnd) => {
@@ -145,10 +159,10 @@ export default function App() {
   const [manualData, setManualData] = useState(() => {
     try {
       const saved = localStorage.getItem('meta_report_manual_data');
-      return saved ? JSON.parse(saved) : {};
+      return saved ? JSON.parse(saved) : DEFAULT_DEMO_MANUAL_DATA;
     } catch (e) {
       console.error("Error reading manualData from localStorage:", e);
-      return {};
+      return DEFAULT_DEMO_MANUAL_DATA;
     }
   });
   
@@ -160,10 +174,7 @@ export default function App() {
     }
   }, [manualData]);
 
-  const [isUsingMock, setIsUsingMock] = useState(false);
-  const [exchangeRates, setExchangeRates] = useState(null);
-
-  // --- NEW: Personal Settings (Token, Webhook) ---
+  // --- Personal Settings (Token, Webhook) ---
   const [settings, setSettings] = useState(() => {
     try {
       const saved = localStorage.getItem('meta_report_settings');
@@ -178,15 +189,25 @@ export default function App() {
       localStorage.setItem('meta_report_settings', JSON.stringify(settings));
     } catch (e) {}
   }, [settings]);
+
+  const [isUsingMock, setIsUsingMock] = useState(!settings.metaToken);
+  const [exchangeRates, setExchangeRates] = useState(null);
   
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState(null);
-  // ---------------------------------------------
-  const [adAccounts, setAdAccounts] = useState([]);
-  const [selectedAccountIds, setSelectedAccountIds] = useState([]);
-  const [loadingAccounts, setLoadingAccounts] = useState(true);
+
+  // Testing states inside Settings modal
+  const [testingToken, setTestingToken] = useState(false);
+  const [tokenTestResult, setTokenTestResult] = useState(null);
+  const [testingWebhook, setTestingWebhook] = useState(false);
+  const [webhookTestResult, setWebhookTestResult] = useState(null);
+
+  // Accounts state initialized with demo accounts so dropdown is never broken
+  const [adAccounts, setAdAccounts] = useState(MOCK_ACCOUNTS);
+  const [selectedAccountIds, setSelectedAccountIds] = useState(MOCK_ACCOUNTS.map(a => a.account_id));
+  const [loadingAccounts, setLoadingAccounts] = useState(false);
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const [datePreset, setDatePreset] = useState('last_30d');
   const [customStartDate, setCustomStartDate] = useState('');
@@ -206,8 +227,97 @@ export default function App() {
   const [pageContentData, setPageContentData] = useState([]);
   const [loadingContent, setLoadingContent] = useState(false);
 
+  // Reset entire system & clear caches
+  const handleResetAll = () => {
+    if (window.confirm("Bạn có chắc chắn muốn RESET TOÀN BỘ? Tất cả Token, Webhook và các số liệu thủ công đã lưu sẽ được làm sạch về trạng thái ban đầu.")) {
+      localStorage.removeItem('meta_report_settings');
+      localStorage.removeItem('meta_report_manual_data');
+      setSettings({ metaToken: '', sheetWebhook: '' });
+      setManualData(DEFAULT_DEMO_MANUAL_DATA);
+      setError(null);
+      setIsUsingMock(true);
+      setAdAccounts(MOCK_ACCOUNTS);
+      setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
+      setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
+      setTokenTestResult(null);
+      setWebhookTestResult(null);
+      setIsSettingsOpen(false);
+      alert("Đã reset toàn bộ hệ thống về trạng thái mặc định thành công!");
+    }
+  };
+
+  // Test Meta Token directly
+  const testMetaToken = async (tokenToTest) => {
+    const t = tokenToTest ? tokenToTest.trim() : '';
+    if (!t) {
+      setTokenTestResult({ success: false, message: 'Vui lòng nhập Access Token trước khi kiểm tra.' });
+      return;
+    }
+    setTestingToken(true);
+    setTokenTestResult(null);
+    try {
+      const res = await fetch(`https://graph.facebook.com/v19.0/me/adaccounts?fields=name,account_id,currency&access_token=${t}`);
+      const result = await res.json();
+      if (result.error) {
+        setTokenTestResult({ success: false, message: result.error.message });
+      } else if (!result.data || result.data.length === 0) {
+        setTokenTestResult({ success: false, message: 'Token hợp lệ nhưng không tìm thấy tài khoản quảng cáo nào được gán quyền.' });
+      } else {
+        setTokenTestResult({ 
+          success: true, 
+          message: `Kết nối thành công! Tìm thấy ${result.data.length} tài khoản quảng cáo.`,
+          accounts: result.data
+        });
+        setSettings(prev => ({ ...prev, metaToken: t }));
+        setAdAccounts(result.data);
+        setSelectedAccountIds(result.data.map(a => a.account_id));
+        setIsUsingMock(false);
+        setError(null);
+      }
+    } catch (err) {
+      setTokenTestResult({ success: false, message: `Lỗi kết nối mạng: ${err.message}` });
+    } finally {
+      setTestingToken(false);
+    }
+  };
+
+  // Test Webhook
+  const testWebhook = async (urlToTest) => {
+    const url = urlToTest ? urlToTest.trim() : '';
+    if (!url) {
+      setWebhookTestResult({ success: false, message: 'Vui lòng nhập Webhook URL của Google Sheets.' });
+      return;
+    }
+    setTestingWebhook(true);
+    setWebhookTestResult(null);
+    try {
+      await fetch(url, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ test: true, timestamp: new Date().toISOString(), message: "Ping test from Meta Report Tool" })
+      });
+      setWebhookTestResult({ success: true, message: 'Đã gửi payload thử nghiệm đến Google Sheets thành công!' });
+      setSettings(prev => ({ ...prev, sheetWebhook: url }));
+    } catch (err) {
+      setWebhookTestResult({ success: false, message: `Không thể kết nối Webhook: ${err.message}` });
+    } finally {
+      setTestingWebhook(false);
+    }
+  };
+
   useEffect(() => {
-    fetchAdAccounts();
+    if (settings.metaToken && settings.metaToken.trim() !== '') {
+      fetchAdAccounts();
+    } else {
+      setIsUsingMock(true);
+      setError(null);
+      setAdAccounts(MOCK_ACCOUNTS);
+      setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
+      setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
+      setLoadingAccounts(false);
+    }
+
     // Fetch live exchange rates to USD
     fetch('https://open.er-api.com/v6/latest/USD')
       .then(res => res.json())
@@ -217,7 +327,7 @@ export default function App() {
         }
       })
       .catch(err => console.error("Error fetching exchange rates:", err));
-  }, []);
+  }, [settings.metaToken]);
 
   useEffect(() => {
     if (selectedAccountIds.length > 0) {
@@ -249,15 +359,19 @@ export default function App() {
   }, []);
 
   const fetchAdAccounts = async () => {
-    setLoadingAccounts(true);
     const token = settings.metaToken || import.meta.env.VITE_META_TOKEN;
-    if (!token || token === 'your_facebook_graph_api_access_token_here') {
-      console.warn("Meta API token not set. Using mock mode.");
+    if (!token || token.trim() === '' || token === 'your_facebook_graph_api_access_token_here') {
       setIsUsingMock(true);
-      setLoadingAccounts(false);
+      setError(null);
+      setAdAccounts(MOCK_ACCOUNTS);
+      setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
       setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
+      setLoadingAccounts(false);
       return;
     }
+
+    setLoadingAccounts(true);
+    setError(null);
 
     try {
       const fbVersion = 'v19.0';
@@ -270,26 +384,19 @@ export default function App() {
       }
 
       if (result.data && result.data.length > 0) {
-        // Lọc: Chỉ lấy các tài khoản có chứa 'CPT' và không chứa 'cpt markets vietnam'
-        const filteredAccounts = result.data.filter(acc => {
-          const name = (acc.name || '').toLowerCase();
-          return name.includes('cpt') && !name.includes('cpt markets vietnam');
-        });
-
-        if (filteredAccounts.length > 0) {
-          setAdAccounts(filteredAccounts);
-          // Tự động chọn tất cả tài khoản CPT hợp lệ
-          setSelectedAccountIds(filteredAccounts.map(a => a.account_id));
-        } else {
-          throw new Error("Không tìm thấy tài khoản quảng cáo CPT hợp lệ (đã loại trừ CPT Markets Vietnam).");
-        }
+        setAdAccounts(result.data);
+        setSelectedAccountIds(result.data.map(a => a.account_id));
+        setIsUsingMock(false);
+        setError(null);
       } else {
-        throw new Error("No Ad Accounts found for this user.");
+        throw new Error("Không tìm thấy tài khoản quảng cáo nào liên kết với Token này.");
       }
     } catch (err) {
       console.error("Error fetching Ad Accounts:", err);
       setError(err.message);
       setIsUsingMock(true);
+      setAdAccounts(MOCK_ACCOUNTS);
+      setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
       setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
     } finally {
       setLoadingAccounts(false);
@@ -674,7 +781,13 @@ export default function App() {
       const formattedData = allCampaigns.map((item, idx) => {
         let fetchLeads = 0;
         if (item.actions) {
-          const leadAction = item.actions.find(a => a.action_type === 'lead' || a.action_type === 'offsite_conversion.fb_pixel_lead');
+          const leadAction = item.actions.find(a => 
+            a.action_type === 'lead' || 
+            a.action_type === 'onsite_conversion.lead_grouped' ||
+            a.action_type === 'offsite_conversion.fb_pixel_lead' ||
+            a.action_type === 'leadgen.other' ||
+            (a.action_type && a.action_type.toLowerCase().includes('lead'))
+          );
           if (leadAction) fetchLeads = parseInt(leadAction.value);
         }
         
@@ -825,128 +938,154 @@ export default function App() {
 
       <div id="pdf-content" className="max-w-7xl mx-auto relative z-10 print:max-w-full p-2">
         
-        {/* Navigation Tabs */}
-        <div className="flex gap-4 mb-4 border-b border-white/10 pb-4 print:hidden pdf-hide">
-          <button 
-            onClick={() => setActiveTab('dashboard')} 
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${activeTab === 'dashboard' ? 'bg-[#33CCFF]/20 text-[#33CCFF] font-semibold' : 'text-gray-400 hover:text-white'}`}
-          >
-            <LayoutDashboard className="w-5 h-5"/> Live Dashboard
-          </button>
-          <button 
-            onClick={() => setActiveTab('reports')} 
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${activeTab === 'reports' ? 'bg-[#0AE5D5]/20 text-[#0AE5D5] font-semibold' : 'text-gray-400 hover:text-white'}`}
-          >
-            <FileText className="w-5 h-5"/> Report
-          </button>
-          <button 
-            onClick={() => setActiveTab('organic')} 
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${activeTab === 'organic' ? 'bg-pink-500/20 text-pink-400 font-semibold' : 'text-gray-400 hover:text-white'}`}
-          >
-            <UsersRound className="w-5 h-5"/> Organic Pages
-          </button>
-        </div>
-
-        {/* Header section (Always visible) */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 print:mb-4">
-          <div>
-            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#33CCFF] to-[#0AE5D5] flex items-center gap-3 print:text-[#070b14] print:from-[#070b14] print:to-[#070b14]">
-              <Activity className="w-8 h-8 text-[#0AE5D5] print:text-[#070b14]" />
-              Meta Ads Performance
-            </h1>
-            <p className="text-gray-400 mt-2 text-sm max-w-xl print:text-gray-600">
-              Real-time analytics for Financial & IB campaigns. Automatic Meta API sync with manual data logging for conversions.
-            </p>
+        {/* TOP BRAND & SYSTEM STATUS BAR */}
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center pb-5 mb-5 border-b border-white/10 gap-4 print:border-none print:pb-0">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-gradient-to-tr from-[#0AE5D5]/20 to-[#33CCFF]/20 border border-[#33CCFF]/30 text-[#0AE5D5] shadow-lg shadow-[#0AE5D5]/5">
+              <Activity className="w-7 h-7" />
+            </div>
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#33CCFF] via-teal-200 to-[#0AE5D5]">
+                  Meta Ads Analytics
+                </h1>
+                {!isUsingMock && settings.metaToken ? (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Live API ({adAccounts.length} Accounts)
+                  </span>
+                ) : (
+                  <button 
+                    onClick={() => setIsSettingsOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/20 transition-all cursor-pointer"
+                    title="Nhấp để cấu hình Meta Access Token"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                    Demo Mode (Chưa kết nối)
+                  </button>
+                )}
+              </div>
+              <p className="text-gray-400 text-xs mt-0.5">
+                Personal reporting & tracking tool • Sync với Google Sheets & Instant Forms
+              </p>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3 print:hidden pdf-hide">
+
+          <div className="flex items-center gap-2.5 print:hidden pdf-hide w-full md:w-auto justify-end">
             <button
               onClick={() => setIsGuideOpen(true)}
-              className="flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500/20 to-purple-600/20 hover:from-purple-500/30 hover:to-purple-600/30 border border-purple-500/30 text-purple-300 text-sm rounded-lg transition-all h-[38px]"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/20 transition-all"
             >
-              <BookOpen className="w-4 h-4" />
-              Guide
+              <BookOpen className="w-3.5 h-3.5" />
+              Hướng dẫn
             </button>
             <button
               onClick={() => setIsSettingsOpen(true)}
-              className="flex items-center justify-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-sm rounded-lg transition-all h-[38px]"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white/5 hover:bg-white/10 text-gray-200 border border-white/10 transition-all"
             >
-              <Settings className="w-4 h-4" />
-              Settings
+              <Settings className="w-3.5 h-3.5" />
+              Cài đặt (API & Sheets)
             </button>
             <button
-              onClick={handleSyncToSheets}
-              disabled={isSyncing}
-              className={`flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-lg transition-all h-[38px] ${
-                syncStatus === 'success' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
-                syncStatus === 'error' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
-                'bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-blue-300'
-              }`}
+              onClick={handleResetAll}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all"
+              title="Reset toàn bộ Token và dữ liệu đã lưu"
             >
-              <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-              {syncStatus === 'success' ? 'Synced!' : syncStatus === 'error' ? 'Error' : isSyncing ? 'Syncing...' : 'Sync to Sheets'}
+              <RotateCcw className="w-3.5 h-3.5" />
+              Reset Toàn Bộ
             </button>
-            
-            {/* Date Preset Selector */}
-            <div className="relative flex items-center bg-white/5 border border-white/10 hover:border-white/20 rounded-lg pr-4 pl-3 py-2 text-sm transition-all h-[38px]">
-               <Calendar className="w-4 h-4 text-[#33CCFF] mr-2" />
+          </div>
+        </header>
+
+        {/* NAVIGATION TABS */}
+        <div className="flex items-center gap-2 mb-5 print:hidden pdf-hide">
+          <button 
+            onClick={() => setActiveTab('dashboard')} 
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${activeTab === 'dashboard' ? 'bg-[#33CCFF]/15 text-[#33CCFF] border border-[#33CCFF]/30 shadow-lg shadow-[#33CCFF]/5' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+          >
+            <LayoutDashboard className="w-4 h-4"/> Live Dashboard
+          </button>
+          <button 
+            onClick={() => setActiveTab('reports')} 
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${activeTab === 'reports' ? 'bg-[#0AE5D5]/15 text-[#0AE5D5] border border-[#0AE5D5]/30 shadow-lg shadow-[#0AE5D5]/5' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+          >
+            <FileText className="w-4 h-4"/> Báo Cáo & Funnel
+          </button>
+          <button 
+            onClick={() => setActiveTab('organic')} 
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${activeTab === 'organic' ? 'bg-pink-500/15 text-pink-400 border border-pink-500/30 shadow-lg shadow-pink-500/5' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+          >
+            <UsersRound className="w-4 h-4"/> Organic Fanpages
+          </button>
+        </div>
+
+        {/* SUB-BAR: CONTROLS & ACTION TOOLBAR (UNIFIED CLEAN 1-ROW BAR) */}
+        <div className="bg-[#0a0f1c]/90 backdrop-blur-md border border-white/10 rounded-xl p-3 mb-6 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 print:hidden pdf-hide shadow-xl">
+          {/* Left: Filters */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Date Preset */}
+            <div className="relative flex items-center bg-white/5 border border-white/10 hover:border-white/20 rounded-lg pr-4 pl-3 py-1.5 text-xs text-white transition-all h-[36px]">
+               <Calendar className="w-3.5 h-3.5 text-[#33CCFF] mr-2 flex-shrink-0" />
                <select 
-                 className="appearance-none bg-transparent text-white focus:outline-none focus:ring-0 cursor-pointer pr-4"
+                 className="appearance-none bg-transparent text-white focus:outline-none focus:ring-0 cursor-pointer pr-4 text-xs font-medium"
                  value={datePreset}
                  onChange={(e) => setDatePreset(e.target.value)}
                >
-                 <option value="today" className="bg-[#0a0f1c]">Today</option>
-                 <option value="yesterday" className="bg-[#0a0f1c]">Yesterday</option>
-                 <option value="last_7d" className="bg-[#0a0f1c]">Last 7 Days</option>
-                 <option value="last_14d" className="bg-[#0a0f1c]">Last 14 Days</option>
-                 <option value="last_30d" className="bg-[#0a0f1c]">Last 30 Days</option>
-                 <option value="this_month" className="bg-[#0a0f1c]">This Month</option>
-                 <option value="last_month" className="bg-[#0a0f1c]">Last Month</option>
-                 <option value="custom" className="bg-[#0a0f1c]">Custom Range...</option>
+                 <option value="today" className="bg-[#0a0f1c]">Hôm nay</option>
+                 <option value="yesterday" className="bg-[#0a0f1c]">Hôm qua</option>
+                 <option value="last_7d" className="bg-[#0a0f1c]">7 ngày qua</option>
+                 <option value="last_14d" className="bg-[#0a0f1c]">14 ngày qua</option>
+                 <option value="last_30d" className="bg-[#0a0f1c]">30 ngày qua</option>
+                 <option value="this_month" className="bg-[#0a0f1c]">Tháng này</option>
+                 <option value="last_month" className="bg-[#0a0f1c]">Tháng trước</option>
+                 <option value="custom" className="bg-[#0a0f1c]">Tùy chọn ngày...</option>
                </select>
-               <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3 pointer-events-none" />
+               <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-2 pointer-events-none" />
             </div>
 
-            {/* Custom Date Range Picker */}
+            {/* Custom Range */}
             {datePreset === 'custom' && (
-              <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-2 h-[38px] transition-all">
+              <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 h-[36px] text-xs">
                 <input 
                   type="date"
-                  className="bg-transparent text-sm text-white focus:outline-none dark:[color-scheme:dark]"
+                  className="bg-transparent text-xs text-white focus:outline-none dark:[color-scheme:dark]"
                   value={customStartDate}
                   onChange={(e) => setCustomStartDate(e.target.value)}
                 />
                 <span className="text-gray-500">-</span>
                 <input 
                   type="date"
-                  className="bg-transparent text-sm text-white focus:outline-none dark:[color-scheme:dark]"
+                  className="bg-transparent text-xs text-white focus:outline-none dark:[color-scheme:dark]"
                   value={customEndDate}
                   onChange={(e) => setCustomEndDate(e.target.value)}
                 />
               </div>
             )}
 
-            {/* Custom Multi-Select Dropdown for Ad Accounts */}
+            {/* Account Selector */}
             <div className="relative" ref={dropdownRef}>
               <button
                 type="button"
                 onClick={() => setIsAccountDropdownOpen(!isAccountDropdownOpen)}
-                disabled={loadingAccounts || adAccounts.length === 0}
-                className="flex items-center justify-between w-[240px] bg-[#0a0f1c] border border-white/10 hover:border-white/20 text-white pl-4 pr-3 py-2 rounded-lg text-sm transition-all focus:outline-none focus:border-[#33CCFF] focus:ring-1 focus:ring-[#33CCFF] disabled:opacity-50 h-[38px]"
+                disabled={loadingAccounts}
+                className="flex items-center justify-between min-w-[210px] bg-white/5 border border-white/10 hover:border-white/20 text-white pl-3 pr-2.5 py-1.5 rounded-lg text-xs transition-all focus:outline-none focus:border-[#33CCFF] h-[36px]"
               >
-                <span className="truncate">
+                <span className="truncate font-medium">
                   {loadingAccounts 
-                    ? "Loading Accounts..." 
+                    ? "Đang tải tài khoản..." 
                     : adAccounts.length === 0 
-                      ? "No Accounts Found" 
-                      : `${selectedAccountIds.length} Account${selectedAccountIds.length !== 1 ? 's' : ''} Selected`}
+                      ? "Chưa có tài khoản" 
+                      : selectedAccountIds.length === adAccounts.length
+                        ? `Tất cả tài khoản (${adAccounts.length})`
+                        : `${selectedAccountIds.length}/${adAccounts.length} Tài khoản`}
                 </span>
-                <ChevronDown className="w-4 h-4 text-gray-400 ml-2 flex-shrink-0" />
+                <ChevronDown className="w-3.5 h-3.5 text-gray-400 ml-2 flex-shrink-0" />
               </button>
 
               {isAccountDropdownOpen && (
-                <div className="absolute top-full right-0 lg:left-0 mt-2 w-[300px] max-h-80 overflow-y-auto bg-[#0a0f1c] border border-[#33CCFF]/30 rounded-xl shadow-2xl z-50 p-2">
+                <div className="absolute top-full left-0 mt-2 w-[320px] max-h-80 overflow-y-auto bg-[#0d1424] border border-[#33CCFF]/30 rounded-xl shadow-2xl z-50 p-2">
                   <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 mb-2">
-                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Select Ad Accounts</span>
+                    <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Chọn tài khoản</span>
                     {(() => {
                       const areAllSelected = adAccounts.length > 0 && selectedAccountIds.length === adAccounts.length;
                       return (
@@ -960,7 +1099,7 @@ export default function App() {
                           }}
                           className="text-xs text-[#33CCFF] hover:text-white transition-colors font-medium"
                         >
-                          {areAllSelected ? 'Deselect All' : 'Select All'}
+                          {areAllSelected ? 'Bỏ chọn hết' : 'Chọn tất cả'}
                         </button>
                       );
                     })()}
@@ -971,14 +1110,14 @@ export default function App() {
                       <div 
                         key={acc.account_id}
                         onClick={() => toggleAccountSelection(acc.account_id)}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${isSelected ? 'bg-[#33CCFF]/10 text-white' : 'hover:bg-white/5 text-gray-300'}`}
+                        className={`flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer transition-colors ${isSelected ? 'bg-[#33CCFF]/10 text-white' : 'hover:bg-white/5 text-gray-300'}`}
                       >
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${isSelected ? 'border-[#33CCFF] bg-[#33CCFF]' : 'border-gray-500'}`}>
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${isSelected ? 'border-[#33CCFF] bg-[#33CCFF]' : 'border-gray-600'}`}>
                            {isSelected && <Check className="w-3 h-3 text-[#070b14]" />}
                         </div>
-                        <div className="truncate flex-1 text-sm">
-                          {acc.name ? acc.name : 'Unknown Account'}
-                          <span className="text-xs text-gray-500 block">ID: {acc.account_id}</span>
+                        <div className="truncate flex-1 text-xs">
+                          <span className="font-medium text-gray-200 block truncate">{acc.name || 'Tài khoản không tên'}</span>
+                          <span className="text-[10px] text-gray-500 block">ID: {acc.account_id}</span>
                         </div>
                       </div>
                     );
@@ -986,47 +1125,97 @@ export default function App() {
                 </div>
               )}
             </div>
+          </div>
 
+          {/* Right: Action Buttons */}
+          <div className="flex items-center gap-2">
             <button 
               onClick={() => {
-                if (selectedAccountIds.length > 0) {
-                  if (datePreset === 'custom' && (!customStartDate || !customEndDate)) {
-                    return;
-                  }
+                if (settings.metaToken && settings.metaToken.trim() !== '' && !isUsingMock) {
                   fetchMetaAPI(selectedAccountIds, datePreset, customStartDate, customEndDate);
                 } else {
-                  fetchAdAccounts();
+                  setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
                 }
               }}
-              disabled={loading || loadingAccounts || (datePreset === 'custom' && (!customStartDate || !customEndDate))}
-              className="flex items-center gap-2 bg-[#33CCFF]/10 hover:bg-[#33CCFF]/20 border border-[#33CCFF]/30 transition-all px-4 py-2 rounded-lg text-sm text-[#33CCFF] disabled:opacity-50 h-[38px]"
+              disabled={loading || loadingAccounts}
+              className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 transition-all px-3 py-1.5 rounded-lg text-xs font-medium text-gray-200 disabled:opacity-50 h-[36px]"
+              title="Làm mới dữ liệu từ Meta Ads hoặc Demo"
             >
-              <RefreshCw className={`w-4 h-4 ${(loading || loadingAccounts) ? 'animate-spin' : ''}`} />
-              Sync
+              <RefreshCw className={`w-3.5 h-3.5 ${(loading || loadingAccounts) ? 'animate-spin' : ''}`} />
+              Làm mới
             </button>
+
+            <button
+              onClick={handleSyncToSheets}
+              disabled={isSyncing}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-all h-[36px] ${
+                syncStatus === 'success' 
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-lg shadow-emerald-500/10' 
+                  : syncStatus === 'error' 
+                    ? 'bg-red-500/20 text-red-300 border border-red-500/40' 
+                    : 'bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300'
+              }`}
+              title="Gửi dữ liệu báo cáo & phễu hiện tại lên Google Sheets qua Webhook"
+            >
+              <Save className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+              {syncStatus === 'success' ? 'Đã sync Sheet!' : syncStatus === 'error' ? 'Lỗi Sync!' : isSyncing ? 'Đang sync...' : 'Sync to Sheet'}
+            </button>
+
             <button 
               onClick={exportPDF}
               disabled={loading || loadingAccounts || isExporting}
-              className="flex items-center gap-2 bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-400/30 transition-all px-4 py-2 rounded-lg text-sm text-indigo-300 disabled:opacity-50 h-[38px] ml-auto md:ml-0"
+              className="flex items-center gap-1.5 bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-400/30 transition-all px-3 py-1.5 rounded-lg text-xs font-medium text-indigo-300 disabled:opacity-50 h-[36px]"
             >
-              <Printer className={`w-4 h-4 ${isExporting ? 'animate-pulse' : ''}`} />
-              {isExporting ? 'Exporting...' : 'Export PDF'}
+              <Printer className={`w-3.5 h-3.5 ${isExporting ? 'animate-pulse' : ''}`} />
+              {isExporting ? 'Đang xuất...' : 'Xuất PDF'}
             </button>
-
           </div>
         </div>
 
-        {/* Warning / Status Banners */}
+        {/* NOTIFICATIONS & BANNERS */}
         {error && (
-          <div className="mb-6 bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg flex items-center gap-2 text-sm backdrop-blur-sm">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <p><span className="font-semibold">API Error:</span> {error}. Using simulated local data for preview.</p>
+          <div className="mb-6 bg-red-500/10 border border-red-500/20 text-red-300 px-4 py-3 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs backdrop-blur-sm shadow-lg shadow-red-500/5">
+            <div className="flex items-center gap-2.5">
+              <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-400" />
+              <div>
+                <span className="font-semibold text-red-400">Lỗi kết nối Meta Graph API:</span> {error}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 self-end sm:self-auto flex-shrink-0">
+              <button 
+                onClick={() => setIsSettingsOpen(true)}
+                className="px-2.5 py-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg text-xs text-white font-medium transition-all"
+              >
+                Cập nhật Token
+              </button>
+              <button 
+                onClick={() => {
+                  setError(null);
+                  setIsUsingMock(true);
+                  setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
+                }}
+                className="px-2.5 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-xs text-gray-300 transition-all"
+              >
+                Về Demo Mode
+              </button>
+            </div>
           </div>
         )}
+
         {isUsingMock && !error && (
-          <div className="mb-6 bg-[#33CCFF]/10 border border-[#33CCFF]/20 text-[#33CCFF] px-4 py-3 rounded-lg flex items-center gap-2 text-sm backdrop-blur-sm">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <p>Running in strictly local mode. Add API credentials to <code className="bg-black/30 px-1.5 py-0.5 rounded text-white text-xs">.env</code> to fetch live Meta Graph API data.</p>
+          <div className="mb-6 bg-gradient-to-r from-blue-500/10 to-teal-500/10 border border-blue-500/20 text-blue-200 px-4 py-3 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs backdrop-blur-sm">
+            <div className="flex items-center gap-2.5">
+              <span className="p-1 rounded bg-blue-500/20 text-blue-300">💡</span>
+              <div>
+                <strong className="text-white">Chế độ Demo (Dữ liệu mẫu):</strong> Đang hiển thị số liệu mô phỏng để xem trước giao diện. Nhập Token cá nhân để đồng bộ trực tiếp với Meta Ads.
+              </div>
+            </div>
+            <button 
+              onClick={() => setIsSettingsOpen(true)}
+              className="px-3 py-1 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-blue-300 rounded-lg font-medium text-xs transition-all flex-shrink-0 self-end sm:self-auto"
+            >
+              Kết nối Meta Token
+            </button>
           </div>
         )}
 
@@ -2358,44 +2547,168 @@ function FunnelHealthReport({ data, manualData }) {
 
       {/* Settings Modal */}
       {isSettingsOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#0a0f1c] border border-white/10 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-6">
-              <Settings className="w-5 h-5 text-[#33CCFF]" />
-              Personal Settings
-            </h2>
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-[#0a0f1c] border border-white/15 rounded-2xl w-full max-w-xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-4 mb-5 border-b border-white/10">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2.5">
+                <Settings className="w-5 h-5 text-[#33CCFF]" />
+                Cài Đặt Kết Nối Trực Tiếp
+              </h2>
+              <button 
+                onClick={() => setIsSettingsOpen(false)}
+                className="text-gray-400 hover:text-white text-lg p-1"
+              >
+                ✕
+              </button>
+            </div>
             
-            <div className="space-y-4">
+            {/* Status indicator inside modal */}
+            <div className={`p-3 rounded-xl mb-5 flex items-center gap-3 text-xs border ${
+              !isUsingMock && settings.metaToken
+                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
+                : 'bg-amber-500/10 border-amber-500/20 text-amber-300'
+            }`}>
+              <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${!isUsingMock && settings.metaToken ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Meta Graph API Access Token</label>
-                <input 
-                  type="password"
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#33CCFF]"
-                  placeholder="EAA..."
-                  value={settings.metaToken}
-                  onChange={(e) => setSettings({...settings, metaToken: e.target.value})}
-                />
-                <p className="text-[11px] text-gray-500 mt-1">Leave empty to use mock data or `.env` fallback.</p>
-              </div>
-              
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">Google Sheets Webhook URL (Apps Script)</label>
-                <input 
-                  type="url"
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#33CCFF]"
-                  placeholder="https://script.google.com/macros/s/.../exec"
-                  value={settings.sheetWebhook}
-                  onChange={(e) => setSettings({...settings, sheetWebhook: e.target.value})}
-                />
+                <span className="font-semibold">{!isUsingMock && settings.metaToken ? 'Trạng thái: Đã kết nối Live API' : 'Trạng thái: Đang ở chế độ Demo'}</span>
+                <p className="opacity-80 text-[11px] mt-0.5">
+                  {!isUsingMock && settings.metaToken 
+                    ? `Đang quản lý ${adAccounts.length} tài khoản quảng cáo trực tiếp từ Meta.` 
+                    : 'Nhập Access Token bên dưới để chuyển sang kết nối trực tiếp với Meta Ads.'}
+                </p>
               </div>
             </div>
 
-            <div className="mt-8 flex justify-end gap-3">
+            <div className="space-y-6">
+              {/* Meta Access Token */}
+              <div className="p-4 bg-white/5 border border-white/10 rounded-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider">
+                    Meta Graph API Access Token
+                  </label>
+                  <button 
+                    onClick={() => setIsGuideOpen(true)}
+                    className="text-[11px] text-[#33CCFF] hover:underline flex items-center gap-1"
+                  >
+                    <BookOpen className="w-3 h-3" /> Cách lấy Token
+                  </button>
+                </div>
+
+                <div className="relative">
+                  <input 
+                    type="password"
+                    className="w-full bg-[#070b14] border border-white/15 rounded-lg px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#33CCFF] font-mono tracking-wider"
+                    placeholder="EAAGm0..."
+                    value={settings.metaToken}
+                    onChange={(e) => {
+                      setSettings({...settings, metaToken: e.target.value});
+                      setTokenTestResult(null);
+                    }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-3 pt-1">
+                  <p className="text-[11px] text-gray-500">
+                    Token được lưu trực tiếp tại trình duyệt (Local Storage).
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => testMetaToken(settings.metaToken)}
+                    disabled={testingToken || !settings.metaToken}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#33CCFF]/15 hover:bg-[#33CCFF]/25 border border-[#33CCFF]/30 text-[#33CCFF] flex items-center gap-1.5 transition-all disabled:opacity-40 flex-shrink-0"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${testingToken ? 'animate-spin' : ''}`} />
+                    {testingToken ? 'Đang kiểm tra...' : 'Kiểm tra & Kết nối'}
+                  </button>
+                </div>
+
+                {tokenTestResult && (
+                  <div className={`p-2.5 rounded-lg text-xs border ${
+                    tokenTestResult.success 
+                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' 
+                      : 'bg-red-500/10 border-red-500/20 text-red-300'
+                  }`}>
+                    {tokenTestResult.success ? '✅ ' : '❌ '}
+                    {tokenTestResult.message}
+                  </div>
+                )}
+              </div>
+              
+              {/* Google Sheets Webhook */}
+              <div className="p-4 bg-white/5 border border-white/10 rounded-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider">
+                    Google Sheets Webhook URL (Apps Script)
+                  </label>
+                  <button 
+                    onClick={() => setIsGuideOpen(true)}
+                    className="text-[11px] text-emerald-400 hover:underline flex items-center gap-1"
+                  >
+                    <BookOpen className="w-3 h-3" /> Cách tạo Webhook
+                  </button>
+                </div>
+
+                <input 
+                  type="url"
+                  className="w-full bg-[#070b14] border border-white/15 rounded-lg px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-400 font-mono"
+                  placeholder="https://script.google.com/macros/s/.../exec"
+                  value={settings.sheetWebhook}
+                  onChange={(e) => {
+                    setSettings({...settings, sheetWebhook: e.target.value});
+                    setWebhookTestResult(null);
+                  }}
+                />
+
+                <div className="flex items-center justify-between gap-3 pt-1">
+                  <p className="text-[11px] text-gray-500">
+                    Bấm "Sync to Sheet" ở thanh công cụ để đẩy dữ liệu báo cáo & phễu.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => testWebhook(settings.sheetWebhook)}
+                    disabled={testingWebhook || !settings.sheetWebhook}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 flex items-center gap-1.5 transition-all disabled:opacity-40 flex-shrink-0"
+                  >
+                    <Save className={`w-3.5 h-3.5 ${testingWebhook ? 'animate-spin' : ''}`} />
+                    {testingWebhook ? 'Đang gửi test...' : 'Gửi thử nghiệm'}
+                  </button>
+                </div>
+
+                {webhookTestResult && (
+                  <div className={`p-2.5 rounded-lg text-xs border ${
+                    webhookTestResult.success 
+                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' 
+                      : 'bg-red-500/10 border-red-500/20 text-red-300'
+                  }`}>
+                    {webhookTestResult.success ? '✅ ' : '❌ '}
+                    {webhookTestResult.message}
+                  </div>
+                )}
+              </div>
+
+              {/* Danger Zone / Reset */}
+              <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-xl flex items-center justify-between gap-4">
+                <div>
+                  <h4 className="text-xs font-semibold text-red-400 uppercase tracking-wider">Reset Toàn Bộ Hệ Thống</h4>
+                  <p className="text-[11px] text-gray-400 mt-0.5">Xóa sạch Token, Webhook và các số liệu đã lưu để quay về mặc định.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleResetAll}
+                  className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-300 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 flex-shrink-0"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Reset Toàn Bộ
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-white/10 flex justify-end gap-3">
               <button 
                 onClick={() => setIsSettingsOpen(false)}
-                className="px-4 py-2 rounded-lg text-sm bg-white/5 hover:bg-white/10 text-gray-300 transition-colors"
+                className="px-5 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-[#33CCFF] to-[#0AE5D5] text-[#070b14] hover:opacity-90 transition-all shadow-lg shadow-[#33CCFF]/20"
               >
-                Close
+                Lưu & Đóng
               </button>
             </div>
           </div>
