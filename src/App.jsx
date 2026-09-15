@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
-import { TrendingUp, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Image as ImageIcon, ArrowRight, UsersRound, Save, Download, Upload, RotateCcw, CheckCircle2, Settings, BookOpen, UserPlus, ShieldAlert, Key, Copy, Trash2, Edit3, UserCheck, Shield, Plus } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Image as ImageIcon, ArrowRight, UsersRound, Save, Download, Upload, RotateCcw, CheckCircle2, Settings, BookOpen, UserPlus, ShieldAlert, Key, Copy, Trash2, Edit3, UserCheck, Shield, Plus, Phone, Mail, MessageSquare, Filter, Kanban, ListFilter, ArrowUpDown, PlusCircle, CheckSquare, Award, Search, PhoneCall } from 'lucide-react';
 
 const MOCK_ACCOUNTS = [
   { account_id: 'mock_1', name: 'Demo Account - Lead Gen Asia', currency: 'USD' },
@@ -61,6 +61,102 @@ const DEFAULT_PROFILES = [
     assignedAccounts: ['mock_2'],
     notes: 'Khách hàng theo dõi ngân sách và ROI hàng tuần',
     avatarBg: 'bg-gradient-to-r from-purple-500 to-pink-500'
+  }
+];
+
+const CRM_STAGES = [
+  { id: 'new', label: 'Mới tiếp cận', color: 'border-blue-500/40 bg-blue-500/10 text-blue-400', badge: 'bg-blue-500/20 text-blue-300' },
+  { id: 'contacting', label: 'Đang tư vấn', color: 'border-amber-500/40 bg-amber-500/10 text-amber-400', badge: 'bg-amber-500/20 text-amber-300' },
+  { id: 'account_opened', label: 'Đã mở tài khoản', color: 'border-purple-500/40 bg-purple-500/10 text-purple-400', badge: 'bg-purple-500/20 text-purple-300' },
+  { id: 'funded', label: 'Đã nạp tiền', color: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400', badge: 'bg-emerald-500/20 text-emerald-300' },
+  { id: 'won', label: 'Thành công (Won)', color: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-400', badge: 'bg-cyan-500/20 text-cyan-300' },
+  { id: 'lost', label: 'Hủy / Thất bại', color: 'border-red-500/40 bg-red-500/10 text-red-400', badge: 'bg-red-500/20 text-red-300' },
+];
+
+const DEFAULT_CRM_LEADS = [
+  {
+    id: 'lead_1',
+    name: 'Trần Văn Minh',
+    phone: '0912 345 678',
+    email: 'minh.tran@gmail.com',
+    source: 'Facebook Ads / Form',
+    campaign: 'VN_LeadGen_Campaign1',
+    status: 'funded',
+    deposit: 1200,
+    assignedTo: 'prof_admin',
+    notes: 'Đã hoàn tất mở tài khoản MT5, nạp lần đầu 1,200 USD. Quan tâm copy-trade.',
+    createdAt: '2026-04-12',
+    updatedAt: '2026-04-15'
+  },
+  {
+    id: 'lead_2',
+    name: 'Lê Hoàng Nam',
+    phone: '0988 765 432',
+    email: 'nam.le@vnn.vn',
+    source: 'Facebook Ads / Form',
+    campaign: 'VN_LeadGen_Campaign1',
+    status: 'account_opened',
+    deposit: 0,
+    assignedTo: 'prof_buyer1',
+    notes: 'Đã xác minh KYC xong. Đang chờ tư vấn chiến lược nạp tiền.',
+    createdAt: '2026-04-14',
+    updatedAt: '2026-04-16'
+  },
+  {
+    id: 'lead_3',
+    name: 'Phạm Thị Thúy',
+    phone: '0903 112 233',
+    email: 'thuy.pham@techcom.vn',
+    source: 'Website / Funnel',
+    campaign: 'VN_IBAcquisition_Gold',
+    status: 'contacting',
+    deposit: 0,
+    assignedTo: 'prof_admin',
+    notes: 'Đã gọi lần 1, khách hẹn tối nay gửi tài liệu hướng dẫn qua Zalo.',
+    createdAt: '2026-04-16',
+    updatedAt: '2026-04-16'
+  },
+  {
+    id: 'lead_4',
+    name: 'Đặng Quốc Huy',
+    phone: '0977 889 900',
+    email: 'huy.dang@yahoo.com',
+    source: 'Facebook Ads / Form',
+    campaign: 'TH_IBAcquisition_April',
+    status: 'won',
+    deposit: 3000,
+    assignedTo: 'prof_buyer1',
+    notes: 'Khách VIP nạp 3,000 USD, đã vào nhóm tín hiệu Premium.',
+    createdAt: '2026-04-05',
+    updatedAt: '2026-04-10'
+  },
+  {
+    id: 'lead_5',
+    name: 'Nguyễn Tiến Dũng',
+    phone: '0934 556 778',
+    email: 'dung.nguyen@fpt.com.vn',
+    source: 'Zalo / Chat',
+    campaign: 'VN_LeadGen_Campaign1',
+    status: 'new',
+    deposit: 0,
+    assignedTo: 'prof_admin',
+    notes: 'Lead mới từ form đăng ký nhận Ebook đầu tư.',
+    createdAt: '2026-04-17',
+    updatedAt: '2026-04-17'
+  },
+  {
+    id: 'lead_6',
+    name: 'Vũ Đức Mạnh',
+    phone: '0945 667 889',
+    email: 'manh.vu@honda.com.vn',
+    source: 'Giới thiệu / Referral',
+    campaign: 'VN_IBAcquisition_Gold',
+    status: 'lost',
+    deposit: 0,
+    assignedTo: 'prof_buyer1',
+    notes: 'Khách đổi ý sang đầu tư bất động sản, hẹn liên hệ lại quý sau.',
+    createdAt: '2026-04-08',
+    updatedAt: '2026-04-11'
   }
 ];
 
@@ -331,20 +427,41 @@ export default function App() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [editingProfile, setEditingProfile] = useState(null);
 
+  // --- CRM Leads & Pipeline State ---
+  const [leads, setLeads] = useState(() => {
+    try {
+      const saved = localStorage.getItem('meta_report_crm_leads');
+      return saved ? JSON.parse(saved) : DEFAULT_CRM_LEADS;
+    } catch (e) {
+      return DEFAULT_CRM_LEADS;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('meta_report_crm_leads', JSON.stringify(leads));
+    } catch (e) {}
+  }, [leads]);
+
+  const [crmSubTab, setCrmSubTab] = useState('pipeline'); // 'pipeline', 'analytics', 'profiles'
+  const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
+  const [editingLead, setEditingLead] = useState(null);
+
   // --- Backup & Restore ---
   const handleBackupData = () => {
     const backupData = {
-      version: "2.0",
+      version: "2.5",
       exportDate: new Date().toISOString(),
       settings,
       manualData,
       profiles,
-      activeProfileId
+      activeProfileId,
+      leads
     };
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
     const dlAnchor = document.createElement('a');
     dlAnchor.setAttribute("href", dataStr);
-    dlAnchor.setAttribute("download", `meta_report_backup_${new Date().toISOString().slice(0, 10)}.json`);
+    dlAnchor.setAttribute("download", `meta_report_crm_backup_${new Date().toISOString().slice(0, 10)}.json`);
     document.body.appendChild(dlAnchor);
     dlAnchor.click();
     dlAnchor.remove();
@@ -369,7 +486,8 @@ export default function App() {
         if (parsed.manualData) setManualData(parsed.manualData);
         if (parsed.profiles) setProfiles(parsed.profiles);
         if (parsed.activeProfileId) setActiveProfileId(parsed.activeProfileId);
-        alert("Khôi phục dữ liệu từ bản sao lưu thành công!");
+        if (parsed.leads && Array.isArray(parsed.leads)) setLeads(parsed.leads);
+        alert("Khôi phục toàn bộ dữ liệu CRM & Cài đặt từ bản sao lưu thành công!");
       } catch (err) {
         alert("Lỗi đọc file sao lưu: " + err.message);
       }
@@ -409,11 +527,13 @@ export default function App() {
     localStorage.removeItem('meta_report_manual_data');
     localStorage.removeItem('meta_report_crm_profiles');
     localStorage.removeItem('meta_report_active_profile_id');
+    localStorage.removeItem('meta_report_crm_leads');
 
     setSettings({ metaToken: '', sheetWebhook: '', savedAccounts: [] });
     setManualData(DEFAULT_DEMO_MANUAL_DATA);
     setProfiles(DEFAULT_PROFILES);
     setActiveProfileId('prof_admin');
+    setLeads(DEFAULT_CRM_LEADS);
     setError(null);
     setIsUsingMock(true);
     setAdAccounts(MOCK_ACCOUNTS);
@@ -1490,7 +1610,7 @@ export default function App() {
             onClick={() => setActiveTab('crm')} 
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${activeTab === 'crm' ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 shadow-lg shadow-indigo-500/5' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
           >
-            <Users className="w-4 h-4"/> CRM Profiles ({profiles.length})
+            <Briefcase className="w-4 h-4"/> Hệ Thống CRM ({leads.length} Leads)
           </button>
           <button 
             onClick={() => setActiveTab('organic')} 
@@ -2050,19 +2170,32 @@ export default function App() {
         </div>
         </>
         ) : activeTab === 'crm' ? (
-          <CRMProfilesManager 
+          <CRMModule 
+            leads={leads} 
+            setLeads={setLeads} 
             profiles={profiles} 
             setProfiles={setProfiles} 
             activeProfileId={activeProfileId} 
             setActiveProfileId={setActiveProfileId} 
             adAccounts={adAccounts}
-            onOpenAddModal={() => {
+            campaigns={data}
+            crmSubTab={crmSubTab}
+            setCrmSubTab={setCrmSubTab}
+            onOpenAddProfileModal={() => {
               setEditingProfile(null);
               setIsProfileModalOpen(true);
             }}
             onEditProfile={(p) => {
               setEditingProfile(p);
               setIsProfileModalOpen(true);
+            }}
+            onOpenAddLeadModal={() => {
+              setEditingLead(null);
+              setIsLeadModalOpen(true);
+            }}
+            onEditLead={(l) => {
+              setEditingLead(l);
+              setIsLeadModalOpen(true);
             }}
           />
         ) : activeTab === 'organic' ? (
@@ -3423,6 +3556,25 @@ function FunnelHealthReport({ data, manualData }) {
         />
       )}
 
+      {/* CRM Lead Create / Edit Modal */}
+      {isLeadModalOpen && (
+        <LeadModal 
+          isOpen={isLeadModalOpen}
+          editingLead={editingLead}
+          profiles={profiles}
+          campaigns={data}
+          onClose={() => setIsLeadModalOpen(false)}
+          onSave={(savedLead) => {
+            if (editingLead) {
+              setLeads(leads.map(l => l.id === savedLead.id ? savedLead : l));
+            } else {
+              setLeads([savedLead, ...leads]);
+            }
+            setIsLeadModalOpen(false);
+          }}
+        />
+      )}
+
       {/* Setup Guide Modal */}
       {isGuideOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -3502,6 +3654,911 @@ function FunnelHealthReport({ data, manualData }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// =====================================================================
+// ======================== FULL CRM SYSTEM MODULE =====================
+// =====================================================================
+
+function CRMModule({
+  leads,
+  setLeads,
+  profiles,
+  setProfiles,
+  activeProfileId,
+  setActiveProfileId,
+  adAccounts,
+  campaigns,
+  crmSubTab,
+  setCrmSubTab,
+  onOpenAddProfileModal,
+  onEditProfile,
+  onOpenAddLeadModal,
+  onEditLead
+}) {
+  const [viewMode, setViewMode] = useState('kanban'); // 'kanban' | 'table'
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStage, setFilterStage] = useState('all');
+  const [filterProfile, setFilterProfile] = useState('all');
+  const [filterSource, setFilterSource] = useState('all');
+
+  // Filter leads
+  const filteredLeads = leads.filter(l => {
+    const s = searchTerm.toLowerCase();
+    const matchSearch = 
+      l.name.toLowerCase().includes(s) ||
+      (l.phone && l.phone.toLowerCase().includes(s)) ||
+      (l.email && l.email.toLowerCase().includes(s)) ||
+      (l.notes && l.notes.toLowerCase().includes(s)) ||
+      (l.campaign && l.campaign.toLowerCase().includes(s));
+    const matchStage = filterStage === 'all' || l.status === filterStage;
+    const matchProfile = filterProfile === 'all' || l.assignedTo === filterProfile;
+    const matchSource = filterSource === 'all' || l.source === filterSource;
+    return matchSearch && matchStage && matchProfile && matchSource;
+  });
+
+  // Calculate CRM Stats
+  const totalLeads = leads.length;
+  const newCount = leads.filter(l => l.status === 'new').length;
+  const contactingCount = leads.filter(l => l.status === 'contacting').length;
+  const accountOpenedCount = leads.filter(l => l.status === 'account_opened').length;
+  const fundedLeads = leads.filter(l => l.status === 'funded' || l.status === 'won');
+  const totalFundedDeposit = leads.reduce((acc, l) => acc + (parseFloat(l.deposit) || 0), 0);
+  const winCount = leads.filter(l => l.status === 'won').length;
+  const winRate = totalLeads > 0 ? ((winCount / totalLeads) * 100).toFixed(1) : '0';
+  const fundedConversionRate = totalLeads > 0 ? ((fundedLeads.length / totalLeads) * 100).toFixed(1) : '0';
+
+  // Calculate Total Ad Spend from campaigns to compute CAC and ROI
+  const totalAdSpend = (campaigns || []).reduce((acc, c) => acc + (parseFloat(c.spend) || 0), 0);
+  const cac = fundedLeads.length > 0 ? Math.round(totalAdSpend / fundedLeads.length) : 0;
+  const netEstimated = totalFundedDeposit - totalAdSpend;
+  const estimatedRoi = totalAdSpend > 0 ? (((totalFundedDeposit - totalAdSpend) / totalAdSpend) * 100).toFixed(1) : 0;
+
+  // Change lead status quickly
+  const handleStageChange = (leadId, newStage) => {
+    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: newStage, updatedAt: new Date().toISOString().slice(0, 10) } : l));
+  };
+
+  // Delete lead
+  const handleDeleteLead = (leadId) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa khách hàng này khỏi CRM?")) {
+      setLeads(prev => prev.filter(l => l.id !== leadId));
+    }
+  };
+
+  // Export CSV
+  const handleExportCSV = () => {
+    const headers = ["ID", "Tên Khách Hàng", "Số Điện Thoại", "Email", "Nguồn", "Chiến Dịch", "Giai Đoạn", "Tiền Nạp (USD)", "Phụ Trách", "Ghi Chú", "Ngày Tạo"];
+    const rows = leads.map(l => {
+      const assignedProf = profiles.find(p => p.id === l.assignedTo);
+      const stageObj = CRM_STAGES.find(s => s.id === l.status);
+      return [
+        l.id,
+        `"${(l.name || '').replace(/"/g, '""')}"`,
+        `"${l.phone || ''}"`,
+        `"${l.email || ''}"`,
+        `"${l.source || ''}"`,
+        `"${l.campaign || ''}"`,
+        `"${stageObj ? stageObj.label : l.status}"`,
+        l.deposit || 0,
+        `"${assignedProf ? assignedProf.name : 'Chưa gán'}"`,
+        `"${(l.notes || '').replace(/"/g, '""')}"`,
+        l.createdAt || ''
+      ].join(",");
+    });
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(","), ...rows].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `crm_leads_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
+  // Import Leads from Meta Campaigns
+  const handleSyncFromCampaigns = () => {
+    const campaignsWithLeads = (campaigns || []).filter(c => (c.leads || 0) > 0);
+    if (campaignsWithLeads.length === 0) {
+      alert("Chưa có chiến dịch Meta nào ghi nhận số lượng Lead trong khoảng thời gian đã chọn.");
+      return;
+    }
+    const newGeneratedLeads = [];
+    campaignsWithLeads.forEach((c, idx) => {
+      newGeneratedLeads.push({
+        id: `meta_lead_${Date.now()}_${idx}`,
+        name: `Lead Form ${c.campaign_name ? c.campaign_name.slice(0, 20) : 'Ads'} #${idx + 1}`,
+        phone: '09' + Math.floor(10000000 + Math.random() * 90000000),
+        email: `lead_${idx + 1}@instantform.fb`,
+        source: 'Facebook Ads / Form',
+        campaign: c.campaign_name || '',
+        status: 'new',
+        deposit: 0,
+        assignedTo: activeProfileId || 'prof_admin',
+        notes: `Tự động đồng bộ từ chiến dịch Facebook Ads: ${c.campaign_name}`,
+        createdAt: new Date().toISOString().slice(0, 10),
+        updatedAt: new Date().toISOString().slice(0, 10)
+      });
+    });
+    setLeads(prev => [...newGeneratedLeads, ...prev]);
+    alert(`Đã nhập thành công ${newGeneratedLeads.length} Khách hàng tiềm năng từ Meta Ads vào CRM!`);
+  };
+
+  // Funnel data for Analytics
+  const funnelData = [
+    { stage: 'Mới nhận', count: newCount, fill: '#3b82f6' },
+    { stage: 'Đang tư vấn', count: contactingCount, fill: '#f59e0b' },
+    { stage: 'Mở tài khoản', count: accountOpenedCount, fill: '#a855f7' },
+    { stage: 'Đã nạp tiền', count: leads.filter(l => l.status === 'funded').length, fill: '#10b981' },
+    { stage: 'Thành công (Won)', count: winCount, fill: '#06b6d4' }
+  ];
+
+  // Source distribution data
+  const sourceMap = {};
+  leads.forEach(l => {
+    const src = l.source || 'Khác';
+    sourceMap[src] = (sourceMap[src] || 0) + 1;
+  });
+  const sourceData = Object.keys(sourceMap).map(k => ({ name: k, value: sourceMap[k] }));
+  const PIE_COLORS = ['#33CCFF', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#64748b'];
+
+  return (
+    <div className="space-y-6">
+      {/* CRM Sub-Navigation Tabs */}
+      <div className="bg-[#0a0f1c]/90 border border-white/10 rounded-2xl p-2.5 flex flex-wrap items-center justify-between gap-3 shadow-xl backdrop-blur-md">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCrmSubTab('pipeline')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              crmSubTab === 'pipeline'
+                ? 'bg-gradient-to-r from-indigo-500 to-cyan-500 text-white shadow-lg shadow-indigo-500/20'
+                : 'text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Kanban className="w-4 h-4" />
+            Pipeline & Khách Hàng ({totalLeads})
+          </button>
+          <button
+            onClick={() => setCrmSubTab('analytics')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              crmSubTab === 'analytics'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/20'
+                : 'text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Activity className="w-4 h-4" />
+            Phân Tích Phễu & ROI
+          </button>
+          <button
+            onClick={() => setCrmSubTab('profiles')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              crmSubTab === 'profiles'
+                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/20'
+                : 'text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            Hồ Sơ & Phân Quyền ({profiles.length})
+          </button>
+        </div>
+
+        {crmSubTab === 'pipeline' && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportCSV}
+              className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-medium rounded-lg border border-white/10 flex items-center gap-1.5 transition-all cursor-pointer"
+              title="Xuất file CSV"
+            >
+              <Download className="w-3.5 h-3.5" /> Xuất CSV
+            </button>
+            <button
+              onClick={handleSyncFromCampaigns}
+              className="px-3 py-1.5 bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 text-xs font-medium rounded-lg border border-indigo-500/30 flex items-center gap-1.5 transition-all cursor-pointer"
+              title="Đồng bộ Lead từ chiến dịch Meta Ads"
+            >
+              <RefreshCw className="w-3.5 h-3.5" /> Đồng bộ từ Ads
+            </button>
+            <button
+              onClick={onOpenAddLeadModal}
+              className="px-3.5 py-1.5 bg-gradient-to-r from-[#33CCFF] to-[#0AE5D5] text-[#070b14] text-xs font-bold rounded-lg shadow-lg shadow-[#33CCFF]/20 hover:opacity-90 flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" /> Thêm Khách Hàng
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* SUB-TAB 1: PIPELINE & LEADS */}
+      {crmSubTab === 'pipeline' && (
+        <div className="space-y-5">
+          {/* Quick CRM KPI Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 flex-shrink-0">
+                <Users className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider">Tổng Khách Hàng</p>
+                <p className="text-xl font-black text-white">{totalLeads}</p>
+              </div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 flex-shrink-0">
+                <MessageSquare className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider">Đang Chăm Sóc</p>
+                <p className="text-xl font-black text-amber-300">{newCount + contactingCount}</p>
+              </div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 flex-shrink-0">
+                <CheckSquare className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider">Khách Đã Nạp Tiền</p>
+                <p className="text-xl font-black text-emerald-300">{fundedLeads.length} <span className="text-xs font-normal text-gray-400">({fundedConversionRate}%)</span></p>
+              </div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 flex-shrink-0">
+                <DollarSign className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider">Tổng Tiền Nạp</p>
+                <p className="text-xl font-black text-cyan-300">${totalFundedDeposit.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* CRM Controls & Filter Bar */}
+          <div className="bg-[#0a0f1c]/80 border border-white/10 rounded-2xl p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-xl">
+            {/* Search and Filters */}
+            <div className="flex flex-wrap items-center gap-2.5 flex-1">
+              {/* Search */}
+              <div className="relative flex-1 min-w-[200px] max-w-sm">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#33CCFF] h-[36px]"
+                  placeholder="Tìm theo tên, SĐT, email, ghi chú..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+
+              {/* Filter Stage */}
+              <select
+                className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#33CCFF] h-[36px] cursor-pointer"
+                value={filterStage}
+                onChange={(e) => setFilterStage(e.target.value)}
+              >
+                <option value="all" className="bg-[#0a0f1c]">Tất cả giai đoạn</option>
+                {CRM_STAGES.map(st => (
+                  <option key={st.id} value={st.id} className="bg-[#0a0f1c]">{st.label}</option>
+                ))}
+              </select>
+
+              {/* Filter Profile */}
+              <select
+                className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#33CCFF] h-[36px] cursor-pointer"
+                value={filterProfile}
+                onChange={(e) => setFilterProfile(e.target.value)}
+              >
+                <option value="all" className="bg-[#0a0f1c]">Tất cả nhân sự</option>
+                {profiles.map(p => (
+                  <option key={p.id} value={p.id} className="bg-[#0a0f1c]">{p.name} ({p.role})</option>
+                ))}
+              </select>
+            </div>
+
+            {/* View Mode Toggle (Kanban vs Table) */}
+            <div className="flex items-center bg-white/5 p-1 rounded-xl border border-white/10 self-end md:self-auto">
+              <button
+                onClick={() => setViewMode('kanban')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                  viewMode === 'kanban' ? 'bg-[#33CCFF] text-[#070b14] font-bold shadow-md' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <Kanban className="w-3.5 h-3.5" /> Kanban
+              </button>
+              <button
+                onClick={() => setViewMode('table')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                  viewMode === 'table' ? 'bg-[#33CCFF] text-[#070b14] font-bold shadow-md' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <ListFilter className="w-3.5 h-3.5" /> Bảng Dữ Liệu
+              </button>
+            </div>
+          </div>
+
+          {/* KANBAN BOARD VIEW */}
+          {viewMode === 'kanban' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5 items-start overflow-x-auto pb-4">
+              {CRM_STAGES.map(stage => {
+                const stageLeads = filteredLeads.filter(l => l.status === stage.id);
+                const stageTotalDeposit = stageLeads.reduce((sum, l) => sum + (parseFloat(l.deposit) || 0), 0);
+                return (
+                  <div 
+                    key={stage.id} 
+                    className="bg-[#0a0f1c]/90 border border-white/10 rounded-2xl flex flex-col max-h-[75vh] shadow-xl overflow-hidden"
+                  >
+                    {/* Column Header */}
+                    <div className="p-3 border-b border-white/10 bg-white/[0.02]">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${stage.color}`}>
+                          {stage.label}
+                        </span>
+                        <span className="text-xs font-bold text-white bg-white/10 px-2 py-0.5 rounded-full">
+                          {stageLeads.length}
+                        </span>
+                      </div>
+                      {stageTotalDeposit > 0 && (
+                        <p className="text-[11px] font-mono text-emerald-400 font-semibold">
+                          ${stageTotalDeposit.toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Column Cards Container */}
+                    <div className="p-2.5 space-y-2.5 overflow-y-auto flex-1">
+                      {stageLeads.length === 0 ? (
+                        <div className="p-6 text-center text-xs text-gray-500 border border-dashed border-white/5 rounded-xl">
+                          Chưa có khách
+                        </div>
+                      ) : (
+                        stageLeads.map(lead => {
+                          const assignedProf = profiles.find(p => p.id === lead.assignedTo);
+                          return (
+                            <div 
+                              key={lead.id}
+                              className="bg-black/40 hover:bg-black/60 border border-white/10 hover:border-[#33CCFF]/40 rounded-xl p-3 transition-all shadow-md group relative"
+                            >
+                              <div className="flex items-start justify-between gap-2 mb-1.5">
+                                <h4 className="font-bold text-xs text-white group-hover:text-[#33CCFF] transition-colors truncate">
+                                  {lead.name}
+                                </h4>
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                  <button
+                                    onClick={() => onEditLead(lead)}
+                                    className="p-1 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                                    title="Sửa thông tin"
+                                  >
+                                    <Edit3 className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteLead(lead.id)}
+                                    className="p-1 text-gray-400 hover:text-red-400 transition-colors cursor-pointer"
+                                    title="Xóa khách"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Contact & Source */}
+                              <div className="space-y-1 mb-2 text-[11px] text-gray-400">
+                                {lead.phone && (
+                                  <div className="flex items-center gap-1.5 text-gray-300">
+                                    <Phone className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+                                    <span className="font-mono">{lead.phone}</span>
+                                  </div>
+                                )}
+                                {lead.email && (
+                                  <div className="flex items-center gap-1.5 truncate">
+                                    <Mail className="w-3 h-3 text-cyan-400 flex-shrink-0" />
+                                    <span className="truncate">{lead.email}</span>
+                                  </div>
+                                )}
+                                <div className="flex items-center justify-between text-[10px] pt-1">
+                                  <span className="px-1.5 py-0.5 bg-white/5 rounded text-gray-400 truncate max-w-[110px]">
+                                    {lead.source}
+                                  </span>
+                                  {parseFloat(lead.deposit) > 0 && (
+                                    <span className="font-mono font-bold text-emerald-300 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                                      +${lead.deposit.toLocaleString()}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Notes */}
+                              {lead.notes && (
+                                <p className="text-[10px] text-gray-400 italic bg-white/[0.02] p-1.5 rounded border border-white/5 mb-2 line-clamp-2">
+                                  "{lead.notes}"
+                                </p>
+                              )}
+
+                              {/* Footer: Assigned & Stage Transition */}
+                              <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-1 text-[10px]">
+                                <div className="flex items-center gap-1 text-gray-400 truncate">
+                                  <span className={`w-4 h-4 rounded-full ${assignedProf ? assignedProf.avatarBg : 'bg-blue-500'} flex items-center justify-center text-[8px] font-bold text-white flex-shrink-0`}>
+                                    {assignedProf ? assignedProf.name.charAt(0).toUpperCase() : 'U'}
+                                  </span>
+                                  <span className="truncate">{assignedProf ? assignedProf.name : 'Chưa gán'}</span>
+                                </div>
+
+                                {/* Quick Stage Selector */}
+                                <select
+                                  className="bg-white/5 border border-white/10 rounded px-1 py-0.5 text-[9px] text-gray-300 focus:outline-none cursor-pointer"
+                                  value={lead.status}
+                                  onChange={(e) => handleStageChange(lead.id, e.target.value)}
+                                >
+                                  {CRM_STAGES.map(s => (
+                                    <option key={s.id} value={s.id} className="bg-[#0a0f1c]">{s.label}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            /* DATA TABLE VIEW */
+            <div className="bg-[#0a0f1c]/90 border border-white/10 rounded-2xl shadow-xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs whitespace-nowrap">
+                  <thead className="bg-black/40 text-gray-400 uppercase text-[10px] tracking-wider border-b border-white/10">
+                    <tr>
+                      <th className="px-4 py-3">Khách Hàng</th>
+                      <th className="px-4 py-3">Liên Hệ</th>
+                      <th className="px-4 py-3">Nguồn & Chiến Dịch</th>
+                      <th className="px-4 py-3">Giai Đoạn Phễu</th>
+                      <th className="px-4 py-3 text-right">Tiền Nạp ($)</th>
+                      <th className="px-4 py-3">Phụ Trách</th>
+                      <th className="px-4 py-3">Ngày Tạo</th>
+                      <th className="px-4 py-3 text-center">Thao Tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {filteredLeads.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                          Không tìm thấy khách hàng nào phù hợp với bộ lọc.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredLeads.map(lead => {
+                        const assignedProf = profiles.find(p => p.id === lead.assignedTo);
+                        const stageObj = CRM_STAGES.find(s => s.id === lead.status) || CRM_STAGES[0];
+                        return (
+                          <tr key={lead.id} className="hover:bg-white/[0.02] transition-colors">
+                            <td className="px-4 py-3 font-semibold text-white">
+                              {lead.name}
+                              {lead.notes && (
+                                <p className="text-[10px] font-normal text-gray-400 truncate max-w-xs">{lead.notes}</p>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-gray-300">
+                              <p>{lead.phone || '-'}</p>
+                              <p className="text-[10px] text-gray-500">{lead.email || '-'}</p>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="px-2 py-0.5 bg-white/5 border border-white/10 rounded text-[11px] text-gray-300">
+                                {lead.source}
+                              </span>
+                              {lead.campaign && (
+                                <p className="text-[10px] text-gray-500 mt-0.5 truncate max-w-[140px]">{lead.campaign}</p>
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              <select
+                                className={`text-[11px] font-medium rounded-lg px-2 py-1 border bg-transparent cursor-pointer focus:outline-none ${stageObj.color}`}
+                                value={lead.status}
+                                onChange={(e) => handleStageChange(lead.id, e.target.value)}
+                              >
+                                {CRM_STAGES.map(s => (
+                                  <option key={s.id} value={s.id} className="bg-[#0a0f1c] text-white">{s.label}</option>
+                                ))}
+                              </select>
+                            </td>
+                            <td className="px-4 py-3 text-right font-mono font-bold text-emerald-400">
+                              ${(lead.deposit || 0).toLocaleString()}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-1.5">
+                                <span className={`w-5 h-5 rounded-full ${assignedProf ? assignedProf.avatarBg : 'bg-blue-500'} flex items-center justify-center text-[9px] font-bold text-white`}>
+                                  {assignedProf ? assignedProf.name.charAt(0).toUpperCase() : 'U'}
+                                </span>
+                                <span className="text-gray-300">{assignedProf ? assignedProf.name : 'Chưa gán'}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-gray-500 font-mono text-[11px]">
+                              {lead.createdAt}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <button
+                                  onClick={() => onEditLead(lead)}
+                                  className="p-1.5 text-gray-400 hover:text-[#33CCFF] transition-colors cursor-pointer"
+                                  title="Chỉnh sửa"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteLead(lead.id)}
+                                  className="p-1.5 text-gray-400 hover:text-red-400 transition-colors cursor-pointer"
+                                  title="Xóa"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* SUB-TAB 2: CRM ANALYTICS & ROI */}
+      {crmSubTab === 'analytics' && (
+        <div className="space-y-6">
+          {/* Detailed Analytics KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-xl">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs uppercase tracking-wider text-gray-400 font-semibold">Tỷ Lệ Chốt Won</span>
+                <Award className="w-4 h-4 text-cyan-400" />
+              </div>
+              <p className="text-2xl font-black text-cyan-300">{winRate}%</p>
+              <p className="text-[11px] text-gray-400 mt-1">{winCount} khách hàng chốt thành công trên tổng số {totalLeads} leads.</p>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-xl">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs uppercase tracking-wider text-gray-400 font-semibold">Doanh Thu / Khách (ARPU)</span>
+                <DollarSign className="w-4 h-4 text-emerald-400" />
+              </div>
+              <p className="text-2xl font-black text-emerald-300">${avgDeposit.toLocaleString()}</p>
+              <p className="text-[11px] text-gray-400 mt-1">Trung bình mỗi khách nạp tiền đóng góp ${avgDeposit}.</p>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-xl">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs uppercase tracking-wider text-gray-400 font-semibold">Chi Phí Thu Hút Khách (CAC)</span>
+                <Activity className="w-4 h-4 text-amber-400" />
+              </div>
+              <p className="text-2xl font-black text-amber-300">${cac.toLocaleString()}</p>
+              <p className="text-[11px] text-gray-400 mt-1">Chi phí Ads / Số khách nạp tiền (${Math.round(totalAdSpend).toLocaleString()} spend).</p>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-xl">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs uppercase tracking-wider text-gray-400 font-semibold">Lợi Nhuận Ròng Ước Tính</span>
+                <TrendingUp className="w-4 h-4 text-indigo-400" />
+              </div>
+              <p className={`text-2xl font-black ${netEstimated >= 0 ? 'text-indigo-300' : 'text-red-400'}`}>
+                ${netEstimated.toLocaleString()}
+              </p>
+              <p className="text-[11px] text-gray-400 mt-1">ROI Chiến Dịch: {estimatedRoi}% so với ngân sách Ads.</p>
+            </div>
+          </div>
+
+          {/* Charts Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Funnel Conversion BarChart */}
+            <div className="bg-[#0a0f1c]/90 border border-white/10 rounded-2xl p-5 shadow-xl">
+              <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                <Activity className="w-4 h-4 text-[#33CCFF]" />
+                Phễu Chuyển Đổi Lead (Funnel Drop-off)
+              </h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={funnelData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
+                    <XAxis dataKey="stage" stroke="#6b7280" fontSize={11} interval={0} angle={-15} textAnchor="end" />
+                    <YAxis stroke="#6b7280" fontSize={11} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#0d1424', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                      formatter={(val) => [`${val} khách`, 'Số lượng']}
+                    />
+                    <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                      {funnelData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Source Distribution PieChart */}
+            <div className="bg-[#0a0f1c]/90 border border-white/10 rounded-2xl p-5 shadow-xl">
+              <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                <Target className="w-4 h-4 text-pink-400" />
+                Phân Bổ Khách Hàng Theo Nguồn
+              </h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={sourceData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={85}
+                      paddingAngle={4}
+                      dataKey="value"
+                    >
+                      {sourceData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#0d1424', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                      formatter={(val, name) => [`${val} lead (${Math.round((val / totalLeads) * 100)}%)`, name]}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* Profile Leaderboard Table */}
+          <div className="bg-[#0a0f1c]/90 border border-white/10 rounded-2xl p-5 shadow-xl">
+            <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+              <Award className="w-4 h-4 text-amber-400" />
+              Hiệu Suất & Doanh Số Theo Nhân Sự (Profile Performance)
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs whitespace-nowrap">
+                <thead className="bg-black/40 text-gray-400 uppercase text-[10px] tracking-wider border-b border-white/10">
+                  <tr>
+                    <th className="px-4 py-3">Nhân Sự</th>
+                    <th className="px-4 py-3">Vai Trò</th>
+                    <th className="px-4 py-3 text-center">Số Lead Phụ Trách</th>
+                    <th className="px-4 py-3 text-center">Khách Nạp Tiền</th>
+                    <th className="px-4 py-3 text-right">Tổng Tiền Nạp</th>
+                    <th className="px-4 py-3 text-right">Tỷ Lệ Chốt</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {profiles.map(p => {
+                    const pLeads = leads.filter(l => l.assignedTo === p.id);
+                    const pFunded = pLeads.filter(l => l.status === 'funded' || l.status === 'won');
+                    const pDeposit = pLeads.reduce((sum, l) => sum + (parseFloat(l.deposit) || 0), 0);
+                    const pWinRate = pLeads.length > 0 ? Math.round((pFunded.length / pLeads.length) * 100) : 0;
+                    return (
+                      <tr key={p.id} className="hover:bg-white/[0.02]">
+                        <td className="px-4 py-3 font-semibold text-white flex items-center gap-2">
+                          <span className={`w-6 h-6 rounded-full ${p.avatarBg || 'bg-blue-500'} flex items-center justify-center text-[10px] font-bold text-white`}>
+                            {p.name.charAt(0).toUpperCase()}
+                          </span>
+                          {p.name}
+                        </td>
+                        <td className="px-4 py-3 text-gray-400">{p.role}</td>
+                        <td className="px-4 py-3 text-center font-bold text-white">{pLeads.length}</td>
+                        <td className="px-4 py-3 text-center font-bold text-emerald-400">{pFunded.length}</td>
+                        <td className="px-4 py-3 text-right font-mono font-bold text-cyan-300">${pDeposit.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-right font-bold text-indigo-400">{pWinRate}%</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SUB-TAB 3: PROFILES MANAGER */}
+      {crmSubTab === 'profiles' && (
+        <CRMProfilesManager 
+          profiles={profiles} 
+          setProfiles={setProfiles} 
+          activeProfileId={activeProfileId} 
+          setActiveProfileId={setActiveProfileId} 
+          adAccounts={adAccounts}
+          onOpenAddModal={onOpenAddProfileModal}
+          onEditProfile={onEditProfile}
+        />
+      )}
+    </div>
+  );
+}
+
+// =====================================================================
+// ======================== LEAD CREATE / EDIT MODAL ===================
+// =====================================================================
+
+function LeadModal({ isOpen, editingLead, profiles, campaigns, onClose, onSave }) {
+  const [name, setName] = useState(editingLead ? editingLead.name : '');
+  const [phone, setPhone] = useState(editingLead ? editingLead.phone : '');
+  const [email, setEmail] = useState(editingLead ? editingLead.email : '');
+  const [source, setSource] = useState(editingLead ? editingLead.source : 'Facebook Ads / Form');
+  const [campaign, setCampaign] = useState(editingLead ? editingLead.campaign : '');
+  const [status, setStatus] = useState(editingLead ? editingLead.status : 'new');
+  const [deposit, setDeposit] = useState(editingLead ? editingLead.deposit : '0');
+  const [assignedTo, setAssignedTo] = useState(editingLead ? editingLead.assignedTo : (profiles[0] ? profiles[0].id : 'prof_admin'));
+  const [notes, setNotes] = useState(editingLead ? editingLead.notes : '');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      alert("Vui lòng nhập tên khách hàng!");
+      return;
+    }
+    const leadData = {
+      id: editingLead ? editingLead.id : `lead_${Date.now()}`,
+      name: name.trim(),
+      phone: phone.trim(),
+      email: email.trim(),
+      source,
+      campaign,
+      status,
+      deposit: parseFloat(deposit) || 0,
+      assignedTo,
+      notes: notes.trim(),
+      createdAt: editingLead ? editingLead.createdAt : new Date().toISOString().slice(0, 10),
+      updatedAt: new Date().toISOString().slice(0, 10)
+    };
+    onSave(leadData);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-50 p-4">
+      <div className="bg-[#0a0f1c] border border-white/15 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/10">
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <PlusCircle className="w-5 h-5 text-[#33CCFF]" />
+            {editingLead ? 'Chỉnh Sửa Thông Tin Khách Hàng' : 'Thêm Khách Hàng / Lead Mới'}
+          </h2>
+          <button 
+            onClick={onClose}
+            className="text-gray-400 hover:text-white text-lg p-1"
+          >
+            ✕
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          <div>
+            <label className="block text-gray-300 font-semibold mb-1">Tên Khách Hàng *</label>
+            <input 
+              type="text" 
+              required
+              placeholder="VD: Nguyễn Văn A"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-[#33CCFF]"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-gray-300 font-semibold mb-1">Số Điện Thoại</label>
+              <input 
+                type="text" 
+                placeholder="VD: 0912 345 678"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3.5 py-2 text-white font-mono focus:outline-none focus:border-[#33CCFF]"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-300 font-semibold mb-1">Email</label>
+              <input 
+                type="email" 
+                placeholder="VD: email@gmail.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-[#33CCFF]"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-gray-300 font-semibold mb-1">Nguồn Khách Hàng</label>
+              <select
+                value={source}
+                onChange={(e) => setSource(e.target.value)}
+                className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-[#33CCFF] cursor-pointer"
+              >
+                <option value="Facebook Ads / Form">Facebook Ads / Form</option>
+                <option value="Website / Funnel">Website / Funnel</option>
+                <option value="Zalo / Chat">Zalo / Chat</option>
+                <option value="Hotline">Hotline</option>
+                <option value="Giới thiệu / Referral">Giới thiệu / Referral</option>
+                <option value="Khác">Khác</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-gray-300 font-semibold mb-1">Chiến Dịch Ads Liên Quan</label>
+              <input 
+                type="text" 
+                placeholder="Tên chiến dịch"
+                value={campaign}
+                onChange={(e) => setCampaign(e.target.value)}
+                className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-[#33CCFF]"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-gray-300 font-semibold mb-1">Giai Đoạn Phễu</label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#33CCFF] cursor-pointer"
+              >
+                {CRM_STAGES.map(st => (
+                  <option key={st.id} value={st.id}>{st.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-gray-300 font-semibold mb-1">Tiền Nạp ($ USD)</label>
+              <input 
+                type="number" 
+                min="0"
+                step="any"
+                value={deposit}
+                onChange={(e) => setDeposit(e.target.value)}
+                className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-[#33CCFF]"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-300 font-semibold mb-1">Người Phụ Trách</label>
+              <select
+                value={assignedTo}
+                onChange={(e) => setAssignedTo(e.target.value)}
+                className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-[#33CCFF] cursor-pointer"
+              >
+                {profiles.map(p => (
+                  <option key={p.id} value={p.id}>{p.name} ({p.role})</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-gray-300 font-semibold mb-1">Ghi Chú Tư Vấn / Lịch Hẹn</label>
+            <textarea 
+              rows={3}
+              placeholder="VD: Khách hàng hỏi về phí swap, hẹn tối nay tư vấn qua Zalo..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-[#33CCFF]"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3 border-t border-white/10">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 transition-all font-medium cursor-pointer"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#33CCFF] to-[#0AE5D5] text-[#070b14] font-bold shadow-lg shadow-[#33CCFF]/20 hover:opacity-90 transition-all cursor-pointer"
+            >
+              Lưu Khách Hàng
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
