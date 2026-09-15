@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
-import { TrendingUp, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Image as ImageIcon, ArrowRight, UsersRound, Save, Download, Upload, RotateCcw, CheckCircle2, Settings, BookOpen } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Image as ImageIcon, ArrowRight, UsersRound, Save, Download, Upload, RotateCcw, CheckCircle2, Settings, BookOpen, UserPlus, ShieldAlert, Key, Copy, Trash2, Edit3, UserCheck, Shield } from 'lucide-react';
 
 const MOCK_ACCOUNTS = [
   { account_id: 'mock_1', name: 'Demo Account - Lead Gen Asia', currency: 'USD' },
@@ -29,6 +29,39 @@ const MOCK_DATA = [
 const MOCK_PAGES_DATA = [
   { page_id: 'p1', name: 'Global Forex Official', fans: 15400, impressions: 125000, engaged_users: 8400 },
   { page_id: 'p2', name: 'Webinar Alerts Asia', fans: 3200, impressions: 45000, engaged_users: 3100 },
+];
+
+const DEFAULT_PROFILES = [
+  {
+    id: 'prof_admin',
+    name: 'Nguyễn Hạo Hà',
+    email: 'admin@metareport.vn',
+    role: 'Admin',
+    status: 'Active',
+    assignedAccounts: ['mock_1', 'mock_2', 'mock_3'],
+    notes: 'Quản trị viên hệ thống & Tổng hợp số liệu toàn diện',
+    avatarBg: 'bg-gradient-to-r from-blue-500 to-cyan-500'
+  },
+  {
+    id: 'prof_buyer1',
+    name: 'Media Buyer Vietnam',
+    email: 'buyer.vn@agency.com',
+    role: 'Media Buyer',
+    status: 'Active',
+    assignedAccounts: ['mock_1'],
+    notes: 'Chuyên trách chiến dịch Lead Gen thị trường VN',
+    avatarBg: 'bg-gradient-to-r from-emerald-500 to-teal-500'
+  },
+  {
+    id: 'prof_client',
+    name: 'Client VIP Alpha',
+    email: 'client.alpha@enterprise.com',
+    role: 'Client',
+    status: 'Active',
+    assignedAccounts: ['mock_2'],
+    notes: 'Khách hàng theo dõi ngân sách và ROI hàng tuần',
+    avatarBg: 'bg-gradient-to-r from-purple-500 to-pink-500'
+  }
 ];
 
 const filterMockByDate = (mockList, preset, customStart, customEnd) => {
@@ -227,23 +260,123 @@ export default function App() {
   const [pageContentData, setPageContentData] = useState([]);
   const [loadingContent, setLoadingContent] = useState(false);
 
-  // Reset entire system & clear caches
-  const handleResetAll = () => {
-    if (window.confirm("Bạn có chắc chắn muốn RESET TOÀN BỘ? Tất cả Token, Webhook và các số liệu thủ công đã lưu sẽ được làm sạch về trạng thái ban đầu.")) {
-      localStorage.removeItem('meta_report_settings');
-      localStorage.removeItem('meta_report_manual_data');
-      setSettings({ metaToken: '', sheetWebhook: '' });
-      setManualData(DEFAULT_DEMO_MANUAL_DATA);
-      setError(null);
-      setIsUsingMock(true);
-      setAdAccounts(MOCK_ACCOUNTS);
-      setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
-      setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
-      setTokenTestResult(null);
-      setWebhookTestResult(null);
-      setIsSettingsOpen(false);
-      alert("Đã reset toàn bộ hệ thống về trạng thái mặc định thành công!");
+  // --- CRM Multi-Profile State ---
+  const [profiles, setProfiles] = useState(() => {
+    try {
+      const saved = localStorage.getItem('meta_report_crm_profiles');
+      return saved ? JSON.parse(saved) : DEFAULT_PROFILES;
+    } catch (e) {
+      return DEFAULT_PROFILES;
     }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('meta_report_crm_profiles', JSON.stringify(profiles));
+    } catch (e) {}
+  }, [profiles]);
+
+  const [activeProfileId, setActiveProfileId] = useState(() => {
+    return localStorage.getItem('meta_report_active_profile_id') || 'prof_admin';
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('meta_report_active_profile_id', activeProfileId);
+    } catch (e) {}
+  }, [activeProfileId]);
+
+  const activeProfile = profiles.find(p => p.id === activeProfileId) || profiles[0] || DEFAULT_PROFILES[0];
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(null);
+
+  // --- Backup & Restore ---
+  const handleBackupData = () => {
+    const backupData = {
+      version: "2.0",
+      exportDate: new Date().toISOString(),
+      settings,
+      manualData,
+      profiles,
+      activeProfileId
+    };
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+    const dlAnchor = document.createElement('a');
+    dlAnchor.setAttribute("href", dataStr);
+    dlAnchor.setAttribute("download", `meta_report_backup_${new Date().toISOString().slice(0, 10)}.json`);
+    document.body.appendChild(dlAnchor);
+    dlAnchor.click();
+    dlAnchor.remove();
+  };
+
+  const fileInputRef = useRef(null);
+  const handleRestoreFile = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target.result);
+        if (parsed.settings) setSettings(parsed.settings);
+        if (parsed.manualData) setManualData(parsed.manualData);
+        if (parsed.profiles) setProfiles(parsed.profiles);
+        if (parsed.activeProfileId) setActiveProfileId(parsed.activeProfileId);
+        alert("Khôi phục dữ liệu từ bản sao lưu thành công!");
+      } catch (err) {
+        alert("Lỗi đọc file sao lưu: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  // --- CAPTCHA-Protected Reset Modal ---
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [captchaCode, setCaptchaCode] = useState('');
+  const [captchaInput, setCaptchaInput] = useState('');
+
+  const generateCaptcha = () => {
+    const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+    let code = '';
+    for (let i = 0; i < 4; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setCaptchaCode(code);
+    setCaptchaInput('');
+  };
+
+  const openResetModal = () => {
+    generateCaptcha();
+    setIsResetModalOpen(true);
+  };
+
+  const handleConfirmReset = () => {
+    if (captchaInput.trim().toUpperCase() !== captchaCode) {
+      alert("Mã CAPTCHA xác nhận không đúng! Vui lòng nhập lại.");
+      generateCaptcha();
+      return;
+    }
+
+    localStorage.removeItem('meta_report_settings');
+    localStorage.removeItem('meta_report_manual_data');
+    localStorage.removeItem('meta_report_crm_profiles');
+    localStorage.removeItem('meta_report_active_profile_id');
+
+    setSettings({ metaToken: '', sheetWebhook: '' });
+    setManualData(DEFAULT_DEMO_MANUAL_DATA);
+    setProfiles(DEFAULT_PROFILES);
+    setActiveProfileId('prof_admin');
+    setError(null);
+    setIsUsingMock(true);
+    setAdAccounts(MOCK_ACCOUNTS);
+    setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
+    setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
+    setTokenTestResult(null);
+    setWebhookTestResult(null);
+    setIsResetModalOpen(false);
+    setIsSettingsOpen(false);
+    alert("Đã RESET TOÀN BỘ hệ thống về trạng thái ban đầu sạch sẽ!");
   };
 
   // Test Meta Token directly
@@ -971,34 +1104,125 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 print:hidden pdf-hide w-full md:w-auto justify-end">
+          <div className="flex flex-wrap items-center gap-2 print:hidden pdf-hide w-full md:w-auto justify-end">
+            {/* Active Profile Switcher (CRM) */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-all cursor-pointer"
+                title="Chuyển đổi hồ sơ người dùng (CRM)"
+              >
+                <span className={`w-5 h-5 rounded-full ${activeProfile.avatarBg || 'bg-blue-500'} flex items-center justify-center text-[10px] text-white font-bold flex-shrink-0`}>
+                  {activeProfile.name ? activeProfile.name.charAt(0).toUpperCase() : 'U'}
+                </span>
+                <span className="max-w-[120px] truncate">{activeProfile.name}</span>
+                <span className="text-[10px] text-gray-400 bg-white/10 px-1.5 py-0.5 rounded font-normal">
+                  {activeProfile.role}
+                </span>
+                <ChevronDown className="w-3 h-3 text-gray-400" />
+              </button>
+
+              {isProfileDropdownOpen && (
+                <div className="absolute right-0 top-full mt-2 w-64 bg-[#0d1424] border border-[#33CCFF]/30 rounded-xl shadow-2xl z-50 p-2 text-xs">
+                  <div className="px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-b border-white/10 mb-1 flex items-center justify-between">
+                    <span>Hồ sơ CRM</span>
+                    <button 
+                      onClick={() => { setActiveTab('crm'); setIsProfileDropdownOpen(false); }} 
+                      className="text-[#33CCFF] hover:underline cursor-pointer"
+                    >
+                      Quản lý
+                    </button>
+                  </div>
+                  {profiles.map(p => (
+                    <div
+                      key={p.id}
+                      onClick={() => {
+                        setActiveProfileId(p.id);
+                        setIsProfileDropdownOpen(false);
+                      }}
+                      className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${p.id === activeProfileId ? 'bg-[#33CCFF]/15 text-white' : 'hover:bg-white/5 text-gray-300'}`}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <span className={`w-6 h-6 rounded-full ${p.avatarBg || 'bg-blue-500'} flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0`}>
+                          {p.name.charAt(0).toUpperCase()}
+                        </span>
+                        <div className="truncate">
+                          <p className="font-medium truncate">{p.name}</p>
+                          <p className="text-[10px] text-gray-400 truncate">{p.role}</p>
+                        </div>
+                      </div>
+                      {p.id === activeProfileId && <Check className="w-3.5 h-3.5 text-[#33CCFF]" />}
+                    </div>
+                  ))}
+                  <div className="border-t border-white/10 mt-1 pt-1">
+                    <button
+                      onClick={() => {
+                        setEditingProfile(null);
+                        setIsProfileModalOpen(true);
+                        setIsProfileDropdownOpen(false);
+                      }}
+                      className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded text-[#33CCFF] hover:bg-[#33CCFF]/10 font-medium transition-all cursor-pointer"
+                    >
+                      <UserPlus className="w-3.5 h-3.5" /> Tạo Profile Mới
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Backup & Restore Data */}
+            <button
+              onClick={handleBackupData}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 transition-all cursor-pointer"
+              title="Tải xuống tệp sao lưu toàn bộ dữ liệu & Profiles (.json)"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Backup
+            </button>
+            <button
+              onClick={() => fileInputRef.current && fileInputRef.current.click()}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/20 transition-all cursor-pointer"
+              title="Khôi phục dữ liệu từ tệp sao lưu (.json)"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              Khôi phục
+            </button>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleRestoreFile} 
+              accept=".json" 
+              className="hidden" 
+            />
+
             <button
               onClick={() => setIsGuideOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/20 transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/20 transition-all cursor-pointer"
             >
               <BookOpen className="w-3.5 h-3.5" />
               Hướng dẫn
             </button>
             <button
               onClick={() => setIsSettingsOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white/5 hover:bg-white/10 text-gray-200 border border-white/10 transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white/5 hover:bg-white/10 text-gray-200 border border-white/10 transition-all cursor-pointer"
             >
               <Settings className="w-3.5 h-3.5" />
-              Cài đặt (API & Sheets)
+              Cài đặt
             </button>
             <button
-              onClick={handleResetAll}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all"
-              title="Reset toàn bộ Token và dữ liệu đã lưu"
+              onClick={openResetModal}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all cursor-pointer"
+              title="Reset toàn bộ hệ thống (Có xác nhận Captcha)"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              Reset Toàn Bộ
+              Reset
             </button>
           </div>
         </header>
 
         {/* NAVIGATION TABS */}
-        <div className="flex items-center gap-2 mb-5 print:hidden pdf-hide">
+        <div className="flex items-center gap-2 mb-5 print:hidden pdf-hide overflow-x-auto pb-1">
           <button 
             onClick={() => setActiveTab('dashboard')} 
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${activeTab === 'dashboard' ? 'bg-[#33CCFF]/15 text-[#33CCFF] border border-[#33CCFF]/30 shadow-lg shadow-[#33CCFF]/5' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
@@ -1010,6 +1234,12 @@ export default function App() {
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${activeTab === 'reports' ? 'bg-[#0AE5D5]/15 text-[#0AE5D5] border border-[#0AE5D5]/30 shadow-lg shadow-[#0AE5D5]/5' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
           >
             <FileText className="w-4 h-4"/> Báo Cáo & Funnel
+          </button>
+          <button 
+            onClick={() => setActiveTab('crm')} 
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${activeTab === 'crm' ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 shadow-lg shadow-indigo-500/5' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+          >
+            <Users className="w-4 h-4"/> CRM Profiles ({profiles.length})
           </button>
           <button 
             onClick={() => setActiveTab('organic')} 
@@ -1556,6 +1786,22 @@ export default function App() {
 
         </div>
         </>
+        ) : activeTab === 'crm' ? (
+          <CRMProfilesManager 
+            profiles={profiles} 
+            setProfiles={setProfiles} 
+            activeProfileId={activeProfileId} 
+            setActiveProfileId={setActiveProfileId} 
+            adAccounts={adAccounts}
+            onOpenAddModal={() => {
+              setEditingProfile(null);
+              setIsProfileModalOpen(true);
+            }}
+            onEditProfile={(p) => {
+              setEditingProfile(p);
+              setIsProfileModalOpen(true);
+            }}
+          />
         ) : activeTab === 'organic' ? (
           <OrganicPagesReport 
             data={pagesData} 
@@ -2690,12 +2936,12 @@ function FunnelHealthReport({ data, manualData }) {
               <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-xl flex items-center justify-between gap-4">
                 <div>
                   <h4 className="text-xs font-semibold text-red-400 uppercase tracking-wider">Reset Toàn Bộ Hệ Thống</h4>
-                  <p className="text-[11px] text-gray-400 mt-0.5">Xóa sạch Token, Webhook và các số liệu đã lưu để quay về mặc định.</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">Xóa sạch Token, Webhook và các số liệu đã lưu (Yêu cầu xác nhận CAPTCHA).</p>
                 </div>
                 <button
                   type="button"
-                  onClick={handleResetAll}
-                  className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-300 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 flex-shrink-0"
+                  onClick={openResetModal}
+                  className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-300 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   Reset Toàn Bộ
@@ -2713,6 +2959,88 @@ function FunnelHealthReport({ data, manualData }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* CAPTCHA Reset Confirmation Modal */}
+      {isResetModalOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-[#0a0f1c] border border-red-500/30 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+            <div className="flex items-center gap-3 text-red-400 mb-4 pb-3 border-b border-red-500/20">
+              <ShieldAlert className="w-6 h-6 flex-shrink-0" />
+              <h2 className="text-lg font-bold text-white">Xác Nhận Xóa Sạch Toàn Bộ</h2>
+            </div>
+
+            <p className="text-xs text-gray-300 mb-4 leading-relaxed">
+              Hành động này sẽ <strong>xóa toàn bộ</strong> Meta Access Token, Google Sheets Webhook, danh sách CRM Profiles và toàn bộ số liệu chuyển đổi đã lưu. Hệ thống sẽ quay về trạng thái mặc định ban đầu và <strong>không thể hoàn tác</strong>.
+            </p>
+
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-4 text-center">
+              <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                Nhập mã bảo mật (CAPTCHA) bên dưới:
+              </label>
+              
+              <div className="flex items-center justify-center gap-3 mb-3">
+                <div className="px-6 py-2 bg-black/60 border border-white/20 rounded-lg text-2xl font-mono font-black text-amber-300 tracking-[0.3em] select-none shadow-inner">
+                  {captchaCode}
+                </div>
+                <button 
+                  type="button" 
+                  onClick={generateCaptcha}
+                  className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all cursor-pointer"
+                  title="Đổi mã khác"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+              </div>
+
+              <input 
+                type="text" 
+                maxLength={4}
+                className="w-full bg-[#070b14] border border-white/20 rounded-lg px-3 py-2 text-center text-sm text-white font-mono tracking-widest uppercase focus:outline-none focus:border-red-400"
+                placeholder="Nhập 4 ký tự vào đây..."
+                value={captchaInput}
+                onChange={(e) => setCaptchaInput(e.target.value)}
+                autoFocus
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsResetModalOpen(false)}
+                className="px-4 py-2 rounded-lg text-xs font-medium bg-white/5 hover:bg-white/10 text-gray-300 transition-colors cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                disabled={captchaInput.trim().toUpperCase() !== captchaCode}
+                onClick={handleConfirmReset}
+                className="px-5 py-2 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-500 text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-red-600/30 cursor-pointer"
+              >
+                Xác Nhận Xóa Sạch
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Profile Create / Edit Modal */}
+      {isProfileModalOpen && (
+        <ProfileModal 
+          isOpen={isProfileModalOpen}
+          editingProfile={editingProfile}
+          adAccounts={adAccounts}
+          onClose={() => setIsProfileModalOpen(false)}
+          onSave={(savedProfile) => {
+            if (editingProfile) {
+              setProfiles(profiles.map(p => p.id === savedProfile.id ? savedProfile : p));
+            } else {
+              setProfiles([...profiles, savedProfile]);
+            }
+            setIsProfileModalOpen(false);
+          }}
+        />
       )}
 
       {/* Setup Guide Modal */}
@@ -2786,7 +3114,7 @@ function FunnelHealthReport({ data, manualData }) {
             <div className="mt-8 flex justify-end gap-3 sticky bottom-0 bg-[#0a0f1c] pt-4">
               <button 
                 onClick={() => setIsGuideOpen(false)}
-                className="px-4 py-2 rounded-lg text-sm bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 transition-colors"
+                className="px-4 py-2 rounded-lg text-sm bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 transition-colors cursor-pointer"
               >
                 Got it
               </button>
@@ -2794,6 +3122,386 @@ function FunnelHealthReport({ data, manualData }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// =====================================================================
+// ======================== CRM PROFILES MODULE ========================
+// =====================================================================
+
+function CRMProfilesManager({ 
+  profiles, 
+  setProfiles, 
+  activeProfileId, 
+  setActiveProfileId, 
+  adAccounts, 
+  onOpenAddModal, 
+  onEditProfile 
+}) {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filtered = profiles.filter(p => 
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (p.email && p.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    p.role.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const adminCount = profiles.filter(p => p.role === 'Admin').length;
+  const buyerCount = profiles.filter(p => p.role === 'Media Buyer').length;
+  const clientCount = profiles.filter(p => p.role === 'Client').length;
+
+  const handleDelete = (id) => {
+    if (profiles.length <= 1) {
+      alert("Hệ thống phải có ít nhất 1 Profile!");
+      return;
+    }
+    if (window.confirm("Bạn có chắc muốn xóa Profile này?")) {
+      const next = profiles.filter(p => p.id !== id);
+      setProfiles(next);
+      if (activeProfileId === id) {
+        setActiveProfileId(next[0].id);
+      }
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Top CRM Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-[#33CCFF]/15 border border-[#33CCFF]/30 flex items-center justify-center text-[#33CCFF]">
+            <Users className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">Tổng Profiles</p>
+            <p className="text-xl font-bold text-white">{profiles.length}</p>
+          </div>
+        </div>
+
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400">
+            <Shield className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">Quản Trị (Admin)</p>
+            <p className="text-xl font-bold text-blue-300">{adminCount}</p>
+          </div>
+        </div>
+
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+            <Target className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">Media Buyers</p>
+            <p className="text-xl font-bold text-emerald-300">{buyerCount}</p>
+          </div>
+        </div>
+
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400">
+            <Briefcase className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-[11px] uppercase tracking-wider text-gray-400 font-semibold">Clients / Khách</p>
+            <p className="text-xl font-bold text-purple-300">{clientCount}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* CRM Header & Actions */}
+      <div className="bg-[#0a0f1c]/80 border border-white/10 rounded-2xl p-5 shadow-xl">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-white/10 mb-4">
+          <div>
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <Users className="w-5 h-5 text-indigo-400" />
+              CRM Quản Lý Hồ Sơ & Phân Quyền
+            </h2>
+            <p className="text-gray-400 text-xs mt-0.5">
+              Tạo hồ sơ cho từng nhân viên, Media Buyer hoặc Khách hàng để theo dõi tài khoản tương ứng.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <input 
+              type="text" 
+              placeholder="Tìm kiếm tên, email, vai trò..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#33CCFF] w-full sm:w-60"
+            />
+            <button
+              onClick={onOpenAddModal}
+              className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:opacity-90 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-500/20 transition-all flex-shrink-0 cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4" />
+              Tạo Profile Mới
+            </button>
+          </div>
+        </div>
+
+        {/* Profiles Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-left whitespace-nowrap">
+            <thead className="text-[10px] uppercase bg-white/5 text-gray-400">
+              <tr>
+                <th className="px-4 py-3">Hồ sơ người dùng</th>
+                <th className="px-4 py-3">Vai trò</th>
+                <th className="px-4 py-3">Tài khoản được gán</th>
+                <th className="px-4 py-3">Ghi chú</th>
+                <th className="px-4 py-3 text-center">Trạng thái</th>
+                <th className="px-4 py-3 text-right">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {filtered.map(p => {
+                const isActive = p.id === activeProfileId;
+                const roleBadge = 
+                  p.role === 'Admin' ? 'bg-blue-500/15 text-blue-400 border-blue-500/30' :
+                  p.role === 'Media Buyer' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' :
+                  p.role === 'Client' ? 'bg-purple-500/15 text-purple-400 border-purple-500/30' :
+                  'bg-amber-500/15 text-amber-400 border-amber-500/30';
+
+                return (
+                  <tr key={p.id} className={`hover:bg-white/5 transition-colors ${isActive ? 'bg-white/[0.02]' : ''}`}>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full ${p.avatarBg || 'bg-blue-500'} flex items-center justify-center font-bold text-white text-xs shadow`}>
+                          {p.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="font-semibold text-white flex items-center gap-2">
+                            {p.name}
+                            {isActive && (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                Đang dùng
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-gray-400">{p.email || 'Chưa cập nhật email'}</div>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-3">
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${roleBadge}`}>
+                        {p.role}
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5 flex-wrap max-w-xs">
+                        {p.assignedAccounts && p.assignedAccounts.length > 0 ? (
+                          p.assignedAccounts.map(accId => {
+                            const acc = adAccounts.find(a => a.account_id === accId);
+                            return (
+                              <span key={accId} className="px-2 py-0.5 bg-white/10 rounded text-[10px] text-gray-300 truncate max-w-[120px]" title={acc ? acc.name : accId}>
+                                {acc ? acc.name : accId}
+                              </span>
+                            );
+                          })
+                        ) : (
+                          <span className="text-[11px] text-gray-500 italic">Tất cả tài khoản</span>
+                        )}
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-3 text-gray-400 max-w-xs truncate" title={p.notes}>
+                      {p.notes || '—'}
+                    </td>
+
+                    <td className="px-4 py-3 text-center">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        {p.status || 'Active'}
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {!isActive ? (
+                          <button
+                            onClick={() => setActiveProfileId(p.id)}
+                            className="px-2.5 py-1 bg-white/5 hover:bg-white/10 text-[#33CCFF] rounded-lg text-xs font-medium transition-all cursor-pointer"
+                            title="Chuyển sang profile này"
+                          >
+                            Chọn dùng
+                          </button>
+                        ) : null}
+                        <button
+                          onClick={() => onEditProfile(p)}
+                          className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-all cursor-pointer"
+                          title="Chỉnh sửa profile"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        {profiles.length > 1 && (
+                          <button
+                            onClick={() => handleDelete(p.id)}
+                            className="p-1.5 hover:bg-red-500/20 rounded-lg text-gray-500 hover:text-red-400 transition-all cursor-pointer"
+                            title="Xóa profile"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProfileModal({ isOpen, editingProfile, adAccounts, onClose, onSave }) {
+  const [name, setName] = useState(editingProfile ? editingProfile.name : '');
+  const [email, setEmail] = useState(editingProfile ? editingProfile.email : '');
+  const [role, setRole] = useState(editingProfile ? editingProfile.role : 'Media Buyer');
+  const [assignedAccounts, setAssignedAccounts] = useState(editingProfile ? (editingProfile.assignedAccounts || []) : []);
+  const [notes, setNotes] = useState(editingProfile ? editingProfile.notes : '');
+
+  const toggleAccount = (accId) => {
+    if (assignedAccounts.includes(accId)) {
+      setAssignedAccounts(assignedAccounts.filter(id => id !== accId));
+    } else {
+      setAssignedAccounts([...assignedAccounts, accId]);
+    }
+  };
+
+  const handleSave = (e) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      alert("Vui lòng nhập tên người dùng!");
+      return;
+    }
+    const avatarBgs = [
+      'bg-gradient-to-r from-blue-500 to-cyan-500',
+      'bg-gradient-to-r from-emerald-500 to-teal-500',
+      'bg-gradient-to-r from-purple-500 to-pink-500',
+      'bg-gradient-to-r from-amber-500 to-orange-500'
+    ];
+    const newProfile = {
+      id: editingProfile ? editingProfile.id : `prof_${Date.now()}`,
+      name: name.trim(),
+      email: email.trim(),
+      role,
+      status: 'Active',
+      assignedAccounts,
+      notes: notes.trim(),
+      avatarBg: editingProfile?.avatarBg || avatarBgs[Math.floor(Math.random() * avatarBgs.length)]
+    };
+    onSave(newProfile);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4">
+      <div className="bg-[#0a0f1c] border border-white/15 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between pb-3 mb-4 border-b border-white/10">
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <UserPlus className="w-5 h-5 text-[#33CCFF]" />
+            {editingProfile ? 'Chỉnh Sửa Hồ Sơ CRM' : 'Tạo Hồ Sơ CRM Mới'}
+          </h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white p-1 cursor-pointer">✕</button>
+        </div>
+
+        <form onSubmit={handleSave} className="space-y-4 text-xs">
+          <div>
+            <label className="block text-gray-300 font-semibold mb-1">Tên Người Dùng / Khách Hàng *</label>
+            <input 
+              type="text" 
+              required
+              placeholder="VD: Nguyễn Văn A hoặc Alpha Corp"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full bg-[#070b14] border border-white/15 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#33CCFF]"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-gray-300 font-semibold mb-1">Email Liên Hệ</label>
+              <input 
+                type="email" 
+                placeholder="user@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-[#070b14] border border-white/15 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#33CCFF]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-gray-300 font-semibold mb-1">Vai Trò (Role)</label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="w-full bg-[#070b14] border border-white/15 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#33CCFF]"
+              >
+                <option value="Admin">Admin (Quản trị)</option>
+                <option value="Media Buyer">Media Buyer (Chạy Ads)</option>
+                <option value="Client">Client (Khách Hàng)</option>
+                <option value="Analyst">Analyst (Chuyên viên số liệu)</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-gray-300 font-semibold mb-1">
+              Tài Khoản Quảng Cáo Được Gán
+            </label>
+            <p className="text-[11px] text-gray-500 mb-2">Chọn các tài khoản mà hồ sơ này phụ trách:</p>
+            <div className="bg-[#070b14] border border-white/10 rounded-xl p-3 max-h-36 overflow-y-auto space-y-1.5">
+              {adAccounts.map(acc => {
+                const isAssigned = assignedAccounts.includes(acc.account_id);
+                return (
+                  <div 
+                    key={acc.account_id}
+                    onClick={() => toggleAccount(acc.account_id)}
+                    className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${isAssigned ? 'bg-[#33CCFF]/10 text-white' : 'hover:bg-white/5 text-gray-400'}`}
+                  >
+                    <span className="truncate">{acc.name || acc.account_id}</span>
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center ${isAssigned ? 'border-[#33CCFF] bg-[#33CCFF]' : 'border-gray-600'}`}>
+                      {isAssigned && <Check className="w-3 h-3 text-[#070b14]" />}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-gray-300 font-semibold mb-1">Ghi Chú Nghiệp Vụ</label>
+            <textarea 
+              rows={2}
+              placeholder="VD: Quản lý ngân sách Q3, phụ trách thị trường Thái Lan..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="w-full bg-[#070b14] border border-white/15 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#33CCFF]"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3 border-t border-white/10">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 transition-all font-medium cursor-pointer"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#33CCFF] to-[#0AE5D5] text-[#070b14] font-bold shadow-lg shadow-[#33CCFF]/20 hover:opacity-90 transition-all cursor-pointer"
+            >
+              Lưu Profile
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
