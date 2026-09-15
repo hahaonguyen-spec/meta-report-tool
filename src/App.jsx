@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
-import { TrendingUp, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Image as ImageIcon, ArrowRight, UsersRound, Save, Download, Upload, RotateCcw, CheckCircle2, Settings, BookOpen, UserPlus, ShieldAlert, Key, Copy, Trash2, Edit3, UserCheck, Shield } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Image as ImageIcon, ArrowRight, UsersRound, Save, Download, Upload, RotateCcw, CheckCircle2, Settings, BookOpen, UserPlus, ShieldAlert, Key, Copy, Trash2, Edit3, UserCheck, Shield, Plus } from 'lucide-react';
 
 const MOCK_ACCOUNTS = [
   { account_id: 'mock_1', name: 'Demo Account - Lead Gen Asia', currency: 'USD' },
@@ -207,13 +207,13 @@ export default function App() {
     }
   }, [manualData]);
 
-  // --- Personal Settings (Token, Webhook) ---
+  // --- Personal Settings (Token, Webhook, Saved Accounts) ---
   const [settings, setSettings] = useState(() => {
     try {
       const saved = localStorage.getItem('meta_report_settings');
-      return saved ? JSON.parse(saved) : { metaToken: '', sheetWebhook: '' };
+      return saved ? JSON.parse(saved) : { metaToken: '', sheetWebhook: '', savedAccounts: [] };
     } catch (e) {
-      return { metaToken: '', sheetWebhook: '' };
+      return { metaToken: '', sheetWebhook: '', savedAccounts: [] };
     }
   });
   
@@ -223,7 +223,45 @@ export default function App() {
     } catch (e) {}
   }, [settings]);
 
-  const [isUsingMock, setIsUsingMock] = useState(!settings.metaToken);
+  // Accounts state initialized with saved accounts if present, else demo accounts
+  const [adAccounts, setAdAccounts] = useState(() => {
+    try {
+      const saved = localStorage.getItem('meta_report_settings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.savedAccounts && Array.isArray(parsed.savedAccounts) && parsed.savedAccounts.length > 0) {
+          return parsed.savedAccounts;
+        }
+      }
+    } catch (e) {}
+    return MOCK_ACCOUNTS;
+  });
+
+  const [selectedAccountIds, setSelectedAccountIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem('meta_report_settings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.savedAccounts && Array.isArray(parsed.savedAccounts) && parsed.savedAccounts.length > 0) {
+          return parsed.savedAccounts.map(a => a.account_id);
+        }
+      }
+    } catch (e) {}
+    return MOCK_ACCOUNTS.map(a => a.account_id);
+  });
+
+  const [isUsingMock, setIsUsingMock] = useState(() => {
+    try {
+      const saved = localStorage.getItem('meta_report_settings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.metaToken && parsed.savedAccounts && parsed.savedAccounts.length > 0) {
+          return false;
+        }
+      }
+    } catch (e) {}
+    return !settings.metaToken;
+  });
   const [exchangeRates, setExchangeRates] = useState(null);
   
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -237,9 +275,11 @@ export default function App() {
   const [testingWebhook, setTestingWebhook] = useState(false);
   const [webhookTestResult, setWebhookTestResult] = useState(null);
 
-  // Accounts state initialized with demo accounts so dropdown is never broken
-  const [adAccounts, setAdAccounts] = useState(MOCK_ACCOUNTS);
-  const [selectedAccountIds, setSelectedAccountIds] = useState(MOCK_ACCOUNTS.map(a => a.account_id));
+  // Manual ad account addition states inside Settings modal
+  const [manualAccountIdInput, setManualAccountIdInput] = useState('');
+  const [addingAccount, setAddingAccount] = useState(false);
+  const [addAccountFeedback, setAddAccountFeedback] = useState(null);
+
   const [loadingAccounts, setLoadingAccounts] = useState(false);
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const [datePreset, setDatePreset] = useState('last_30d');
@@ -318,7 +358,14 @@ export default function App() {
     reader.onload = (event) => {
       try {
         const parsed = JSON.parse(event.target.result);
-        if (parsed.settings) setSettings(parsed.settings);
+        if (parsed.settings) {
+          setSettings(parsed.settings);
+          if (parsed.settings.savedAccounts && Array.isArray(parsed.settings.savedAccounts) && parsed.settings.savedAccounts.length > 0) {
+            setAdAccounts(parsed.settings.savedAccounts);
+            setSelectedAccountIds(parsed.settings.savedAccounts.map(a => a.account_id));
+            setIsUsingMock(false);
+          }
+        }
         if (parsed.manualData) setManualData(parsed.manualData);
         if (parsed.profiles) setProfiles(parsed.profiles);
         if (parsed.activeProfileId) setActiveProfileId(parsed.activeProfileId);
@@ -363,7 +410,7 @@ export default function App() {
     localStorage.removeItem('meta_report_crm_profiles');
     localStorage.removeItem('meta_report_active_profile_id');
 
-    setSettings({ metaToken: '', sheetWebhook: '' });
+    setSettings({ metaToken: '', sheetWebhook: '', savedAccounts: [] });
     setManualData(DEFAULT_DEMO_MANUAL_DATA);
     setProfiles(DEFAULT_PROFILES);
     setActiveProfileId('prof_admin');
@@ -374,12 +421,79 @@ export default function App() {
     setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
     setTokenTestResult(null);
     setWebhookTestResult(null);
+    setAddAccountFeedback(null);
     setIsResetModalOpen(false);
     setIsSettingsOpen(false);
     alert("Đã RESET TOÀN BỘ hệ thống về trạng thái ban đầu sạch sẽ!");
   };
 
-  // Test Meta Token directly
+  // Helper: Multi-source Ad Account scanner (Personal /me/adaccounts + Business Manager /me/businesses)
+  const scanAllAdAccounts = async (token) => {
+    const fbVersion = 'v19.0';
+    const accountsMap = new Map();
+
+    // 1. Verify token & get user identity
+    const meRes = await fetch(`https://graph.facebook.com/${fbVersion}/me?fields=id,name,email&access_token=${token}`);
+    const meData = await meRes.json();
+    if (meData.error) {
+      throw new Error(meData.error.message);
+    }
+
+    // 2. Fetch /me/adaccounts (Personal / Assigned Accounts)
+    try {
+      const accRes = await fetch(`https://graph.facebook.com/${fbVersion}/me/adaccounts?fields=name,account_id,currency,account_status&limit=100&access_token=${token}`);
+      const accData = await accRes.json();
+      if (accData.data && Array.isArray(accData.data)) {
+        accData.data.forEach(acc => {
+          const cleanId = (acc.account_id || acc.id || '').replace(/^act_/, '').trim();
+          if (cleanId) {
+            accountsMap.set(cleanId, {
+              account_id: cleanId,
+              name: acc.name || `Tài khoản ${cleanId}`,
+              currency: acc.currency || 'USD'
+            });
+          }
+        });
+      }
+    } catch (e) {
+      console.warn("Could not fetch me/adaccounts:", e);
+    }
+
+    // 3. Fetch /me/businesses (Business Manager Owned and Client Ad Accounts)
+    try {
+      const bmRes = await fetch(`https://graph.facebook.com/${fbVersion}/me/businesses?fields=id,name,owned_ad_accounts{name,account_id,currency,account_status},client_ad_accounts{name,account_id,currency,account_status}&limit=50&access_token=${token}`);
+      const bmData = await bmRes.json();
+      if (bmData.data && Array.isArray(bmData.data)) {
+        bmData.data.forEach(bm => {
+          const processList = (list) => {
+            if (list && list.data && Array.isArray(list.data)) {
+              list.data.forEach(acc => {
+                const cleanId = (acc.account_id || acc.id || '').replace(/^act_/, '').trim();
+                if (cleanId && !accountsMap.has(cleanId)) {
+                  accountsMap.set(cleanId, {
+                    account_id: cleanId,
+                    name: `${acc.name || cleanId} (${bm.name || 'BM'})`,
+                    currency: acc.currency || 'USD'
+                  });
+                }
+              });
+            }
+          };
+          processList(bm.owned_ad_accounts);
+          processList(bm.client_ad_accounts);
+        });
+      }
+    } catch (e) {
+      console.warn("Could not fetch me/businesses:", e);
+    }
+
+    return {
+      user: meData,
+      accounts: Array.from(accountsMap.values())
+    };
+  };
+
+  // Test Meta Token directly & Auto-discover accounts
   const testMetaToken = async (tokenToTest) => {
     const t = tokenToTest ? tokenToTest.trim() : '';
     if (!t) {
@@ -389,28 +503,147 @@ export default function App() {
     setTestingToken(true);
     setTokenTestResult(null);
     try {
-      const res = await fetch(`https://graph.facebook.com/v19.0/me/adaccounts?fields=name,account_id,currency&access_token=${t}`);
-      const result = await res.json();
-      if (result.error) {
-        setTokenTestResult({ success: false, message: result.error.message });
-      } else if (!result.data || result.data.length === 0) {
-        setTokenTestResult({ success: false, message: 'Token hợp lệ nhưng không tìm thấy tài khoản quảng cáo nào được gán quyền.' });
-      } else {
-        setTokenTestResult({ 
-          success: true, 
-          message: `Kết nối thành công! Tìm thấy ${result.data.length} tài khoản quảng cáo.`,
-          accounts: result.data
-        });
-        setSettings(prev => ({ ...prev, metaToken: t }));
-        setAdAccounts(result.data);
-        setSelectedAccountIds(result.data.map(a => a.account_id));
+      const { user, accounts } = await scanAllAdAccounts(t);
+
+      // Merge with existing saved accounts in settings
+      const existingSaved = settings.savedAccounts || [];
+      const mergedMap = new Map();
+      existingSaved.forEach(a => {
+        if (a && a.account_id) mergedMap.set(a.account_id, a);
+      });
+      accounts.forEach(a => mergedMap.set(a.account_id, a));
+      const finalAccounts = Array.from(mergedMap.values());
+
+      // Save token and discovered accounts to state and localStorage
+      const newSettings = {
+        ...settings,
+        metaToken: t,
+        savedAccounts: finalAccounts
+      };
+      setSettings(newSettings);
+      localStorage.setItem('meta_report_settings', JSON.stringify(newSettings));
+
+      if (finalAccounts.length > 0) {
+        setAdAccounts(finalAccounts);
+        setSelectedAccountIds(finalAccounts.map(a => a.account_id));
         setIsUsingMock(false);
         setError(null);
+        setTokenTestResult({ 
+          success: true, 
+          message: `Xác thực thành công! Chủ Token: "${user.name || 'Meta User'}". Đã tìm thấy và kết nối ${finalAccounts.length} tài khoản quảng cáo.`,
+          accounts: finalAccounts
+        });
+      } else {
+        // Token is valid! But no accounts discovered automatically from me/adaccounts or BM
+        setIsUsingMock(false);
+        setError(null);
+        setTokenTestResult({ 
+          success: true, 
+          isWarning: true,
+          message: `Token hợp lệ (Chủ Token: "${user.name || 'Meta User'}")! Chưa tìm thấy tài khoản cá nhân. Hãy nhập trực tiếp ID tài khoản (ví dụ: act_123456789) vào mục "Thêm tài khoản theo ID" bên dưới để kết nối ngay!`
+        });
       }
     } catch (err) {
-      setTokenTestResult({ success: false, message: `Lỗi kết nối mạng: ${err.message}` });
+      setTokenTestResult({ success: false, message: `Lỗi kết nối Meta Graph API: ${err.message}` });
     } finally {
       setTestingToken(false);
+    }
+  };
+
+  // Add Ad Account manually by ID
+  const addManualAdAccount = async (inputStr) => {
+    const token = settings.metaToken ? settings.metaToken.trim() : '';
+    if (!token) {
+      setAddAccountFeedback({ success: false, message: 'Vui lòng nhập và kiểm tra Meta Access Token trước khi thêm tài khoản.' });
+      return;
+    }
+
+    const raw = (inputStr || manualAccountIdInput || '').trim();
+    if (!raw) {
+      setAddAccountFeedback({ success: false, message: 'Vui lòng nhập ID tài khoản quảng cáo (ví dụ: act_1234567890 hoặc 1234567890).' });
+      return;
+    }
+
+    const cleanId = raw.replace(/^act_/, '').trim();
+    const actId = `act_${cleanId}`;
+
+    setAddingAccount(true);
+    setAddAccountFeedback(null);
+
+    try {
+      const fbVersion = 'v19.0';
+      const res = await fetch(`https://graph.facebook.com/${fbVersion}/${actId}?fields=name,account_id,currency,account_status&access_token=${token}`);
+      const data = await res.json();
+
+      if (data.error) {
+        throw new Error(data.error.message);
+      }
+
+      const newAccount = {
+        account_id: cleanId,
+        name: data.name || `Tài khoản ${cleanId}`,
+        currency: data.currency || 'USD'
+      };
+
+      const currentSaved = settings.savedAccounts || [];
+      const updatedSaved = [...currentSaved.filter(a => a.account_id !== cleanId), newAccount];
+
+      const newSettings = {
+        ...settings,
+        savedAccounts: updatedSaved
+      };
+      setSettings(newSettings);
+      localStorage.setItem('meta_report_settings', JSON.stringify(newSettings));
+
+      setAdAccounts(prev => {
+        const withoutMock = prev.filter(a => !MOCK_ACCOUNTS.some(m => m.account_id === a.account_id) && a.account_id !== cleanId);
+        return [...withoutMock, newAccount];
+      });
+
+      setSelectedAccountIds(prev => {
+        const withoutMock = prev.filter(id => !MOCK_ACCOUNTS.some(m => m.account_id === id));
+        return withoutMock.includes(cleanId) ? withoutMock : [...withoutMock, cleanId];
+      });
+
+      setIsUsingMock(false);
+      setError(null);
+      setManualAccountIdInput('');
+      setAddAccountFeedback({
+        success: true,
+        message: `Đã kết nối thành công: "${newAccount.name}" (ID: act_${cleanId} - ${newAccount.currency})`
+      });
+
+      // Fetch live data for the new account
+      fetchMetaAPI([cleanId], datePreset, customStartDate, customEndDate);
+    } catch (err) {
+      setAddAccountFeedback({
+        success: false,
+        message: `Không thể kết nối tài khoản ${actId}: ${err.message}`
+      });
+    } finally {
+      setAddingAccount(false);
+    }
+  };
+
+  // Remove Ad Account
+  const removeAdAccount = (accountIdToRemove) => {
+    const currentSaved = settings.savedAccounts || [];
+    const updatedSaved = currentSaved.filter(a => a.account_id !== accountIdToRemove);
+    const newSettings = { ...settings, savedAccounts: updatedSaved };
+    setSettings(newSettings);
+    localStorage.setItem('meta_report_settings', JSON.stringify(newSettings));
+
+    const remaining = adAccounts.filter(a => a.account_id !== accountIdToRemove);
+    if (remaining.length === 0) {
+      setAdAccounts(MOCK_ACCOUNTS);
+      setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
+      setIsUsingMock(true);
+    } else {
+      setAdAccounts(remaining);
+      setSelectedAccountIds(prev => {
+        const next = prev.filter(id => id !== accountIdToRemove);
+        return next.length > 0 ? next : [remaining[0].account_id];
+      });
     }
   };
 
@@ -491,8 +724,8 @@ export default function App() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const fetchAdAccounts = async () => {
-    const token = settings.metaToken || import.meta.env.VITE_META_TOKEN;
+  const fetchAdAccounts = async (forceToken = null) => {
+    const token = forceToken || settings.metaToken || import.meta.env.VITE_META_TOKEN;
     if (!token || token.trim() === '' || token === 'your_facebook_graph_api_access_token_here') {
       setIsUsingMock(true);
       setError(null);
@@ -507,30 +740,48 @@ export default function App() {
     setError(null);
 
     try {
-      const fbVersion = 'v19.0';
-      const url = `https://graph.facebook.com/${fbVersion}/me/adaccounts?fields=name,account_id,currency&access_token=${token}`;
-      const response = await fetch(url);
-      const result = await response.json();
-      
-      if (result.error) {
-        throw new Error(result.error.message);
-      }
+      const { accounts } = await scanAllAdAccounts(token);
 
-      if (result.data && result.data.length > 0) {
-        setAdAccounts(result.data);
-        setSelectedAccountIds(result.data.map(a => a.account_id));
+      const currentSaved = settings.savedAccounts || [];
+      const mergedMap = new Map();
+      currentSaved.forEach(a => {
+        if (a && a.account_id) mergedMap.set(a.account_id, a);
+      });
+      accounts.forEach(a => mergedMap.set(a.account_id, a));
+      const finalAccounts = Array.from(mergedMap.values());
+
+      if (finalAccounts.length > 0) {
+        setAdAccounts(finalAccounts);
+        setSelectedAccountIds(prev => {
+          const valid = prev.filter(id => finalAccounts.some(a => a.account_id === id));
+          return valid.length > 0 ? valid : finalAccounts.map(a => a.account_id);
+        });
         setIsUsingMock(false);
         setError(null);
+        setSettings(prev => ({ ...prev, savedAccounts: finalAccounts }));
       } else {
-        throw new Error("Không tìm thấy tài khoản quảng cáo nào liên kết với Token này.");
+        if (currentSaved.length === 0) {
+          setIsUsingMock(false);
+          setAdAccounts([]);
+          setSelectedAccountIds([]);
+          setError("Token hợp lệ nhưng chưa tìm thấy tài khoản tự động. Vui lòng mở Cài đặt và nhập ID tài khoản (ví dụ: act_123456789) để kết nối.");
+        }
       }
     } catch (err) {
       console.error("Error fetching Ad Accounts:", err);
-      setError(err.message);
-      setIsUsingMock(true);
-      setAdAccounts(MOCK_ACCOUNTS);
-      setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
-      setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
+      const currentSaved = settings.savedAccounts || [];
+      if (currentSaved.length > 0) {
+        setAdAccounts(currentSaved);
+        setSelectedAccountIds(currentSaved.map(a => a.account_id));
+        setIsUsingMock(false);
+        setError(`Lỗi cập nhật danh sách tài khoản: ${err.message}`);
+      } else {
+        setError(err.message);
+        setIsUsingMock(true);
+        setAdAccounts(MOCK_ACCOUNTS);
+        setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
+        setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
+      }
     } finally {
       setLoadingAccounts(false);
     }
@@ -1352,6 +1603,18 @@ export default function App() {
                       </div>
                     );
                   })}
+                  <div className="pt-2 mt-2 border-t border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAccountDropdownOpen(false);
+                        setIsSettingsOpen(true);
+                      }}
+                      className="w-full py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-[#33CCFF]/20 text-[#33CCFF] text-xs font-semibold flex items-center justify-center gap-1.5 transition-all"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Thêm / Quản lý tài khoản Ads...
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -2809,19 +3072,21 @@ function FunnelHealthReport({ data, manualData }) {
             </div>
             
             {/* Status indicator inside modal */}
-            <div className={`p-3 rounded-xl mb-5 flex items-center gap-3 text-xs border ${
+            <div className={`p-3.5 rounded-xl mb-5 flex items-center justify-between text-xs border ${
               !isUsingMock && settings.metaToken
                 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
                 : 'bg-amber-500/10 border-amber-500/20 text-amber-300'
             }`}>
-              <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${!isUsingMock && settings.metaToken ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
-              <div>
-                <span className="font-semibold">{!isUsingMock && settings.metaToken ? 'Trạng thái: Đã kết nối Live API' : 'Trạng thái: Đang ở chế độ Demo'}</span>
-                <p className="opacity-80 text-[11px] mt-0.5">
-                  {!isUsingMock && settings.metaToken 
-                    ? `Đang quản lý ${adAccounts.length} tài khoản quảng cáo trực tiếp từ Meta.` 
-                    : 'Nhập Access Token bên dưới để chuyển sang kết nối trực tiếp với Meta Ads.'}
-                </p>
+              <div className="flex items-center gap-3">
+                <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${!isUsingMock && settings.metaToken ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+                <div>
+                  <span className="font-semibold">{!isUsingMock && settings.metaToken ? 'Trạng thái: Đã kết nối Live API' : 'Trạng thái: Đang ở chế độ Demo'}</span>
+                  <p className="opacity-80 text-[11px] mt-0.5">
+                    {!isUsingMock && settings.metaToken 
+                      ? `Đang quản lý ${adAccounts.filter(a => !MOCK_ACCOUNTS.some(m => m.account_id === a.account_id)).length || adAccounts.length} tài khoản quảng cáo trực tiếp từ Meta.` 
+                      : 'Nhập Access Token và thêm tài khoản bên dưới để tải số liệu thực tế.'}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -2855,7 +3120,7 @@ function FunnelHealthReport({ data, manualData }) {
 
                 <div className="flex items-center justify-between gap-3 pt-1">
                   <p className="text-[11px] text-gray-500">
-                    Token được lưu trực tiếp tại trình duyệt (Local Storage).
+                    Token được lưu an toàn tại Local Storage.
                   </p>
                   <button
                     type="button"
@@ -2864,20 +3129,121 @@ function FunnelHealthReport({ data, manualData }) {
                     className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#33CCFF]/15 hover:bg-[#33CCFF]/25 border border-[#33CCFF]/30 text-[#33CCFF] flex items-center gap-1.5 transition-all disabled:opacity-40 flex-shrink-0"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${testingToken ? 'animate-spin' : ''}`} />
-                    {testingToken ? 'Đang kiểm tra...' : 'Kiểm tra & Kết nối'}
+                    {testingToken ? 'Đang kiểm tra...' : 'Kiểm tra & Quét tài khoản'}
                   </button>
                 </div>
 
                 {tokenTestResult && (
                   <div className={`p-2.5 rounded-lg text-xs border ${
-                    tokenTestResult.success 
-                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' 
-                      : 'bg-red-500/10 border-red-500/20 text-red-300'
+                    tokenTestResult.isWarning
+                      ? 'bg-amber-500/10 border-amber-500/20 text-amber-300'
+                      : tokenTestResult.success 
+                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' 
+                        : 'bg-red-500/10 border-red-500/20 text-red-300'
                   }`}>
-                    {tokenTestResult.success ? '✅ ' : '❌ '}
+                    {tokenTestResult.isWarning ? '⚠️ ' : tokenTestResult.success ? '✅ ' : '❌ '}
                     {tokenTestResult.message}
                   </div>
                 )}
+              </div>
+
+              {/* Dedicated Ad Accounts Manager */}
+              <div className="p-4 bg-white/5 border border-white/10 rounded-xl space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="block text-xs font-semibold text-white uppercase tracking-wider flex items-center gap-2">
+                      <Briefcase className="w-4 h-4 text-[#33CCFF]" />
+                      Tài Khoản Quảng Cáo Đã Kết Nối ({adAccounts.filter(a => !MOCK_ACCOUNTS.some(m => m.account_id === a.account_id)).length})
+                    </label>
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      Hỗ trợ tự động quét hoặc nhập trực tiếp ID tài khoản cá nhân / BM.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => testMetaToken(settings.metaToken)}
+                    disabled={testingToken || !settings.metaToken}
+                    className="text-[11px] text-[#33CCFF] hover:underline flex items-center gap-1 disabled:opacity-40"
+                    title="Quét lại từ Token"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${testingToken ? 'animate-spin' : ''}`} /> Quét lại
+                  </button>
+                </div>
+
+                {/* Manual Account ID Input */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    className="flex-1 bg-[#070b14] border border-white/15 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 font-mono focus:outline-none focus:border-[#33CCFF]"
+                    placeholder="Nhập ID tài khoản (Ví dụ: act_1234567890 hoặc 1234567890)"
+                    value={manualAccountIdInput}
+                    onChange={(e) => {
+                      setManualAccountIdInput(e.target.value);
+                      setAddAccountFeedback(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addManualAdAccount(manualAccountIdInput);
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => addManualAdAccount(manualAccountIdInput)}
+                    disabled={addingAccount || !manualAccountIdInput.trim()}
+                    className="px-3.5 py-2 bg-[#33CCFF] hover:bg-[#33CCFF]/90 text-[#070b14] font-semibold text-xs rounded-lg transition-all disabled:opacity-40 flex items-center gap-1.5 flex-shrink-0 cursor-pointer"
+                  >
+                    <Plus className={`w-3.5 h-3.5 ${addingAccount ? 'animate-spin' : ''}`} />
+                    {addingAccount ? 'Đang kiểm tra...' : 'Thêm tài khoản'}
+                  </button>
+                </div>
+
+                {/* Add account feedback */}
+                {addAccountFeedback && (
+                  <div className={`p-2.5 rounded-lg text-xs border ${
+                    addAccountFeedback.success 
+                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' 
+                      : 'bg-red-500/10 border-red-500/20 text-red-300'
+                  }`}>
+                    {addAccountFeedback.success ? '✅ ' : '❌ '}
+                    {addAccountFeedback.message}
+                  </div>
+                )}
+
+                {/* List of Connected Accounts */}
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {adAccounts.filter(a => !MOCK_ACCOUNTS.some(m => m.account_id === a.account_id)).length === 0 ? (
+                    <div className="p-3 rounded-lg bg-black/20 border border-dashed border-white/10 text-center text-xs text-gray-400">
+                      Chưa có tài khoản live nào. Hãy nhập ID tài khoản vào ô trên hoặc bấm "Kiểm tra & Quét tài khoản".
+                    </div>
+                  ) : (
+                    adAccounts
+                      .filter(a => !MOCK_ACCOUNTS.some(m => m.account_id === a.account_id))
+                      .map(acc => (
+                        <div 
+                          key={acc.account_id}
+                          className="flex items-center justify-between p-2.5 bg-black/40 border border-white/10 rounded-lg text-xs hover:border-[#33CCFF]/30 transition-all"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0"></span>
+                            <div className="min-w-0">
+                              <p className="font-semibold text-white truncate">{acc.name}</p>
+                              <p className="text-[10px] text-gray-400 font-mono">ID: act_{acc.account_id} • Tiền tệ: {acc.currency || 'USD'}</p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeAdAccount(acc.account_id)}
+                            className="p-1.5 text-gray-400 hover:text-red-400 transition-colors ml-2 flex-shrink-0 cursor-pointer"
+                            title="Xóa tài khoản này"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))
+                  )}
+                </div>
               </div>
               
               {/* Google Sheets Webhook */}
@@ -2952,9 +3318,23 @@ function FunnelHealthReport({ data, manualData }) {
             <div className="mt-6 pt-4 border-t border-white/10 flex justify-end gap-3">
               <button 
                 onClick={() => setIsSettingsOpen(false)}
-                className="px-5 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-[#33CCFF] to-[#0AE5D5] text-[#070b14] hover:opacity-90 transition-all shadow-lg shadow-[#33CCFF]/20"
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-gray-300 transition-all cursor-pointer"
               >
-                Lưu & Đóng
+                Đóng
+              </button>
+              <button 
+                onClick={async () => {
+                  setIsSettingsOpen(false);
+                  if (settings.metaToken && settings.metaToken.trim() !== '') {
+                    await fetchAdAccounts(settings.metaToken);
+                    if (selectedAccountIds.length > 0) {
+                      fetchMetaAPI(selectedAccountIds, datePreset, customStartDate, customEndDate);
+                    }
+                  }
+                }}
+                className="px-5 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-[#33CCFF] to-[#0AE5D5] text-[#070b14] hover:opacity-90 transition-all shadow-lg shadow-[#33CCFF]/20 cursor-pointer"
+              >
+                Lưu & Áp Dụng
               </button>
             </div>
           </div>
