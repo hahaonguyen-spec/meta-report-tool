@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
-import { TrendingUp, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Image as ImageIcon, ArrowRight, UsersRound, Save, Download, Upload, RotateCcw, CheckCircle2, Settings, BookOpen, UserPlus, ShieldAlert, Key, Copy, Trash2, Edit3, UserCheck, Shield, Plus, Phone, Mail, MessageSquare, Filter, Kanban, ListFilter, ArrowUpDown, PlusCircle, CheckSquare, Award, Search, PhoneCall, Building2, Play, Pause, Zap, Power, ExternalLink, ShieldCheck, HelpCircle, Eye, BarChart3 } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Image as ImageIcon, ArrowRight, UsersRound, Save, Download, Upload, RotateCcw, CheckCircle2, Settings, BookOpen, UserPlus, ShieldAlert, Key, Copy, Trash2, Edit3, UserCheck, Shield, Plus, Phone, Mail, MessageSquare, Filter, Kanban, ListFilter, ArrowUpDown, PlusCircle, CheckSquare, Award, Search, PhoneCall, Building2, Play, Pause, Zap, Power, ExternalLink, ShieldCheck, HelpCircle } from 'lucide-react';
 
 const MOCK_ACCOUNTS = [
   { account_id: 'mock_1', name: 'Demo Account - Lead Gen Asia', currency: 'USD' },
@@ -374,7 +374,7 @@ export default function App() {
     } catch (e) {}
   }, [settings]);
 
-  // Accounts state initialized with saved accounts if present, else empty
+  // Accounts state initialized with saved accounts if present, else demo accounts
   const [adAccounts, setAdAccounts] = useState(() => {
     try {
       const saved = localStorage.getItem('meta_report_settings');
@@ -385,7 +385,7 @@ export default function App() {
         }
       }
     } catch (e) {}
-    return [];
+    return MOCK_ACCOUNTS;
   });
 
   const [selectedAccountIds, setSelectedAccountIds] = useState(() => {
@@ -398,10 +398,21 @@ export default function App() {
         }
       }
     } catch (e) {}
-    return [];
+    return MOCK_ACCOUNTS.map(a => a.account_id);
   });
 
-  const [isUsingMock, setIsUsingMock] = useState(false);
+  const [isUsingMock, setIsUsingMock] = useState(() => {
+    try {
+      const saved = localStorage.getItem('meta_report_settings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.metaToken && parsed.savedAccounts && parsed.savedAccounts.length > 0) {
+          return false;
+        }
+      }
+    } catch (e) {}
+    return !settings.metaToken;
+  });
   const [exchangeRates, setExchangeRates] = useState(null);
   
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -646,31 +657,21 @@ export default function App() {
     localStorage.removeItem('meta_report_crm_leads');
 
     setSettings({ metaToken: '', sheetWebhook: '', savedAccounts: [] });
-    setManualData({});
+    setManualData(DEFAULT_DEMO_MANUAL_DATA);
     setProfiles(DEFAULT_PROFILES);
     setActiveProfileId('prof_admin');
-    setLeads([]);
+    setLeads(DEFAULT_CRM_LEADS);
     setError(null);
-    setIsUsingMock(false);
-    setAdAccounts([]);
-    setSelectedAccountIds([]);
-    setData([]);
+    setIsUsingMock(true);
+    setAdAccounts(MOCK_ACCOUNTS);
+    setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
+    setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
     setTokenTestResult(null);
     setWebhookTestResult(null);
     setAddAccountFeedback(null);
     setIsResetModalOpen(false);
     setIsSettingsOpen(false);
-    alert("Đã RESET TOÀN BỘ hệ thống về trạng thái sạch hoàn toàn (0 dữ liệu)!");
-
-  const handleLoadDemoData = () => {
-    setIsUsingMock(true);
-    setError(null);
-    setAdAccounts(MOCK_ACCOUNTS);
-    setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
-    setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
-    setManualData(DEFAULT_DEMO_MANUAL_DATA);
-    setLeads(DEFAULT_CRM_LEADS);
-  };
+    alert("Đã RESET TOÀN BỘ hệ thống về trạng thái ban đầu sạch sẽ!");
   };
 
   // Helper: Multi-source Ad Account scanner (Personal /me/adaccounts + Business Manager /me/businesses + Permissions Inspector)
@@ -907,10 +908,9 @@ export default function App() {
 
     const remaining = adAccounts.filter(a => a.account_id !== accountIdToRemove);
     if (remaining.length === 0) {
-      setAdAccounts([]);
-      setSelectedAccountIds([]);
-      setData([]);
-      setIsUsingMock(false);
+      setAdAccounts(MOCK_ACCOUNTS);
+      setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
+      setIsUsingMock(true);
     } else {
       setAdAccounts(remaining);
       setSelectedAccountIds(prev => {
@@ -948,15 +948,12 @@ export default function App() {
   useEffect(() => {
     if (settings.metaToken && settings.metaToken.trim() !== '') {
       fetchAdAccounts();
-    } else if (isUsingMock) {
+    } else {
+      setIsUsingMock(true);
+      setError(null);
       setAdAccounts(MOCK_ACCOUNTS);
       setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
       setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
-      setLoadingAccounts(false);
-    } else {
-      setAdAccounts([]);
-      setSelectedAccountIds([]);
-      setData([]);
       setLoadingAccounts(false);
     }
 
@@ -1003,16 +1000,11 @@ export default function App() {
   const fetchAdAccounts = async (forceToken = null) => {
     const token = forceToken || settings.metaToken || import.meta.env.VITE_META_TOKEN;
     if (!token || token.trim() === '' || token === 'your_facebook_graph_api_access_token_here') {
-      if (isUsingMock) {
-        setError(null);
-        setAdAccounts(MOCK_ACCOUNTS);
-        setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
-        setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
-      } else {
-        setAdAccounts([]);
-        setSelectedAccountIds([]);
-        setData([]);
-      }
+      setIsUsingMock(true);
+      setError(null);
+      setAdAccounts(MOCK_ACCOUNTS);
+      setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
+      setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
       setLoadingAccounts(false);
       return;
     }
@@ -1984,7 +1976,7 @@ export default function App() {
               title="5/5 Quyền Meta Graph API Đang Hoạt Động"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Chế Độ: Xem Báo Cáo (Read-Only)</span>
+              <span>Quyền Meta: 5/5 Active</span>
             </button>
 
             <button
@@ -2238,7 +2230,14 @@ export default function App() {
 
           {/* Right: Action Buttons */}
           <div className="flex items-center gap-2">
-
+            <button
+              onClick={() => setIsCreateCampaignOpen(true)}
+              className="flex items-center gap-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 transition-all px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-300 h-[36px] shadow-lg shadow-emerald-500/10 cursor-pointer"
+              title="Tạo chiến dịch mới trực tiếp trên Meta Ads (ads_management)"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Tạo Chiến Dịch
+            </button>
             <button 
               onClick={() => {
                 if (settings.metaToken && settings.metaToken.trim() !== '' && !isUsingMock) {
@@ -2391,11 +2390,6 @@ export default function App() {
                 <div className="w-full h-full flex justify-center items-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#33CCFF]"></div>
                 </div>
-              ) : chartData.length === 0 ? (
-                <div className="w-full h-full flex flex-col items-center justify-center text-gray-500">
-                  <Activity className="w-8 h-8 mb-2 opacity-30 text-gray-400" />
-                  <p className="text-xs text-gray-400">Chưa có dữ liệu biểu đồ chiến dịch</p>
-                </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
@@ -2420,38 +2414,38 @@ export default function App() {
           <div className="xl:col-span-3 bg-white/5 border border-white/10 backdrop-blur-md rounded-2xl shadow-xl overflow-hidden mt-6">
             <div className="p-6 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h2 className="text-lg font-semibold flex items-center gap-2 mb-1 flex-wrap text-white">
+                <h2 className="text-lg font-semibold flex items-center gap-2 mb-1 flex-wrap">
                   <Briefcase className="w-5 h-5 text-[#0AE5D5]" />
-                  Báo Cáo Hiệu Suất Chiến Dịch
-                  {isUsingMock && (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-normal bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-0.5 rounded-full">
-                      Chế Độ Xem Thử (Demo Data)
-                    </span>
-                  )}
+                  Advanced Marketing Analysis
+                  <span className="inline-flex items-center gap-1 text-[11px] font-normal bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full" title="All manual inputs (Account Open, Funded Accounts, Deposit, Daily Budget) are automatically saved to LocalStorage for future reports">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Saved for future reports
+                  </span>
                 </h2>
-                <p className="text-xs text-gray-400">Số liệu ngân sách, tương tác quảng cáo từ Meta Ads và hiệu quả chuyển đổi.</p>
+                <p className="text-xs text-gray-400">Manual inputs (Account Open, Deposit, Funded Accounts & Budget) are automatically saved in local storage for future updates and reports.</p>
               </div>
 
-              <div className="flex items-center gap-2 pdf-hide print:hidden">
-                {!settings.metaToken && !isUsingMock && (
+              <div className="flex items-center gap-2 pdf-hide print:hidden flex-wrap">
+                <button
+                  onClick={handleExportManualData}
+                  className="px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg text-xs flex items-center gap-1.5 transition-all border border-white/10"
+                  title="Export saved manual inputs (Account Open, Deposit, Budget) to JSON file"
+                >
+                  <Download className="w-3.5 h-3.5" /> Export Inputs
+                </button>
+                <label 
+                  className="px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg text-xs flex items-center gap-1.5 transition-all border border-white/10 cursor-pointer"
+                  title="Import previously saved manual inputs from JSON file"
+                >
+                  <Upload className="w-3.5 h-3.5" /> Import Inputs
+                  <input type="file" accept=".json" onChange={handleImportManualData} className="hidden" />
+                </label>
+                {Object.keys(manualData).length > 0 && (
                   <button
-                    onClick={handleLoadDemoData}
-                    className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white rounded-lg text-xs flex items-center gap-1.5 transition-all border border-white/10 cursor-pointer"
+                    onClick={handleClearManualData}
+                    className="px-2.5 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-xs flex items-center gap-1.5 transition-all border border-red-500/20"
+                    title="Clear all saved manual inputs"
                   >
-                    <Eye className="w-3.5 h-3.5 text-[#0AE5D5]" /> Xem Dữ Liệu Mẫu (Demo)
-                  </button>
-                )}
-                {isUsingMock && (
-                  <button
-                    onClick={() => {
-                      setIsUsingMock(false);
-                      setData([]);
-                      setAdAccounts([]);
-                      setSelectedAccountIds([]);
-                    }}
-                    className="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 rounded-lg text-xs flex items-center gap-1.5 transition-all border border-amber-500/20 cursor-pointer"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" /> Thoát Xem Thử
+                    <RotateCcw className="w-3.5 h-3.5" /> Clear Inputs
                   </button>
                 )}
               </div>
@@ -2463,13 +2457,13 @@ export default function App() {
                   <tr>
                     <th className="px-3 py-3 font-medium tracking-wider text-center align-bottom border-r border-white/10" rowSpan={2}>Trạng Thái</th>
                     <th className="px-4 py-3 font-medium tracking-wider align-bottom" rowSpan={2}>Campaign Name</th>
-                    <th className="px-4 py-2 font-medium tracking-wider text-center bg-indigo-500/10 border-l border-b border-white/5 text-indigo-300" colSpan={2}>Ngân Sách & Tiến Độ (Budget)</th>
-                    <th className="px-4 py-2 font-medium tracking-wider text-center border-b border-white/5" colSpan={7}>Số Liệu Meta Ads (Auto Insights)</th>
-                    <th className="px-4 py-2 font-medium tracking-wider text-center bg-blue-500/5 border-l border-b border-white/5 text-blue-300" colSpan={6}>Hiệu Quả Chuyển Đổi & ROI</th>
+                    <th className="px-4 py-2 font-medium tracking-wider text-center bg-indigo-500/10 border-l border-b border-white/5 text-indigo-300" colSpan={2}>Budget Control</th>
+                    <th className="px-4 py-2 font-medium tracking-wider text-center border-b border-white/5" colSpan={7}>Meta Insights (Auto)</th>
+                    <th className="px-4 py-2 font-medium tracking-wider text-center bg-blue-500/5 border-l border-b border-white/5 text-blue-300" colSpan={6}>Business Conversion (Manual Input limits)</th>
                   </tr>
                   <tr>
-                    <th className="px-4 py-2 font-medium tracking-wider bg-indigo-500/20 text-indigo-300 border-l border-white/5">Ngân Sách</th>
-                    <th className="px-4 py-2 font-medium tracking-wider bg-indigo-500/10 text-indigo-300">Tiến Độ (Pacing)</th>
+                    <th className="px-4 py-2 font-medium tracking-wider bg-indigo-500/20 text-indigo-300 border-l border-white/5">Budget Limit</th>
+                    <th className="px-4 py-2 font-medium tracking-wider bg-indigo-500/10 text-indigo-300">Pacing</th>
                     <th className="px-4 py-2 font-medium tracking-wider bg-black/20">Spend</th>
                     <th className="px-4 py-2 font-medium tracking-wider bg-black/20">Impr</th>
                     <th className="px-4 py-2 font-medium tracking-wider bg-black/20">Clicks</th>
@@ -2490,40 +2484,6 @@ export default function App() {
                     <tr>
                       <td colSpan={17} className="px-6 py-8 text-center text-gray-500">
                         Loading campaign data...
-                      </td>
-                    </tr>
-                  ) : displayedCampaigns.length === 0 ? (
-                    <tr>
-                      <td colSpan={17} className="px-6 py-14 text-center">
-                        <div className="flex flex-col items-center justify-center max-w-md mx-auto text-gray-400">
-                          <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3 text-gray-500">
-                            <BarChart3 className="w-6 h-6 text-gray-400" />
-                          </div>
-                          <p className="text-sm font-semibold text-white mb-1">Chưa Có Dữ Liệu Chiến Dịch</p>
-                          <p className="text-xs text-gray-400 mb-4 text-center leading-relaxed">
-                            {settings.metaToken 
-                              ? "Không tìm thấy chiến dịch nào phù hợp với bộ lọc hoặc tài khoản đã chọn."
-                              : "Hệ thống đang ở trạng thái sạch hoàn toàn. Vui lòng kết nối Meta Access Token trong phần Cài đặt để tải báo cáo thực tế."}
-                          </p>
-                          <div className="flex items-center gap-2.5">
-                            <button
-                              type="button"
-                              onClick={() => setIsSettingsOpen(true)}
-                              className="px-4 py-2 rounded-lg text-xs font-semibold bg-gradient-to-r from-[#33CCFF] to-[#0AE5D5] text-[#070b14] hover:opacity-90 transition-all shadow-md cursor-pointer"
-                            >
-                              Mở Cài Đặt Token
-                            </button>
-                            {!settings.metaToken && (
-                              <button
-                                type="button"
-                                onClick={handleLoadDemoData}
-                                className="px-3.5 py-2 rounded-lg text-xs font-medium bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 transition-all cursor-pointer"
-                              >
-                                Tải Dữ Liệu Mẫu (Demo)
-                              </button>
-                            )}
-                          </div>
-                        </div>
                       </td>
                     </tr>
                   ) : displayedCampaigns.map((item) => {
@@ -2555,18 +2515,32 @@ export default function App() {
 
                     return (
                       <tr key={item.campaign_id} className="hover:bg-white/[0.04] transition-colors print:border-b print:border-gray-200">
-                        {/* Status Badge (Read-only Report) */}
+                        {/* Status Toggle Switch (ads_management) */}
                         <td className="px-3 py-3 text-center border-r border-white/5">
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                            (item.status || 'ACTIVE') === 'ACTIVE' 
-                              ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' 
-                              : 'bg-gray-500/15 text-gray-400 border border-gray-500/30'
-                          }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${
-                              (item.status || 'ACTIVE') === 'ACTIVE' ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'
-                            }`}></span>
-                            {(item.status || 'ACTIVE') === 'ACTIVE' ? 'ACTIVE' : 'PAUSED'}
-                          </span>
+                          <div className="flex flex-col items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => toggleCampaignStatus(item.campaign_id, item.status || 'ACTIVE')}
+                              disabled={togglingStatus === item.campaign_id}
+                              className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                (item.status || 'ACTIVE') === 'ACTIVE' ? 'bg-emerald-500' : 'bg-gray-700'
+                              } ${togglingStatus === item.campaign_id ? 'opacity-50 cursor-wait' : ''}`}
+                              title={`Bấm để ${(item.status || 'ACTIVE') === 'ACTIVE' ? 'TẮT (Pause)' : 'BẬT (Active)'} chiến dịch trên Meta Ads`}
+                            >
+                              <span
+                                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                  (item.status || 'ACTIVE') === 'ACTIVE' ? 'translate-x-4' : 'translate-x-0'
+                                }`}
+                              />
+                            </button>
+                            <span className={`text-[9px] font-semibold uppercase px-1.5 py-0.2 rounded ${
+                              (item.status || 'ACTIVE') === 'ACTIVE' 
+                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' 
+                                : 'bg-gray-500/15 text-gray-400 border border-gray-500/30'
+                            }`}>
+                              {(item.status || 'ACTIVE') === 'ACTIVE' ? 'ACTIVE' : 'PAUSED'}
+                            </span>
+                          </div>
                         </td>
 
                         <td className="px-4 py-3 font-medium text-gray-200 print:text-[#070b14]" title={item.campaign_name}>
@@ -2590,16 +2564,53 @@ export default function App() {
                           </div>
                         </td>
 
-                        {/* Budget (Read-only Report) */}
-                        <td className="px-4 py-3 border-l border-white/5 bg-indigo-500/[0.03]">
-                          <div className="flex flex-col">
-                            <span className="font-mono font-bold text-white text-xs">
-                              ${budgetAmount > 0 ? budgetAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}
-                            </span>
-                            <span className="text-[10px] text-gray-400 font-medium mt-0.5">
-                              {budgetType === 'lifetime' ? 'Trọn đời (Lifetime)' : '/ngày (Daily)'}
-                            </span>
+                        {/* Budget Control */}
+                        <td className="px-4 py-2 border-l border-white/5 bg-indigo-500/[0.05] print:bg-transparent">
+                          <div className="flex items-center gap-1.5 pdf-hide print:hidden">
+                            <div className="relative flex-1">
+                              <span className="absolute left-2 top-1.5 text-gray-500">$</span>
+                              <input 
+                                type="number" 
+                                className="w-20 bg-black/40 border border-white/10 rounded pl-5 pr-2 py-1.5 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 text-white text-xs transition-all"
+                                placeholder={budgetAmount.toString()}
+                                value={mData.budget !== undefined ? mData.budget : (mData.dailyBudget !== undefined ? mData.dailyBudget : '')}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  handleManualChange(item.campaign_id, 'budget', val);
+                                  handleManualChange(item.campaign_id, 'dailyBudget', val);
+                                }}
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newType = budgetType === 'daily' ? 'lifetime' : 'daily';
+                                handleManualChange(item.campaign_id, 'budgetType', newType);
+                              }}
+                              className={`px-1.5 py-1 rounded text-[10px] font-bold uppercase transition-all border ${
+                                budgetType === 'lifetime' 
+                                  ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 hover:bg-purple-500/30' 
+                                  : 'bg-[#33CCFF]/20 text-[#33CCFF] border-[#33CCFF]/40 hover:bg-[#33CCFF]/30'
+                              }`}
+                              title={`Current: ${budgetType === 'lifetime' ? 'Lifetime Budget' : 'Daily Budget'}. Click to toggle.`}
+                            >
+                              {budgetType === 'lifetime' ? 'LT' : 'Daily'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const curVal = mData.budget !== undefined ? mData.budget : (mData.dailyBudget !== undefined ? mData.dailyBudget : budgetAmount);
+                                updateCampaignBudgetOnMeta(item.campaign_id, curVal, budgetType, item.original_currency);
+                              }}
+                              className="p-1 rounded bg-[#33CCFF]/15 hover:bg-[#33CCFF]/25 text-[#33CCFF] border border-[#33CCFF]/30 transition-all cursor-pointer flex items-center justify-center"
+                              title="Đồng bộ ngân sách này lên Meta Ads trực tiếp (ads_management)"
+                            >
+                              <Zap className="w-3 h-3" />
+                            </button>
                           </div>
+                          <span className="hidden print:inline-block font-medium text-[#070b14]">
+                            ${budgetAmount.toFixed(2)} {budgetType === 'lifetime' ? '(Lifetime)' : '/day'}
+                          </span>
                         </td>
                         <td className="px-4 py-3 bg-indigo-500/[0.02]">
                           <div className="flex flex-col items-start gap-0.5">
@@ -2641,21 +2652,35 @@ export default function App() {
                           ${cpl.toFixed(2)}
                         </td>
                         
-                        {/* Conversion & ROI Metrics (Read-only Report) */}
-                        <td className="px-4 py-3 border-l border-white/5 bg-[#33CCFF]/[0.03] text-right font-medium text-white">
-                          <div className="font-semibold text-xs">{manualAccountOpen.toLocaleString()}</div>
+                        {/* Manual inputs & Calc */}
+                        <td className="px-4 py-2 border-l border-white/5 bg-[#33CCFF]/[0.05] print:bg-transparent print:border-none">
+                          <input 
+                            type="number" 
+                            className="w-16 bg-black/40 border border-white/10 rounded px-2 py-1.5 focus:outline-none focus:border-[#33CCFF] focus:ring-1 focus:ring-[#33CCFF] text-white text-xs transition-all pdf-hide print:hidden"
+                            placeholder="0"
+                            value={mData.accountOpen || ''}
+                            onChange={(e) => handleManualChange(item.campaign_id, 'accountOpen', e.target.value)}
+                          />
+                          <span className="hidden print:inline-block font-medium text-[#070b14]">{mData.accountOpen || '0'}</span>
                           {item.leads > 0 && manualAccountOpen > 0 && (
                             <div className="text-[10px] text-[#33CCFF]/80 mt-0.5" title="Lead to Account Open CVR">
                               L→A: {leadToAcct.toFixed(1)}%
                             </div>
                           )}
                         </td>
-                        <td className="px-4 py-3 font-medium text-[#33CCFF] bg-[#33CCFF]/[0.02] text-right">
+                        <td className="px-4 py-3 font-medium text-[#33CCFF] bg-[#33CCFF]/[0.02] print:text-blue-600 print:bg-transparent">
                           ${cpa.toFixed(2)}
                         </td>
                         
-                        <td className="px-4 py-3 bg-[#0AE5D5]/[0.03] text-right font-medium text-white">
-                          <div className="font-semibold text-xs">{manualFundedAccounts.toLocaleString()}</div>
+                        <td className="px-4 py-2 bg-[#0AE5D5]/[0.05] print:bg-transparent">
+                          <input 
+                            type="number" 
+                            className="w-16 bg-black/40 border border-white/10 rounded px-2 py-1.5 focus:outline-none focus:border-[#0AE5D5] focus:ring-1 focus:ring-[#0AE5D5] text-white text-xs transition-all pdf-hide print:hidden"
+                            placeholder="0"
+                            value={mData.fundedAccounts || ''}
+                            onChange={(e) => handleManualChange(item.campaign_id, 'fundedAccounts', e.target.value)}
+                          />
+                          <span className="hidden print:inline-block font-medium text-[#070b14]">{mData.fundedAccounts || '0'}</span>
                           {item.leads > 0 && manualFundedAccounts > 0 && (
                             <div className="text-[10px] text-[#0AE5D5]/80 mt-0.5 space-y-0.5" title="Conversion Funnel Rates">
                               <div>L→F: {leadToFund.toFixed(1)}%</div>
@@ -2663,12 +2688,22 @@ export default function App() {
                             </div>
                           )}
                         </td>
-                        <td className="px-4 py-3 font-medium text-[#0AE5D5] bg-[#0AE5D5]/[0.02] text-right">
+                        <td className="px-4 py-3 font-medium text-[#0AE5D5] bg-[#0AE5D5]/[0.02] print:text-teal-600 print:bg-transparent">
                           ${cpfa.toFixed(2)}
                         </td>
 
-                        <td className="px-4 py-3 bg-indigo-500/[0.03] text-right font-mono font-bold text-white">
-                          ${manualDeposit > 0 ? manualDeposit.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00'}
+                        <td className="px-4 py-2 bg-indigo-500/[0.05] print:bg-transparent">
+                          <div className="relative">
+                            <span className="absolute left-2 top-1.5 text-gray-500 pdf-hide print:hidden">$</span>
+                            <input 
+                              type="number" 
+                              className="w-20 bg-black/40 border border-white/10 rounded pl-5 pr-2 py-1.5 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 text-white text-xs transition-all pdf-hide print:hidden"
+                              placeholder="0.00"
+                              value={mData.deposit || ''}
+                              onChange={(e) => handleManualChange(item.campaign_id, 'deposit', e.target.value)}
+                            />
+                            <span className="hidden print:inline-block font-medium text-[#070b14]">${mData.deposit || '0.00'}</span>
+                          </div>
                         </td>
                         <td className={`px-4 py-3 font-bold bg-indigo-500/[0.02] ${roi > 0 ? "text-green-400" : roi < 0 ? "text-red-400" : "text-gray-400"}`}>
                           {roi > 0 ? '+' : ''}{roi.toFixed(1)}%
@@ -2751,7 +2786,15 @@ export default function App() {
 
       {/* --- MODALS --- */}
 
-
+      {/* Quick Campaign Creator Modal (ads_management) */}
+      {isCreateCampaignOpen && (
+        <QuickCampaignModal
+          isOpen={isCreateCampaignOpen}
+          adAccounts={adAccounts}
+          onClose={() => setIsCreateCampaignOpen(false)}
+          onCreateCampaign={createNewCampaign}
+        />
+      )}
 
       {/* Settings Modal */}
       {isSettingsOpen && (
