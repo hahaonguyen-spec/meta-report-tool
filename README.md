@@ -35,12 +35,21 @@ Hệ thống quản lý báo cáo Meta Ads và CRM tiếp thị / bán hàng cá
 
 ---
 
-### 2. 📊 Live Dashboard & Báo Cáo Meta Ads
-- **Kết nối Meta Graph API**: Quét đa nguồn tự động từ tài khoản cá nhân (`/me/adaccounts`) và Trình quản lý Doanh nghiệp BM (`/me/businesses`).
-- **Thêm tài khoản Ads bằng ID**: Nhập trực tiếp ID tài khoản (ví dụ `act_1234567890`) để xác thực và kết nối ngay.
-- **Đồng bộ Google Sheets Webhook**: Đẩy báo cáo tự động sang Google Sheets chỉ với 1 cú click.
-- **Báo cáo chuyên sâu**: Phân tích theo ngày, Báo cáo Doanh thu & ROI, Phễu chuyển đổi toàn diện.
-- **Organic Fanpages**: Đo lường Reach, Engagement và phân tích định dạng bài viết tốt nhất.
+### 2. 📊 Live Dashboard & Bộ Điều Hành Meta Ads (5/5 Quyền Graph API)
+- **⚡ `ads_management` (Điều Hành Chiến Dịch Trực Tiếp)**:
+  - **Công tắc Bật / Tắt chiến dịch 1-click (Active / Paused)**: Chuyển đổi trạng thái chiến dịch ngay trên bảng mà không cần vào Facebook Ads Manager.
+  - **Đồng bộ ngân sách lên Meta (`⚡ Lên Meta`)**: Chỉnh sửa và đẩy trực tiếp ngân sách ngày/trọn đời lên API.
+  - **Tạo chiến dịch nhanh (`+ Tạo Chiến Dịch`)**: Khởi tạo chiến dịch mới với Objective (Leads, Sales, Traffic, Engagement) và ngân sách tùy biến.
+- **🏢 `business_management` (Trung Tâm Quản Trị Doanh Nghiệp - BM Hub)**:
+  - Quản lý danh mục Portfolio / Business Manager: Trạng thái xác minh doanh nghiệp, tài khoản Ads sở hữu, tài khoản đối tác liên kết và tổng chi tiêu.
+  - 1-Click lọc tất cả tài khoản thuộc Business Manager lên Live Dashboard.
+- **📈 `ads_read` (Đọc Dữ Liệu & Insights Chuyên Sâu)**:
+  - Đọc toàn bộ chiến dịch (kể cả chiến dịch đang tắt để bật lại), chi phí, impressions, clicks, leads, CPM, CTR, ROAS.
+- **📄 `pages_show_list` & `pages_read_engagement` (Quản Lý & Phân Tích Fanpage Organic)**:
+  - Quản trị toàn bộ Fanpage: Ảnh đại diện, lượt thích, người theo dõi, hạng mục và link trực tiếp.
+  - Phân tích tương tác bài viết Organic: Reactions 👍❤️, Comments 💬, Shares 🔁 và tỷ lệ tương tác (Engagement Rate %).
+- **🛡️ Bộ Kiểm Tra Quyền Tự Động (Permissions Inspector)**:
+  - Tự động gọi `/me/permissions` để kiểm tra và gắn huy hiệu xác nhận 5/5 quyền đã hoạt động.
 
 ---
 

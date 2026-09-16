@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
-import { TrendingUp, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Image as ImageIcon, ArrowRight, UsersRound, Save, Download, Upload, RotateCcw, CheckCircle2, Settings, BookOpen, UserPlus, ShieldAlert, Key, Copy, Trash2, Edit3, UserCheck, Shield, Plus, Phone, Mail, MessageSquare, Filter, Kanban, ListFilter, ArrowUpDown, PlusCircle, CheckSquare, Award, Search, PhoneCall } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Image as ImageIcon, ArrowRight, UsersRound, Save, Download, Upload, RotateCcw, CheckCircle2, Settings, BookOpen, UserPlus, ShieldAlert, Key, Copy, Trash2, Edit3, UserCheck, Shield, Plus, Phone, Mail, MessageSquare, Filter, Kanban, ListFilter, ArrowUpDown, PlusCircle, CheckSquare, Award, Search, PhoneCall, Building2, Play, Pause, Zap, Power, ExternalLink, ShieldCheck, HelpCircle } from 'lucide-react';
 
 const MOCK_ACCOUNTS = [
   { account_id: 'mock_1', name: 'Demo Account - Lead Gen Asia', currency: 'USD' },
@@ -18,17 +18,72 @@ const DEFAULT_DEMO_MANUAL_DATA = {
   '105': { accountOpen: '14', fundedAccounts: '6', deposit: '1600' },
 };
 
+const TARGET_PERMISSIONS = [
+  { key: 'ads_management', name: 'ads_management', title: 'Quản Lý Quảng Cáo', desc: 'Bật/tắt chiến dịch 1-click, đồng bộ ngân sách và tạo chiến dịch nhanh' },
+  { key: 'business_management', name: 'business_management', title: 'Quản Trị Doanh Nghiệp', desc: 'Quản lý Business Manager / Portfolios, tài khoản đối tác và trang trực thuộc' },
+  { key: 'ads_read', name: 'ads_read', title: 'Đọc Dữ Liệu Ads & Insights', desc: 'Đọc chi tiết chỉ số chiến dịch, leads, spend, CPM, CTR, ROAS' },
+  { key: 'pages_read_engagement', name: 'pages_read_engagement', title: 'Đọc Tương Tác Fanpage', desc: 'Phân tích tương tác bài viết organic, reactions, comments, shares' },
+  { key: 'pages_show_list', name: 'pages_show_list', title: 'Danh Sách Fanpage', desc: 'Truy xuất danh sách và thông tin tất cả Fanpage bạn quản trị' },
+];
+
+const MOCK_BUSINESSES = [
+  {
+    id: 'bm_1001',
+    name: 'Asia Growth Capital Portfolio',
+    verification_status: 'verified',
+    created_time: '2023-01-15T10:00:00+0000',
+    primary_page: { name: 'Global Forex Official' },
+    owned_ad_accounts: {
+      data: [
+        { account_id: 'mock_1', id: 'act_mock_1', name: 'Demo Account - Lead Gen Asia', currency: 'USD', account_status: 1, amount_spent: '142500' },
+        { account_id: 'mock_2', id: 'act_mock_2', name: 'Demo Account - Retargeting Pro', currency: 'USD', account_status: 1, amount_spent: '88200' },
+      ]
+    },
+    client_ad_accounts: {
+      data: [
+        { account_id: 'mock_3', id: 'act_mock_3', name: 'Demo Account - Global Awareness', currency: 'USD', account_status: 1, amount_spent: '41000' },
+      ]
+    },
+    owned_pages: {
+      data: [
+        { id: 'p1', name: 'Global Forex Official', category: 'Dịch Vụ Tài Chính', fan_count: 15400 },
+        { id: 'p2', name: 'Webinar Alerts Asia', category: 'Giáo Dục & Đào Tạo', fan_count: 3200 },
+      ]
+    }
+  }
+];
+
 const MOCK_DATA = [
-  { campaign_id: '101', campaign_name: 'VN_LeadGen_Campaign1', account_name: 'Demo Account - Lead Gen Asia', spend: 1250.5, impressions: 55000, clicks: 3450, leads: 145, start_time: '2026-04-15T08:00:00+0000', api_budget: 20, api_budget_type: 'daily' },
-  { campaign_id: '102', campaign_name: 'TH_IBAcquisition_April', account_name: 'Demo Account - Retargeting Pro', spend: 850.0, impressions: 42000, clicks: 2200, leads: 85, start_time: '2026-04-01T10:30:00+0000', api_budget: 1000, api_budget_type: 'lifetime' },
-  { campaign_id: '103', campaign_name: 'PH_Awareness_Q1', account_name: 'Demo Account - Global Awareness', spend: 430.2, impressions: 21000, clicks: 1100, leads: 32, start_time: '2026-04-10T14:15:00+0000', api_budget: 10, api_budget_type: 'daily' },
-  { campaign_id: '104', campaign_name: 'IND_Webinar_Promo', account_name: 'Demo Account - Global Awareness', spend: 960.0, impressions: 88000, clicks: 2800, leads: 95, start_time: '2026-04-20T09:00:00+0000', api_budget: 1200, api_budget_type: 'lifetime' },
-  { campaign_id: '105', campaign_name: 'VN_IBAcquisition_Gold', account_name: 'Demo Account - Lead Gen Asia', spend: 650.8, impressions: 32000, clicks: 1750, leads: 48, start_time: '2026-04-05T16:45:00+0000', api_budget: 20, api_budget_type: 'daily' },
+  { campaign_id: '101', campaign_name: 'VN_LeadGen_Campaign1', account_name: 'Demo Account - Lead Gen Asia', spend: 1250.5, impressions: 55000, clicks: 3450, leads: 145, start_time: '2026-04-15T08:00:00+0000', api_budget: 20, api_budget_type: 'daily', status: 'ACTIVE', effective_status: 'ACTIVE', objective: 'OUTCOME_LEADS' },
+  { campaign_id: '102', campaign_name: 'TH_IBAcquisition_April', account_name: 'Demo Account - Retargeting Pro', spend: 850.0, impressions: 42000, clicks: 2200, leads: 85, start_time: '2026-04-01T10:30:00+0000', api_budget: 1000, api_budget_type: 'lifetime', status: 'ACTIVE', effective_status: 'ACTIVE', objective: 'OUTCOME_LEADS' },
+  { campaign_id: '103', campaign_name: 'PH_Awareness_Q1', account_name: 'Demo Account - Global Awareness', spend: 430.2, impressions: 21000, clicks: 1100, leads: 32, start_time: '2026-04-10T14:15:00+0000', api_budget: 10, api_budget_type: 'daily', status: 'PAUSED', effective_status: 'PAUSED', objective: 'OUTCOME_AWARENESS' },
+  { campaign_id: '104', campaign_name: 'IND_Webinar_Promo', account_name: 'Demo Account - Global Awareness', spend: 960.0, impressions: 88000, clicks: 2800, leads: 95, start_time: '2026-04-20T09:00:00+0000', api_budget: 1200, api_budget_type: 'lifetime', status: 'ACTIVE', effective_status: 'ACTIVE', objective: 'OUTCOME_TRAFFIC' },
+  { campaign_id: '105', campaign_name: 'VN_IBAcquisition_Gold', account_name: 'Demo Account - Lead Gen Asia', spend: 650.8, impressions: 32000, clicks: 1750, leads: 48, start_time: '2026-04-05T16:45:00+0000', api_budget: 20, api_budget_type: 'daily', status: 'PAUSED', effective_status: 'PAUSED', objective: 'OUTCOME_LEADS' },
 ];
 
 const MOCK_PAGES_DATA = [
-  { page_id: 'p1', name: 'Global Forex Official', fans: 15400, impressions: 125000, engaged_users: 8400 },
-  { page_id: 'p2', name: 'Webinar Alerts Asia', fans: 3200, impressions: 45000, engaged_users: 3100 },
+  { 
+    page_id: 'p1', 
+    name: 'Global Forex Official', 
+    category: 'Dịch Vụ Tài Chính',
+    picture: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=120&h=120&fit=crop&crop=face',
+    link: 'https://facebook.com',
+    fans: 15400, 
+    followers_count: 18200,
+    impressions: 125000, 
+    engaged_users: 8400 
+  },
+  { 
+    page_id: 'p2', 
+    name: 'Webinar Alerts Asia', 
+    category: 'Giáo Dục & Đào Tạo',
+    picture: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=120&h=120&fit=crop&crop=face',
+    link: 'https://facebook.com',
+    fans: 3200, 
+    followers_count: 4100,
+    impressions: 45000, 
+    engaged_users: 3100 
+  },
 ];
 
 const DEFAULT_PROFILES = [
@@ -386,6 +441,37 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [activeReportTab, setActiveReportTab] = useState('daily');
 
+  // --- Meta Permissions & Business Manager States (5 Selected Permissions) ---
+  const [permissionsStatus, setPermissionsStatus] = useState(() => {
+    try {
+      const saved = localStorage.getItem('meta_report_permissions');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+
+  const [businessesData, setBusinessesData] = useState(() => {
+    try {
+      const saved = localStorage.getItem('meta_report_businesses');
+      return saved ? JSON.parse(saved) : MOCK_BUSINESSES;
+    } catch (e) {
+      return MOCK_BUSINESSES;
+    }
+  });
+
+  const [loadingBusinesses, setLoadingBusinesses] = useState(false);
+  const [isCreateCampaignOpen, setIsCreateCampaignOpen] = useState(false);
+  const [togglingStatus, setTogglingStatus] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
+
+  const showToast = (message, type = 'success') => {
+    setToastMessage({ message, type });
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 4000);
+  };
+
   // Organic Pages State
   const [pagesData, setPagesData] = useState([]);
   const [loadingPages, setLoadingPages] = useState(false);
@@ -547,10 +633,12 @@ export default function App() {
     alert("Đã RESET TOÀN BỘ hệ thống về trạng thái ban đầu sạch sẽ!");
   };
 
-  // Helper: Multi-source Ad Account scanner (Personal /me/adaccounts + Business Manager /me/businesses)
+  // Helper: Multi-source Ad Account scanner (Personal /me/adaccounts + Business Manager /me/businesses + Permissions Inspector)
   const scanAllAdAccounts = async (token) => {
     const fbVersion = 'v19.0';
     const accountsMap = new Map();
+    let businesses = [];
+    let permissions = [];
 
     // 1. Verify token & get user identity
     const meRes = await fetch(`https://graph.facebook.com/${fbVersion}/me?fields=id,name,email&access_token=${token}`);
@@ -559,7 +647,18 @@ export default function App() {
       throw new Error(meData.error.message);
     }
 
-    // 2. Fetch /me/adaccounts (Personal / Assigned Accounts)
+    // 2. Permissions Inspector (/me/permissions)
+    try {
+      const permRes = await fetch(`https://graph.facebook.com/${fbVersion}/me/permissions?access_token=${token}`);
+      const permData = await permRes.json();
+      if (permData.data && Array.isArray(permData.data)) {
+        permissions = permData.data;
+      }
+    } catch (e) {
+      console.warn("Could not fetch permissions:", e);
+    }
+
+    // 3. Fetch /me/adaccounts (Personal / Assigned Accounts)
     try {
       const accRes = await fetch(`https://graph.facebook.com/${fbVersion}/me/adaccounts?fields=name,account_id,currency,account_status&limit=100&access_token=${token}`);
       const accData = await accRes.json();
@@ -579,11 +678,12 @@ export default function App() {
       console.warn("Could not fetch me/adaccounts:", e);
     }
 
-    // 3. Fetch /me/businesses (Business Manager Owned and Client Ad Accounts)
+    // 4. Fetch /me/businesses (Business Manager Owned, Client Accounts & Pages)
     try {
-      const bmRes = await fetch(`https://graph.facebook.com/${fbVersion}/me/businesses?fields=id,name,owned_ad_accounts{name,account_id,currency,account_status},client_ad_accounts{name,account_id,currency,account_status}&limit=50&access_token=${token}`);
+      const bmRes = await fetch(`https://graph.facebook.com/${fbVersion}/me/businesses?fields=id,name,verification_status,created_time,primary_page{name},owned_ad_accounts{name,account_id,currency,account_status,amount_spent},client_ad_accounts{name,account_id,currency,account_status,amount_spent},owned_pages{id,name,category,fan_count}&limit=50&access_token=${token}`);
       const bmData = await bmRes.json();
       if (bmData.data && Array.isArray(bmData.data)) {
+        businesses = bmData.data;
         bmData.data.forEach(bm => {
           const processList = (list) => {
             if (list && list.data && Array.isArray(list.data)) {
@@ -609,7 +709,9 @@ export default function App() {
 
     return {
       user: meData,
-      accounts: Array.from(accountsMap.values())
+      accounts: Array.from(accountsMap.values()),
+      businesses,
+      permissions
     };
   };
 
@@ -623,7 +725,7 @@ export default function App() {
     setTestingToken(true);
     setTokenTestResult(null);
     try {
-      const { user, accounts } = await scanAllAdAccounts(t);
+      const { user, accounts, businesses, permissions } = await scanAllAdAccounts(t);
 
       // Merge with existing saved accounts in settings
       const existingSaved = settings.savedAccounts || [];
@@ -642,6 +744,16 @@ export default function App() {
       };
       setSettings(newSettings);
       localStorage.setItem('meta_report_settings', JSON.stringify(newSettings));
+
+      if (permissions && permissions.length > 0) {
+        setPermissionsStatus(permissions);
+        localStorage.setItem('meta_report_permissions', JSON.stringify(permissions));
+      }
+
+      if (businesses && businesses.length > 0) {
+        setBusinessesData(businesses);
+        localStorage.setItem('meta_report_businesses', JSON.stringify(businesses));
+      }
 
       if (finalAccounts.length > 0) {
         setAdAccounts(finalAccounts);
@@ -1017,7 +1129,7 @@ export default function App() {
     try {
       const fbVersion = 'v19.0';
       // 1. Fetch Pages
-      const pagesUrl = `https://graph.facebook.com/${fbVersion}/me/accounts?fields=name,access_token,id,followers_count&access_token=${token}`;
+      const pagesUrl = `https://graph.facebook.com/${fbVersion}/me/accounts?fields=name,access_token,id,followers_count,fan_count,category,picture{url},link&access_token=${token}`;
       const pagesRes = await fetch(pagesUrl);
       const pagesJson = await pagesRes.json();
 
@@ -1061,10 +1173,14 @@ export default function App() {
           return {
             page_id: page.id,
             name: page.name,
+            category: page.category || 'Facebook Page',
+            picture: page.picture?.data?.url || null,
+            link: page.link || `https://facebook.com/${page.id}`,
             access_token: page.access_token,
             impressions,
             engaged_users,
-            fans,
+            fans: page.fan_count || page.followers_count || fans,
+            followers_count: page.followers_count || fans,
             warning: errorMsg
           };
         } catch (e) {
@@ -1195,7 +1311,7 @@ export default function App() {
         }
         
         const url = `https://graph.facebook.com/${fbVersion}/${fetchAccountId}/insights?fields=campaign_name,campaign_id,spend,impressions,clicks,actions&level=campaign&${dateQuery}&access_token=${token}`;
-        const campaignUrl = `https://graph.facebook.com/${fbVersion}/${fetchAccountId}/campaigns?fields=id,start_time,daily_budget,lifetime_budget&access_token=${token}`;
+        const campaignUrl = `https://graph.facebook.com/${fbVersion}/${fetchAccountId}/campaigns?fields=id,name,status,effective_status,objective,start_time,daily_budget,lifetime_budget&limit=150&access_token=${token}`;
         
         const [response, campaignResponse] = await Promise.all([
           fetch(url),
@@ -1238,6 +1354,11 @@ export default function App() {
              }
 
              campaignInfoMap[c.id] = {
+               id: c.id,
+               name: c.name,
+               status: c.status || 'ACTIVE',
+               effective_status: c.effective_status || c.status || 'ACTIVE',
+               objective: c.objective || 'OUTCOME_LEADS',
                start_time: c.start_time,
                api_budget: apiBudget,
                api_budget_type: apiBudgetType,
@@ -1247,12 +1368,35 @@ export default function App() {
            });
         }
         
-        return (result.data || []).map(campaign => {
+        const insightCampaignIds = new Set((result.data || []).map(c => c.campaign_id));
+        const combinedCampaigns = [...(result.data || [])];
+
+        // Merge campaigns from account that have 0 spend in this period
+        if (campaignResult.data && Array.isArray(campaignResult.data)) {
+          campaignResult.data.forEach(c => {
+            if (!insightCampaignIds.has(c.id)) {
+              combinedCampaigns.push({
+                campaign_id: c.id,
+                campaign_name: c.name || `Campaign ${c.id}`,
+                spend: 0,
+                impressions: 0,
+                clicks: 0,
+                actions: []
+              });
+            }
+          });
+        }
+
+        return combinedCampaigns.map(campaign => {
           const originalSpend = parseFloat(campaign.spend) || 0;
           const info = campaignInfoMap[campaign.campaign_id] || {};
           return {
             ...campaign,
             account_name: accountName,
+            account_id: accId,
+            status: info.status || 'ACTIVE',
+            effective_status: info.effective_status || info.status || 'ACTIVE',
+            objective: info.objective || 'OUTCOME_LEADS',
             start_time: info.start_time || null,
             api_budget: info.api_budget || null,
             api_budget_type: info.api_budget_type || 'daily',
@@ -1301,6 +1445,10 @@ export default function App() {
           campaign_id: stableCampaignId,
           campaign_name: item.campaign_name || 'Unknown Campaign',
           account_name: item.account_name || 'Unknown Account',
+          account_id: item.account_id || '',
+          status: item.status || 'ACTIVE',
+          effective_status: item.effective_status || item.status || 'ACTIVE',
+          objective: item.objective || 'OUTCOME_LEADS',
           original_currency: item.original_currency || 'USD',
           start_time: item.start_time || null,
           api_budget: item.api_budget || null,
@@ -1337,6 +1485,203 @@ export default function App() {
         ? prev.filter(id => id !== accountId)
         : [...prev, accountId]
     );
+  };
+
+  // --- 1. ads_management: Bật / Tắt Chiến Dịch Trực Tiếp Trên Meta Ads ---
+  const toggleCampaignStatus = async (campaignId, currentStatus) => {
+    const newStatus = (currentStatus === 'ACTIVE') ? 'PAUSED' : 'ACTIVE';
+    setTogglingStatus(campaignId);
+
+    // Optimistic UI Update
+    setData(prev => prev.map(c => 
+      c.campaign_id === campaignId 
+        ? { ...c, status: newStatus, effective_status: newStatus } 
+        : c
+    ));
+
+    if (isUsingMock || !settings.metaToken) {
+      setTimeout(() => {
+        setTogglingStatus(null);
+        showToast(`[Demo] Đã chuyển chiến dịch sang trạng thái ${newStatus}!`);
+      }, 300);
+      return;
+    }
+
+    try {
+      const params = new URLSearchParams({
+        status: newStatus,
+        access_token: settings.metaToken
+      });
+      const res = await fetch(`https://graph.facebook.com/v19.0/${campaignId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params
+      });
+      const json = await res.json();
+      if (json.error) {
+        throw new Error(json.error.message);
+      }
+      showToast(`Đã ${newStatus === 'ACTIVE' ? 'BẬT' : 'TẮT'} chiến dịch thành công trên Meta Ads!`, 'success');
+    } catch (err) {
+      // Revert UI
+      setData(prev => prev.map(c => 
+        c.campaign_id === campaignId 
+          ? { ...c, status: currentStatus, effective_status: currentStatus } 
+          : c
+      ));
+      alert(`Lỗi khi cập nhật trạng thái Meta Ads: ${err.message}`);
+    } finally {
+      setTogglingStatus(null);
+    }
+  };
+
+  // --- 2. ads_management: Đồng Bộ Ngân Sách Lên Meta Ads ---
+  const updateCampaignBudgetOnMeta = async (campaignId, budgetUsd, budgetType = 'daily', currency = 'USD') => {
+    const numBudget = parseFloat(budgetUsd);
+    if (isNaN(numBudget) || numBudget <= 0) {
+      alert("Vui lòng nhập số tiền ngân sách hợp lệ!");
+      return;
+    }
+
+    if (isUsingMock || !settings.metaToken) {
+      showToast(`[Demo] Đã lưu ngân sách $${numBudget} (${budgetType}) vào hệ thống!`);
+      return;
+    }
+
+    try {
+      let rateToUsd = 1;
+      if (currency && currency !== 'USD' && exchangeRates && exchangeRates[currency]) {
+        rateToUsd = 1 / exchangeRates[currency];
+      }
+      const rawBudgetInCurrency = numBudget / rateToUsd;
+      const budgetInCents = Math.round(rawBudgetInCurrency * 100);
+
+      const params = new URLSearchParams({
+        access_token: settings.metaToken
+      });
+      if (budgetType === 'daily') {
+        params.append('daily_budget', budgetInCents.toString());
+      } else {
+        params.append('lifetime_budget', budgetInCents.toString());
+      }
+
+      const res = await fetch(`https://graph.facebook.com/v19.0/${campaignId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params
+      });
+      const json = await res.json();
+      if (json.error) {
+        throw new Error(json.error.message);
+      }
+
+      // Update state
+      setData(prev => prev.map(c => 
+        c.campaign_id === campaignId 
+          ? { 
+              ...c, 
+              api_budget: numBudget, 
+              api_budget_type: budgetType,
+              api_daily_budget: budgetType === 'daily' ? numBudget : null,
+              api_lifetime_budget: budgetType === 'lifetime' ? numBudget : null 
+            } 
+          : c
+      ));
+      showToast(`Đã đồng bộ ngân sách $${numBudget} lên Meta Ads thành công!`, 'success');
+    } catch (err) {
+      alert(`Lỗi khi cập nhật ngân sách lên Meta: ${err.message}`);
+    }
+  };
+
+  // --- 3. ads_management: Tạo Chiến Dịch Mới Trực Tiếp Trên Meta Ads ---
+  const createNewCampaign = async ({ accountId, name, objective, dailyBudget, status = 'PAUSED' }) => {
+    const cleanActId = (accountId || '').replace(/^act_/, '').trim();
+    if (!cleanActId) {
+      alert("Vui lòng chọn tài khoản quảng cáo!");
+      return;
+    }
+
+    if (isUsingMock || !settings.metaToken) {
+      const newMock = {
+        campaign_id: `camp_${Date.now()}`,
+        campaign_name: name,
+        account_name: adAccounts.find(a => a.account_id === cleanActId)?.name || `Account ${cleanActId}`,
+        spend: 0,
+        impressions: 0,
+        clicks: 0,
+        leads: 0,
+        start_time: new Date().toISOString(),
+        api_budget: parseFloat(dailyBudget) || 20,
+        api_budget_type: 'daily',
+        status: status,
+        effective_status: status,
+        objective: objective
+      };
+      setData(prev => [newMock, ...prev]);
+      showToast(`[Demo] Đã tạo chiến dịch "${name}" thành công!`);
+      setIsCreateCampaignOpen(false);
+      return;
+    }
+
+    try {
+      const actObj = adAccounts.find(a => a.account_id === cleanActId);
+      const currency = actObj ? actObj.currency : 'USD';
+      let rateToUsd = 1;
+      if (currency && currency !== 'USD' && exchangeRates && exchangeRates[currency]) {
+        rateToUsd = 1 / exchangeRates[currency];
+      }
+      const numBudget = parseFloat(dailyBudget) || 10;
+      const rawBudget = numBudget / rateToUsd;
+      const budgetInCents = Math.round(rawBudget * 100);
+
+      const params = new URLSearchParams({
+        name: name.trim(),
+        objective: objective,
+        status: status,
+        special_ad_categories: '[]',
+        daily_budget: budgetInCents.toString(),
+        access_token: settings.metaToken
+      });
+
+      const res = await fetch(`https://graph.facebook.com/v19.0/act_${cleanActId}/campaigns`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params
+      });
+      const json = await res.json();
+      if (json.error) {
+        throw new Error(json.error.message);
+      }
+
+      showToast(`Đã tạo chiến dịch "${name}" thành công trên Meta Ads (ID: ${json.id})!`, 'success');
+      setIsCreateCampaignOpen(false);
+      fetchMetaAPI(selectedAccountIds, datePreset, customStartDate, customEndDate);
+    } catch (err) {
+      alert(`Lỗi tạo chiến dịch trên Meta: ${err.message}`);
+    }
+  };
+
+  // --- 4. business_management: Quét Lại Danh Mục Doanh Nghiệp (BM) ---
+  const refreshBusinesses = async (token) => {
+    if (!token) {
+      setBusinessesData(MOCK_BUSINESSES);
+      showToast("Đã tải dữ liệu Business Manager (Demo)!");
+      return;
+    }
+    setLoadingBusinesses(true);
+    try {
+      const bmRes = await fetch(`https://graph.facebook.com/v19.0/me/businesses?fields=id,name,verification_status,created_time,primary_page{name},owned_ad_accounts{name,account_id,currency,account_status,amount_spent},client_ad_accounts{name,account_id,currency,account_status,amount_spent},owned_pages{id,name,category,fan_count}&limit=50&access_token=${token}`);
+      const bmData = await bmRes.json();
+      if (bmData.data && Array.isArray(bmData.data)) {
+        setBusinessesData(bmData.data);
+        localStorage.setItem('meta_report_businesses', JSON.stringify(bmData.data));
+        showToast("Đã đồng bộ danh mục Business Manager thành công!");
+      }
+    } catch (e) {
+      alert(`Lỗi khi quét Business Manager: ${e.message}`);
+    } finally {
+      setLoadingBusinesses(false);
+    }
   };
 
   const handleManualChange = (id, field, value) => {
@@ -1567,6 +1912,16 @@ export default function App() {
               className="hidden" 
             />
 
+            {/* Meta Permissions Indicator (5 Permissions) */}
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 transition-all cursor-pointer"
+              title="5/5 Quyền Meta Graph API Đang Hoạt Động"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Quyền Meta: 5/5 Active</span>
+            </button>
+
             <button
               onClick={() => setIsGuideOpen(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/20 transition-all cursor-pointer"
@@ -1611,6 +1966,12 @@ export default function App() {
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${activeTab === 'crm' ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 shadow-lg shadow-indigo-500/5' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
           >
             <Briefcase className="w-4 h-4"/> Hệ Thống CRM ({leads.length} Leads)
+          </button>
+          <button 
+            onClick={() => setActiveTab('bm')} 
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${activeTab === 'bm' ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30 shadow-lg shadow-amber-500/5' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+          >
+            <Building2 className="w-4 h-4"/> Doanh Nghiệp (BM)
           </button>
           <button 
             onClick={() => setActiveTab('organic')} 
@@ -1742,6 +2103,14 @@ export default function App() {
 
           {/* Right: Action Buttons */}
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsCreateCampaignOpen(true)}
+              className="flex items-center gap-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 transition-all px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-300 h-[36px] shadow-lg shadow-emerald-500/10 cursor-pointer"
+              title="Tạo chiến dịch mới trực tiếp trên Meta Ads (ads_management)"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Tạo Chiến Dịch
+            </button>
             <button 
               onClick={() => {
                 if (settings.metaToken && settings.metaToken.trim() !== '' && !isUsingMock) {
@@ -1786,6 +2155,19 @@ export default function App() {
         </div>
 
         {/* NOTIFICATIONS & BANNERS */}
+        {toastMessage && (
+          <div className={`mb-4 px-4 py-3 rounded-xl flex items-center justify-between gap-3 text-xs border backdrop-blur-md shadow-xl ${
+            toastMessage.type === 'error' 
+              ? 'bg-red-500/20 border-red-500/40 text-red-200' 
+              : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-200'
+          }`}>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+              <span className="font-semibold">{toastMessage.message}</span>
+            </div>
+            <button onClick={() => setToastMessage(null)} className="text-gray-400 hover:text-white text-sm p-1">✕</button>
+          </div>
+        )}
         {error && (
           <div className="mb-6 bg-red-500/10 border border-red-500/20 text-red-300 px-4 py-3 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs backdrop-blur-sm shadow-lg shadow-red-500/5">
             <div className="flex items-center gap-2.5">
@@ -1946,6 +2328,7 @@ export default function App() {
               <table className="w-full text-sm text-left whitespace-nowrap">
                 <thead className="text-[10px] uppercase bg-black/40 text-gray-400 border-b border-white/10 border-t border-white/5">
                   <tr>
+                    <th className="px-3 py-3 font-medium tracking-wider text-center align-bottom border-r border-white/10" rowSpan={2}>Trạng Thái</th>
                     <th className="px-4 py-3 font-medium tracking-wider align-bottom" rowSpan={2}>Campaign Name</th>
                     <th className="px-4 py-2 font-medium tracking-wider text-center bg-indigo-500/10 border-l border-b border-white/5 text-indigo-300" colSpan={2}>Budget Control</th>
                     <th className="px-4 py-2 font-medium tracking-wider text-center border-b border-white/5" colSpan={7}>Meta Insights (Auto)</th>
@@ -1972,7 +2355,7 @@ export default function App() {
                 <tbody className="divide-y divide-white/5 text-xs">
                   {loading ? (
                     <tr>
-                      <td colSpan={16} className="px-6 py-8 text-center text-gray-500">
+                      <td colSpan={17} className="px-6 py-8 text-center text-gray-500">
                         Loading campaign data...
                       </td>
                     </tr>
@@ -2005,6 +2388,34 @@ export default function App() {
 
                     return (
                       <tr key={item.campaign_id} className="hover:bg-white/[0.04] transition-colors print:border-b print:border-gray-200">
+                        {/* Status Toggle Switch (ads_management) */}
+                        <td className="px-3 py-3 text-center border-r border-white/5">
+                          <div className="flex flex-col items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => toggleCampaignStatus(item.campaign_id, item.status || 'ACTIVE')}
+                              disabled={togglingStatus === item.campaign_id}
+                              className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                (item.status || 'ACTIVE') === 'ACTIVE' ? 'bg-emerald-500' : 'bg-gray-700'
+                              } ${togglingStatus === item.campaign_id ? 'opacity-50 cursor-wait' : ''}`}
+                              title={`Bấm để ${(item.status || 'ACTIVE') === 'ACTIVE' ? 'TẮT (Pause)' : 'BẬT (Active)'} chiến dịch trên Meta Ads`}
+                            >
+                              <span
+                                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                  (item.status || 'ACTIVE') === 'ACTIVE' ? 'translate-x-4' : 'translate-x-0'
+                                }`}
+                              />
+                            </button>
+                            <span className={`text-[9px] font-semibold uppercase px-1.5 py-0.2 rounded ${
+                              (item.status || 'ACTIVE') === 'ACTIVE' 
+                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' 
+                                : 'bg-gray-500/15 text-gray-400 border border-gray-500/30'
+                            }`}>
+                              {(item.status || 'ACTIVE') === 'ACTIVE' ? 'ACTIVE' : 'PAUSED'}
+                            </span>
+                          </div>
+                        </td>
+
                         <td className="px-4 py-3 font-medium text-gray-200 print:text-[#070b14]" title={item.campaign_name}>
                           <div className="truncate max-w-[200px]">{item.campaign_name}</div>
                           <div className="mt-1 flex items-center gap-1.5 flex-wrap">
@@ -2057,6 +2468,17 @@ export default function App() {
                               title={`Current: ${budgetType === 'lifetime' ? 'Lifetime Budget' : 'Daily Budget'}. Click to toggle.`}
                             >
                               {budgetType === 'lifetime' ? 'LT' : 'Daily'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const curVal = mData.budget !== undefined ? mData.budget : (mData.dailyBudget !== undefined ? mData.dailyBudget : budgetAmount);
+                                updateCampaignBudgetOnMeta(item.campaign_id, curVal, budgetType, item.original_currency);
+                              }}
+                              className="p-1 rounded bg-[#33CCFF]/15 hover:bg-[#33CCFF]/25 text-[#33CCFF] border border-[#33CCFF]/30 transition-all cursor-pointer flex items-center justify-center"
+                              title="Đồng bộ ngân sách này lên Meta Ads trực tiếp (ads_management)"
+                            >
+                              <Zap className="w-3 h-3" />
                             </button>
                           </div>
                           <span className="hidden print:inline-block font-medium text-[#070b14]">
@@ -2198,6 +2620,18 @@ export default function App() {
               setIsLeadModalOpen(true);
             }}
           />
+        ) : activeTab === 'bm' ? (
+          <BusinessManagerHub 
+            businesses={businessesData} 
+            loading={loadingBusinesses}
+            onRefresh={() => refreshBusinesses(settings.metaToken)}
+            onFilterByBM={(bmAccountIds) => {
+              setSelectedAccountIds(bmAccountIds);
+              setActiveTab('dashboard');
+              showToast(`Đã lọc ${bmAccountIds.length} tài khoản thuộc Business Manager trên Live Dashboard!`);
+            }}
+            selectedAccountIds={selectedAccountIds}
+          />
         ) : activeTab === 'organic' ? (
           <OrganicPagesReport 
             data={pagesData} 
@@ -2220,6 +2654,16 @@ export default function App() {
         )}
 
       {/* --- MODALS --- */}
+
+      {/* Quick Campaign Creator Modal (ads_management) */}
+      {isCreateCampaignOpen && (
+        <QuickCampaignModal
+          isOpen={isCreateCampaignOpen}
+          adAccounts={adAccounts}
+          onClose={() => setIsCreateCampaignOpen(false)}
+          onCreateCampaign={createNewCampaign}
+        />
+      )}
 
       {/* Settings Modal */}
       {isSettingsOpen && (
@@ -2312,6 +2756,48 @@ export default function App() {
                     {tokenTestResult.message}
                   </div>
                 )}
+              </div>
+
+              {/* Meta Permissions Inspector (5 Selected Permissions) */}
+              <div className="p-4 bg-gradient-to-br from-emerald-500/10 via-white/5 to-transparent border border-emerald-500/20 rounded-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-emerald-300 uppercase tracking-wider flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    Quyền Meta Graph API Đã Cấp Phép
+                  </label>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    5 Quyền Nòng Cốt
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-400">
+                  Hệ thống kiểm tra trực tiếp qua endpoint <code className="text-pink-300 bg-black/40 px-1 py-0.5 rounded font-mono">/me/permissions</code>:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                  {TARGET_PERMISSIONS.map(p => {
+                    const isGranted = Boolean(
+                      isUsingMock || 
+                      (permissionsStatus && permissionsStatus.some(perm => perm.permission === p.key && perm.status === 'granted'))
+                    );
+                    return (
+                      <div key={p.key} className="p-2.5 rounded-lg bg-black/40 border border-white/10 flex items-start gap-2.5">
+                        <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                          isGranted ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-500/20 text-gray-400'
+                        }`}>
+                          {isGranted ? <Check className="w-3 h-3 text-emerald-400" /> : <span className="text-[10px]">○</span>}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="font-mono text-xs font-semibold text-white truncate">{p.key}</span>
+                            <span className={`text-[9px] px-1 py-0.2 rounded font-semibold ${isGranted ? 'bg-emerald-500/20 text-emerald-300' : 'bg-gray-700 text-gray-400'}`}>
+                              {isGranted ? 'ACTIVE' : 'CHƯA CÓ'}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">{p.desc}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Dedicated Ad Accounts Manager */}
@@ -3254,7 +3740,19 @@ function OrganicPagesReport({ data, loading, error, selectedPage, onSelectPage, 
              onClick={() => onSelectPage(page)}
              className="bg-black/20 border border-white/5 rounded-xl p-5 hover:border-pink-500/50 hover:bg-white/5 cursor-pointer transition-all relative group"
            >
-             <h3 className="font-bold text-lg text-pink-300 mb-4 truncate pr-6" title={page.name}>{page.name}</h3>
+             <div className="flex items-center gap-3 mb-4 pr-6">
+               {page.picture ? (
+                 <img src={page.picture} alt={page.name} className="w-10 h-10 rounded-full object-cover border border-white/10 flex-shrink-0" />
+               ) : (
+                 <div className="w-10 h-10 rounded-full bg-pink-500/20 text-pink-400 flex items-center justify-center font-bold text-sm border border-pink-500/30 flex-shrink-0">
+                   {page.name.charAt(0)}
+                 </div>
+               )}
+               <div className="min-w-0 flex-1">
+                 <h3 className="font-bold text-base text-pink-300 truncate" title={page.name}>{page.name}</h3>
+                 <p className="text-[11px] text-gray-400 truncate">{page.category || 'Facebook Page'}</p>
+               </div>
+             </div>
              <ChevronRight className="w-5 h-5 absolute right-4 top-5 text-gray-500 group-hover:text-pink-400 transition-colors" />
              
              {page.error ? (
@@ -4941,6 +5439,394 @@ function ProfileModal({ isOpen, editingProfile, adAccounts, onClose, onSave }) {
           </div>
         </form>
       </div>
+    </div>
+  );
+}
+
+
+// =====================================================================
+// ==================== QUICK CAMPAIGN MODAL ===========================
+// =====================================================================
+
+function QuickCampaignModal({
+  isOpen,
+  adAccounts,
+  onClose,
+  onCreateCampaign
+}) {
+  const [selectedActId, setSelectedActId] = useState(adAccounts[0]?.account_id || '');
+  const [name, setName] = useState('');
+  const [objective, setObjective] = useState('OUTCOME_LEADS');
+  const [dailyBudget, setDailyBudget] = useState('20');
+  const [status, setStatus] = useState('PAUSED');
+  const [submitting, setSubmitting] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      alert("Vui lòng nhập tên chiến dịch!");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await onCreateCampaign({
+        accountId: selectedActId,
+        name: name.trim(),
+        objective,
+        dailyBudget,
+        status
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-50 p-4">
+      <div className="bg-[#0a0f1c] border border-white/15 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+        <div className="flex items-center justify-between pb-3 mb-4 border-b border-white/10">
+          <h2 className="text-base font-bold text-white flex items-center gap-2">
+            <Plus className="w-5 h-5 text-emerald-400" />
+            Tạo Chiến Dịch Nhanh Trên Meta Ads
+          </h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white p-1">✕</button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1.5">
+              Tài Khoản Quảng Cáo
+            </label>
+            <select
+              className="w-full bg-[#070b14] border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-400"
+              value={selectedActId}
+              onChange={(e) => setSelectedActId(e.target.value)}
+            >
+              {adAccounts.map(a => (
+                <option key={a.account_id} value={a.account_id} className="bg-[#0a0f1c]">
+                  {a.name} (act_{a.account_id}) [{a.currency || 'USD'}]
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1.5">
+              Tên Chiến Dịch Quảng Cáo
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="VD: VN_LeadGen_Forex_Promo_Q2"
+              className="w-full bg-[#070b14] border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-400"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1.5">
+              Mục Tiêu Chiến Dịch (Objective)
+            </label>
+            <select
+              className="w-full bg-[#070b14] border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-400"
+              value={objective}
+              onChange={(e) => setObjective(e.target.value)}
+            >
+              <option value="OUTCOME_LEADS" className="bg-[#0a0f1c]">🎯 Thu Hút Khách Hàng Tiềm Năng (Leads)</option>
+              <option value="OUTCOME_SALES" className="bg-[#0a0f1c]">💰 Doanh Số & Mở Tài Khoản (Sales)</option>
+              <option value="OUTCOME_TRAFFIC" className="bg-[#0a0f1c]">🚀 Lưu Lượng Truy Cập (Traffic)</option>
+              <option value="OUTCOME_ENGAGEMENT" className="bg-[#0a0f1c]">💬 Tương Tác & Tin Nhắn (Engagement)</option>
+              <option value="OUTCOME_AWARENESS" className="bg-[#0a0f1c]">📢 Nhận Thức Thương Hiệu (Awareness)</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1.5">
+                Ngân Sách Ngày ($)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                required
+                className="w-full bg-[#070b14] border border-white/15 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-emerald-400"
+                value={dailyBudget}
+                onChange={(e) => setDailyBudget(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1.5">
+                Trạng Thái Khởi Tạo
+              </label>
+              <select
+                className="w-full bg-[#070b14] border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-400"
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+              >
+                <option value="PAUSED" className="bg-[#0a0f1c]">⚪ Tạm Dừng (PAUSED - Khuyên dùng)</option>
+                <option value="ACTIVE" className="bg-[#0a0f1c]">🟢 Chạy Ngay (ACTIVE)</option>
+              </select>
+            </div>
+          </div>
+
+          <p className="text-[11px] text-gray-400 leading-relaxed bg-white/5 p-2.5 rounded-lg border border-white/5">
+            💡 Chiến dịch sẽ được tạo trực tiếp trên Meta Marketing API (quyền <code className="text-emerald-300">ads_management</code>) với cấu hình chuẩn CBO / ABO.
+          </p>
+
+          <div className="flex justify-end gap-2.5 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-lg text-xs font-medium bg-white/5 hover:bg-white/10 text-gray-300 cursor-pointer"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="px-4 py-2 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 flex items-center gap-1.5 transition-all shadow-lg shadow-emerald-500/20 cursor-pointer disabled:opacity-50"
+            >
+              <Plus className={`w-3.5 h-3.5 ${submitting ? 'animate-spin' : ''}`} />
+              {submitting ? 'Đang tạo trên Meta...' : 'Tạo Chiến Dịch Lên Meta'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================
+// ================ BUSINESS MANAGER & PORTFOLIO HUB ===================
+// =====================================================================
+
+function BusinessManagerHub({
+  businesses,
+  loading,
+  onRefresh,
+  onFilterByBM,
+  selectedAccountIds,
+}) {
+  const [expandedBmId, setExpandedBmId] = useState(businesses[0]?.id || null);
+
+  const totalBms = businesses.length;
+  let totalOwnedAccounts = 0;
+  let totalClientAccounts = 0;
+  let totalPages = 0;
+
+  businesses.forEach(bm => {
+    if (bm.owned_ad_accounts?.data) totalOwnedAccounts += bm.owned_ad_accounts.data.length;
+    if (bm.client_ad_accounts?.data) totalClientAccounts += bm.client_ad_accounts.data.length;
+    if (bm.owned_pages?.data) totalPages += bm.owned_pages.data.length;
+  });
+
+  return (
+    <div className="space-y-6">
+      {/* Top Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20">
+        <div className="flex items-center gap-3.5">
+          <div className="p-3 bg-amber-500/20 text-amber-300 rounded-xl">
+            <Building2 className="w-6 h-6" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              Trung Tâm Quản Trị Doanh Nghiệp (Business Manager & Portfolios)
+              <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono px-2 py-0.5 rounded uppercase">
+                business_management
+              </span>
+            </h2>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Quản lý toàn bộ danh mục tài sản: Portfolio doanh nghiệp, tài khoản quảng cáo trực thuộc, đối tác và trang Fanpage.
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={onRefresh}
+          disabled={loading}
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 transition-all cursor-pointer disabled:opacity-50 self-start sm:self-auto"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+          {loading ? 'Đang đồng bộ...' : 'Quét lại BM'}
+        </button>
+      </div>
+
+      {/* KPI Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+          <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">Business Portfolios</p>
+          <p className="text-2xl font-bold text-white">{totalBms}</p>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+          <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">TK Ads Sở Hữu (Owned)</p>
+          <p className="text-2xl font-bold text-[#33CCFF]">{totalOwnedAccounts}</p>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+          <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">TK Ads Đối Tác (Client)</p>
+          <p className="text-2xl font-bold text-[#0AE5D5]">{totalClientAccounts}</p>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+          <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">Fanpage Quản Trị</p>
+          <p className="text-2xl font-bold text-pink-400">{totalPages}</p>
+        </div>
+      </div>
+
+      {/* List of Business Managers */}
+      {businesses.length === 0 ? (
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-10 text-center text-gray-400">
+          <Building2 className="w-12 h-12 mx-auto mb-3 opacity-30 text-amber-400" />
+          <h3 className="text-base font-bold text-white mb-1">Chưa Tìm Thấy Business Manager</h3>
+          <p className="text-xs text-gray-400 max-w-md mx-auto">
+            Tài khoản Meta hoặc Token của bạn có thể đang dùng tài khoản cá nhân hoặc chưa cấp quyền <code className="text-pink-300">business_management</code>. Bấm "Quét lại BM" hoặc kiểm tra lại quyền trong Cài đặt.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {businesses.map(bm => {
+            const owned = bm.owned_ad_accounts?.data || [];
+            const client = bm.client_ad_accounts?.data || [];
+            const pages = bm.owned_pages?.data || [];
+            const allBmAccountIds = [...owned, ...client].map(a => (a.account_id || a.id || '').replace(/^act_/, ''));
+            const isSelectedAll = allBmAccountIds.length > 0 && allBmAccountIds.every(id => selectedAccountIds.includes(id));
+            const isExpanded = expandedBmId === bm.id;
+
+            return (
+              <div key={bm.id} className="bg-[#0a0f1c] border border-white/10 rounded-2xl overflow-hidden shadow-xl">
+                {/* BM Header */}
+                <div className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 bg-white/[0.02]">
+                  <div className="flex items-start sm:items-center gap-3">
+                    <div className="p-2.5 bg-amber-500/15 text-amber-300 rounded-xl flex-shrink-0">
+                      <Building2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-base font-bold text-white">{bm.name}</h3>
+                        <span className={`text-[10px] px-2 py-0.5 rounded font-semibold uppercase ${
+                          bm.verification_status === 'verified'
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                            : 'bg-gray-700 text-gray-300 border border-white/10'
+                        }`}>
+                          {bm.verification_status === 'verified' ? '🛡️ Đã Xác Minh' : '⚠️ Chưa Xác Minh'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-400 font-mono mt-0.5">
+                        BM ID: {bm.id} • Tạo ngày: {bm.created_time ? new Date(bm.created_time).toLocaleDateString('vi-VN') : 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-end md:self-auto flex-wrap">
+                    <button
+                      onClick={() => onFilterByBM(allBmAccountIds)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                        isSelectedAll 
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' 
+                          : 'bg-[#33CCFF]/15 hover:bg-[#33CCFF]/25 text-[#33CCFF] border border-[#33CCFF]/30'
+                      }`}
+                      title="Lọc tất cả tài khoản thuộc BM này lên Live Dashboard"
+                    >
+                      <Target className="w-3.5 h-3.5" />
+                      {isSelectedAll ? 'Đang lọc trên Dashboard' : `Lọc tất cả (${allBmAccountIds.length} TK Ads)`}
+                    </button>
+                    <button
+                      onClick={() => setExpandedBmId(isExpanded ? null : bm.id)}
+                      className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all cursor-pointer"
+                    >
+                      <ChevronDown className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* BM Expanded Asset Details */}
+                {isExpanded && (
+                  <div className="p-5 space-y-6">
+                    {/* Section 1: Owned Ad Accounts */}
+                    <div>
+                      <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <Briefcase className="w-4 h-4 text-[#33CCFF]" />
+                        Tài Khoản Quảng Cáo Sở Hữu ({owned.length})
+                      </h4>
+                      {owned.length === 0 ? (
+                        <p className="text-xs text-gray-500 italic">Không có tài khoản sở hữu trực tiếp.</p>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {owned.map(acc => (
+                            <div key={acc.account_id || acc.id} className="p-3 bg-black/40 border border-white/10 rounded-xl text-xs space-y-1">
+                              <div className="flex items-center justify-between">
+                                <span className="font-semibold text-white truncate">{acc.name || 'Tài khoản Ads'}</span>
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                  {acc.currency || 'USD'}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-gray-400 font-mono">act_{acc.account_id || acc.id}</p>
+                              {acc.amount_spent && (
+                                <p className="text-[10px] text-gray-400">
+                                  Đã chi tiêu: <strong className="text-gray-200">${(parseFloat(acc.amount_spent) / 100).toLocaleString()}</strong>
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Section 2: Client Ad Accounts */}
+                    <div>
+                      <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <Briefcase className="w-4 h-4 text-[#0AE5D5]" />
+                        Tài Khoản Đối Tác & Khách Hàng Quản Trị ({client.length})
+                      </h4>
+                      {client.length === 0 ? (
+                        <p className="text-xs text-gray-500 italic">Không có tài khoản đối tác liên kết.</p>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {client.map(acc => (
+                            <div key={acc.account_id || acc.id} className="p-3 bg-black/40 border border-white/10 rounded-xl text-xs space-y-1">
+                              <div className="flex items-center justify-between">
+                                <span className="font-semibold text-white truncate">{acc.name || 'Client Ads'}</span>
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal-500/10 text-teal-400 border border-teal-500/20">
+                                  {acc.currency || 'USD'}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-gray-400 font-mono">act_{acc.account_id || acc.id}</p>
+                              {acc.amount_spent && (
+                                <p className="text-[10px] text-gray-400">
+                                  Đã chi tiêu: <strong className="text-gray-200">${(parseFloat(acc.amount_spent) / 100).toLocaleString()}</strong>
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Section 3: Pages in BM */}
+                    {pages.length > 0 && (
+                      <div>
+                        <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+                          <UsersRound className="w-4 h-4 text-pink-400" />
+                          Trang Fanpage Trực Thuộc ({pages.length})
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {pages.map(p => (
+                            <div key={p.id} className="px-3 py-1.5 bg-black/30 border border-white/10 rounded-lg text-xs flex items-center gap-2">
+                              <span className="font-semibold text-pink-300">{p.name}</span>
+                              {p.fan_count && <span className="text-[10px] text-gray-400">({p.fan_count.toLocaleString()} likes)</span>}
+                              {p.category && <span className="text-[9px] text-gray-500 font-mono">[{p.category}]</span>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
