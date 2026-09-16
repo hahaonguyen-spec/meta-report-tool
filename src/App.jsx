@@ -374,7 +374,7 @@ export default function App() {
     } catch (e) {}
   }, [settings]);
 
-  // Accounts state initialized with saved accounts if present, else demo accounts
+  // Accounts state initialized with saved accounts if present, else empty
   const [adAccounts, setAdAccounts] = useState(() => {
     try {
       const saved = localStorage.getItem('meta_report_settings');
@@ -385,7 +385,7 @@ export default function App() {
         }
       }
     } catch (e) {}
-    return MOCK_ACCOUNTS;
+    return [];
   });
 
   const [selectedAccountIds, setSelectedAccountIds] = useState(() => {
@@ -398,21 +398,10 @@ export default function App() {
         }
       }
     } catch (e) {}
-    return MOCK_ACCOUNTS.map(a => a.account_id);
+    return [];
   });
 
-  const [isUsingMock, setIsUsingMock] = useState(() => {
-    try {
-      const saved = localStorage.getItem('meta_report_settings');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.metaToken && parsed.savedAccounts && parsed.savedAccounts.length > 0) {
-          return false;
-        }
-      }
-    } catch (e) {}
-    return !settings.metaToken;
-  });
+  const [isUsingMock, setIsUsingMock] = useState(false);
   const [exchangeRates, setExchangeRates] = useState(null);
   
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -657,21 +646,31 @@ export default function App() {
     localStorage.removeItem('meta_report_crm_leads');
 
     setSettings({ metaToken: '', sheetWebhook: '', savedAccounts: [] });
-    setManualData(DEFAULT_DEMO_MANUAL_DATA);
+    setManualData({});
     setProfiles(DEFAULT_PROFILES);
     setActiveProfileId('prof_admin');
-    setLeads(DEFAULT_CRM_LEADS);
+    setLeads([]);
     setError(null);
-    setIsUsingMock(true);
-    setAdAccounts(MOCK_ACCOUNTS);
-    setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
-    setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
+    setIsUsingMock(false);
+    setAdAccounts([]);
+    setSelectedAccountIds([]);
+    setData([]);
     setTokenTestResult(null);
     setWebhookTestResult(null);
     setAddAccountFeedback(null);
     setIsResetModalOpen(false);
     setIsSettingsOpen(false);
-    alert("Đã RESET TOÀN BỘ hệ thống về trạng thái ban đầu sạch sẽ!");
+    alert("Đã RESET TOÀN BỘ hệ thống về trạng thái sạch hoàn toàn (0 dữ liệu)!");
+
+  const handleLoadDemoData = () => {
+    setIsUsingMock(true);
+    setError(null);
+    setAdAccounts(MOCK_ACCOUNTS);
+    setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
+    setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
+    setManualData(DEFAULT_DEMO_MANUAL_DATA);
+    setLeads(DEFAULT_CRM_LEADS);
+  };
   };
 
   // Helper: Multi-source Ad Account scanner (Personal /me/adaccounts + Business Manager /me/businesses + Permissions Inspector)
@@ -908,9 +907,10 @@ export default function App() {
 
     const remaining = adAccounts.filter(a => a.account_id !== accountIdToRemove);
     if (remaining.length === 0) {
-      setAdAccounts(MOCK_ACCOUNTS);
-      setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
-      setIsUsingMock(true);
+      setAdAccounts([]);
+      setSelectedAccountIds([]);
+      setData([]);
+      setIsUsingMock(false);
     } else {
       setAdAccounts(remaining);
       setSelectedAccountIds(prev => {
@@ -948,12 +948,15 @@ export default function App() {
   useEffect(() => {
     if (settings.metaToken && settings.metaToken.trim() !== '') {
       fetchAdAccounts();
-    } else {
-      setIsUsingMock(true);
-      setError(null);
+    } else if (isUsingMock) {
       setAdAccounts(MOCK_ACCOUNTS);
       setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
       setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
+      setLoadingAccounts(false);
+    } else {
+      setAdAccounts([]);
+      setSelectedAccountIds([]);
+      setData([]);
       setLoadingAccounts(false);
     }
 
@@ -1000,11 +1003,16 @@ export default function App() {
   const fetchAdAccounts = async (forceToken = null) => {
     const token = forceToken || settings.metaToken || import.meta.env.VITE_META_TOKEN;
     if (!token || token.trim() === '' || token === 'your_facebook_graph_api_access_token_here') {
-      setIsUsingMock(true);
-      setError(null);
-      setAdAccounts(MOCK_ACCOUNTS);
-      setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
-      setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
+      if (isUsingMock) {
+        setError(null);
+        setAdAccounts(MOCK_ACCOUNTS);
+        setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
+        setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
+      } else {
+        setAdAccounts([]);
+        setSelectedAccountIds([]);
+        setData([]);
+      }
       setLoadingAccounts(false);
       return;
     }
@@ -2383,6 +2391,11 @@ export default function App() {
                 <div className="w-full h-full flex justify-center items-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#33CCFF]"></div>
                 </div>
+              ) : chartData.length === 0 ? (
+                <div className="w-full h-full flex flex-col items-center justify-center text-gray-500">
+                  <Activity className="w-8 h-8 mb-2 opacity-30 text-gray-400" />
+                  <p className="text-xs text-gray-400">Chưa có dữ liệu biểu đồ chiến dịch</p>
+                </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
@@ -2407,38 +2420,38 @@ export default function App() {
           <div className="xl:col-span-3 bg-white/5 border border-white/10 backdrop-blur-md rounded-2xl shadow-xl overflow-hidden mt-6">
             <div className="p-6 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h2 className="text-lg font-semibold flex items-center gap-2 mb-1 flex-wrap">
+                <h2 className="text-lg font-semibold flex items-center gap-2 mb-1 flex-wrap text-white">
                   <Briefcase className="w-5 h-5 text-[#0AE5D5]" />
-                  Advanced Marketing Analysis
-                  <span className="inline-flex items-center gap-1 text-[11px] font-normal bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full" title="All manual inputs (Account Open, Funded Accounts, Deposit, Daily Budget) are automatically saved to LocalStorage for future reports">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Saved for future reports
-                  </span>
+                  Báo Cáo Hiệu Suất Chiến Dịch
+                  {isUsingMock && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-normal bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-0.5 rounded-full">
+                      Chế Độ Xem Thử (Demo Data)
+                    </span>
+                  )}
                 </h2>
-                <p className="text-xs text-gray-400">Manual inputs (Account Open, Deposit, Funded Accounts & Budget) are automatically saved in local storage for future updates and reports.</p>
+                <p className="text-xs text-gray-400">Số liệu ngân sách, tương tác quảng cáo từ Meta Ads và hiệu quả chuyển đổi.</p>
               </div>
 
-              <div className="flex items-center gap-2 pdf-hide print:hidden flex-wrap">
-                <button
-                  onClick={handleExportManualData}
-                  className="px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg text-xs flex items-center gap-1.5 transition-all border border-white/10"
-                  title="Export saved manual inputs (Account Open, Deposit, Budget) to JSON file"
-                >
-                  <Download className="w-3.5 h-3.5" /> Export Inputs
-                </button>
-                <label 
-                  className="px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg text-xs flex items-center gap-1.5 transition-all border border-white/10 cursor-pointer"
-                  title="Import previously saved manual inputs from JSON file"
-                >
-                  <Upload className="w-3.5 h-3.5" /> Import Inputs
-                  <input type="file" accept=".json" onChange={handleImportManualData} className="hidden" />
-                </label>
-                {Object.keys(manualData).length > 0 && (
+              <div className="flex items-center gap-2 pdf-hide print:hidden">
+                {!settings.metaToken && !isUsingMock && (
                   <button
-                    onClick={handleClearManualData}
-                    className="px-2.5 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-xs flex items-center gap-1.5 transition-all border border-red-500/20"
-                    title="Clear all saved manual inputs"
+                    onClick={handleLoadDemoData}
+                    className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white rounded-lg text-xs flex items-center gap-1.5 transition-all border border-white/10 cursor-pointer"
                   >
-                    <RotateCcw className="w-3.5 h-3.5" /> Clear Inputs
+                    <Eye className="w-3.5 h-3.5 text-[#0AE5D5]" /> Xem Dữ Liệu Mẫu (Demo)
+                  </button>
+                )}
+                {isUsingMock && (
+                  <button
+                    onClick={() => {
+                      setIsUsingMock(false);
+                      setData([]);
+                      setAdAccounts([]);
+                      setSelectedAccountIds([]);
+                    }}
+                    className="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 rounded-lg text-xs flex items-center gap-1.5 transition-all border border-amber-500/20 cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" /> Thoát Xem Thử
                   </button>
                 )}
               </div>
@@ -2477,6 +2490,40 @@ export default function App() {
                     <tr>
                       <td colSpan={17} className="px-6 py-8 text-center text-gray-500">
                         Loading campaign data...
+                      </td>
+                    </tr>
+                  ) : displayedCampaigns.length === 0 ? (
+                    <tr>
+                      <td colSpan={17} className="px-6 py-14 text-center">
+                        <div className="flex flex-col items-center justify-center max-w-md mx-auto text-gray-400">
+                          <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3 text-gray-500">
+                            <BarChart3 className="w-6 h-6 text-gray-400" />
+                          </div>
+                          <p className="text-sm font-semibold text-white mb-1">Chưa Có Dữ Liệu Chiến Dịch</p>
+                          <p className="text-xs text-gray-400 mb-4 text-center leading-relaxed">
+                            {settings.metaToken 
+                              ? "Không tìm thấy chiến dịch nào phù hợp với bộ lọc hoặc tài khoản đã chọn."
+                              : "Hệ thống đang ở trạng thái sạch hoàn toàn. Vui lòng kết nối Meta Access Token trong phần Cài đặt để tải báo cáo thực tế."}
+                          </p>
+                          <div className="flex items-center gap-2.5">
+                            <button
+                              type="button"
+                              onClick={() => setIsSettingsOpen(true)}
+                              className="px-4 py-2 rounded-lg text-xs font-semibold bg-gradient-to-r from-[#33CCFF] to-[#0AE5D5] text-[#070b14] hover:opacity-90 transition-all shadow-md cursor-pointer"
+                            >
+                              Mở Cài Đặt Token
+                            </button>
+                            {!settings.metaToken && (
+                              <button
+                                type="button"
+                                onClick={handleLoadDemoData}
+                                className="px-3.5 py-2 rounded-lg text-xs font-medium bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 transition-all cursor-pointer"
+                              >
+                                Tải Dữ Liệu Mẫu (Demo)
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </td>
                     </tr>
                   ) : displayedCampaigns.map((item) => {
