@@ -343,10 +343,10 @@ export default function App() {
   const [manualData, setManualData] = useState(() => {
     try {
       const saved = localStorage.getItem('meta_report_manual_data');
-      return saved ? JSON.parse(saved) : DEFAULT_DEMO_MANUAL_DATA;
+      return saved ? JSON.parse(saved) : {};
     } catch (e) {
       console.error("Error reading manualData from localStorage:", e);
-      return DEFAULT_DEMO_MANUAL_DATA;
+      return {};
     }
   });
   
@@ -374,7 +374,7 @@ export default function App() {
     } catch (e) {}
   }, [settings]);
 
-  // Accounts state initialized with saved accounts if present, else demo accounts
+  // Accounts state initialized with saved accounts if present, else empty
   const [adAccounts, setAdAccounts] = useState(() => {
     try {
       const saved = localStorage.getItem('meta_report_settings');
@@ -385,7 +385,7 @@ export default function App() {
         }
       }
     } catch (e) {}
-    return MOCK_ACCOUNTS;
+    return [];
   });
 
   const [selectedAccountIds, setSelectedAccountIds] = useState(() => {
@@ -398,21 +398,10 @@ export default function App() {
         }
       }
     } catch (e) {}
-    return MOCK_ACCOUNTS.map(a => a.account_id);
+    return [];
   });
 
-  const [isUsingMock, setIsUsingMock] = useState(() => {
-    try {
-      const saved = localStorage.getItem('meta_report_settings');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.metaToken && parsed.savedAccounts && parsed.savedAccounts.length > 0) {
-          return false;
-        }
-      }
-    } catch (e) {}
-    return !settings.metaToken;
-  });
+  const [isUsingMock, setIsUsingMock] = useState(false);
   const [exchangeRates, setExchangeRates] = useState(null);
   
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -454,9 +443,9 @@ export default function App() {
   const [businessesData, setBusinessesData] = useState(() => {
     try {
       const saved = localStorage.getItem('meta_report_businesses');
-      return saved ? JSON.parse(saved) : MOCK_BUSINESSES;
+      return saved ? JSON.parse(saved) : [];
     } catch (e) {
-      return MOCK_BUSINESSES;
+      return [];
     }
   });
 
@@ -558,9 +547,9 @@ export default function App() {
   const [leads, setLeads] = useState(() => {
     try {
       const saved = localStorage.getItem('meta_report_crm_leads');
-      return saved ? JSON.parse(saved) : DEFAULT_CRM_LEADS;
+      return saved ? JSON.parse(saved) : [];
     } catch (e) {
-      return DEFAULT_CRM_LEADS;
+      return [];
     }
   });
 
@@ -655,23 +644,27 @@ export default function App() {
     localStorage.removeItem('meta_report_crm_profiles');
     localStorage.removeItem('meta_report_active_profile_id');
     localStorage.removeItem('meta_report_crm_leads');
+    localStorage.removeItem('meta_report_businesses');
+    localStorage.removeItem('meta_report_permissions');
 
     setSettings({ metaToken: '', sheetWebhook: '', savedAccounts: [] });
-    setManualData(DEFAULT_DEMO_MANUAL_DATA);
+    setManualData({});
     setProfiles(DEFAULT_PROFILES);
     setActiveProfileId('prof_admin');
-    setLeads(DEFAULT_CRM_LEADS);
+    setLeads([]);
     setError(null);
-    setIsUsingMock(true);
-    setAdAccounts(MOCK_ACCOUNTS);
-    setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
-    setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
+    setIsUsingMock(false);
+    setAdAccounts([]);
+    setSelectedAccountIds([]);
+    setData([]);
+    setBusinessesData([]);
+    setPagesData([]);
     setTokenTestResult(null);
     setWebhookTestResult(null);
     setAddAccountFeedback(null);
     setIsResetModalOpen(false);
     setIsSettingsOpen(false);
-    alert("Đã RESET TOÀN BỘ hệ thống về trạng thái ban đầu sạch sẽ!");
+    alert("Đã RESET TOÀN BỘ hệ thống về trạng thái sạch hoàn toàn (0 dữ liệu)!");
   };
 
   // Helper: Multi-source Ad Account scanner (Personal /me/adaccounts + Business Manager /me/businesses + Permissions Inspector)
@@ -907,16 +900,14 @@ export default function App() {
     localStorage.setItem('meta_report_settings', JSON.stringify(newSettings));
 
     const remaining = adAccounts.filter(a => a.account_id !== accountIdToRemove);
+    setAdAccounts(remaining);
+    setSelectedAccountIds(prev => {
+      const next = prev.filter(id => id !== accountIdToRemove);
+      return next.length > 0 ? next : (remaining.length > 0 ? [remaining[0].account_id] : []);
+    });
     if (remaining.length === 0) {
-      setAdAccounts(MOCK_ACCOUNTS);
-      setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
-      setIsUsingMock(true);
-    } else {
-      setAdAccounts(remaining);
-      setSelectedAccountIds(prev => {
-        const next = prev.filter(id => id !== accountIdToRemove);
-        return next.length > 0 ? next : [remaining[0].account_id];
-      });
+      setData([]);
+      setIsUsingMock(false);
     }
   };
 
@@ -949,11 +940,11 @@ export default function App() {
     if (settings.metaToken && settings.metaToken.trim() !== '') {
       fetchAdAccounts();
     } else {
-      setIsUsingMock(true);
+      setIsUsingMock(false);
       setError(null);
-      setAdAccounts(MOCK_ACCOUNTS);
-      setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
-      setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
+      setAdAccounts([]);
+      setSelectedAccountIds([]);
+      setData([]);
       setLoadingAccounts(false);
     }
 
@@ -1000,11 +991,10 @@ export default function App() {
   const fetchAdAccounts = async (forceToken = null) => {
     const token = forceToken || settings.metaToken || import.meta.env.VITE_META_TOKEN;
     if (!token || token.trim() === '' || token === 'your_facebook_graph_api_access_token_here') {
-      setIsUsingMock(true);
-      setError(null);
-      setAdAccounts(MOCK_ACCOUNTS);
-      setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
-      setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
+      setIsUsingMock(false);
+      setAdAccounts([]);
+      setSelectedAccountIds([]);
+      setData([]);
       setLoadingAccounts(false);
       return;
     }
@@ -1050,10 +1040,10 @@ export default function App() {
         setError(`Lỗi cập nhật danh sách tài khoản: ${err.message}`);
       } else {
         setError(err.message);
-        setIsUsingMock(true);
-        setAdAccounts(MOCK_ACCOUNTS);
-        setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
-        setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
+        setIsUsingMock(false);
+        setAdAccounts([]);
+        setSelectedAccountIds([]);
+        setData([]);
       }
     } finally {
       setLoadingAccounts(false);
@@ -1162,7 +1152,7 @@ export default function App() {
     const token = settings.metaToken || import.meta.env.VITE_META_TOKEN;
 
     if (!token || token === 'your_facebook_graph_api_access_token_here') {
-      setPagesData(MOCK_PAGES_DATA);
+      setPagesData([]);
       setLoadingPages(false);
       return;
     }
@@ -1234,7 +1224,7 @@ export default function App() {
     } catch (err) {
       console.error("Error fetching pages:", err);
       setPagesError(err.message);
-      setPagesData(MOCK_PAGES_DATA);
+      setPagesData([]);
     } finally {
       setLoadingPages(false);
     }
@@ -1329,9 +1319,8 @@ export default function App() {
     const token = settings.metaToken || import.meta.env.VITE_META_TOKEN;
 
     if (!token || token === 'your_facebook_graph_api_access_token_here') {
-      console.warn("Meta API credentials not set. Using mock data.");
-      setIsUsingMock(true);
-      setData(filterMockByDate(MOCK_DATA, preset, customStart, customEnd));
+      setIsUsingMock(false);
+      setData([]);
       setLoading(false);
       return;
     }
@@ -1511,10 +1500,10 @@ export default function App() {
 
       setData(formattedData);
     } catch (err) {
-      console.error("Error fetching Meta API, falling back to mock:", err);
+      console.error("Error fetching Meta API:", err);
       setError(err.message);
-      setIsUsingMock(true);
-      setData(filterMockByDate(MOCK_DATA, preset, customStart, customEnd));
+      setIsUsingMock(false);
+      setData([]);
     } finally {
       setLoading(false);
     }
@@ -1705,7 +1694,7 @@ export default function App() {
   // --- 4. business_management: Quét Lại Danh Mục Doanh Nghiệp (BM) ---
   const refreshBusinesses = async (token) => {
     if (!token) {
-      setBusinessesData(MOCK_BUSINESSES);
+      setBusinessesData([]);
       showToast("Đã tải dữ liệu Business Manager (Demo)!");
       return;
     }
@@ -1855,10 +1844,10 @@ export default function App() {
                 <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#33CCFF] via-teal-200 to-[#0AE5D5]">
                   Meta Ads Analytics
                 </h1>
-                {!isUsingMock && settings.metaToken ? (
+                {settings.metaToken ? (
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                    Live API ({adAccounts.length} Accounts)
+                    Meta API Live ({adAccounts.length} Tài khoản)
                   </span>
                 ) : (
                   <button 
@@ -1867,7 +1856,7 @@ export default function App() {
                     title="Nhấp để cấu hình Meta Access Token"
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                    Demo Mode (Chưa kết nối)
+                    Chưa kết nối API Token
                   </button>
                 )}
               </div>
@@ -2240,15 +2229,13 @@ export default function App() {
             </button>
             <button 
               onClick={() => {
-                if (settings.metaToken && settings.metaToken.trim() !== '' && !isUsingMock) {
+                if (settings.metaToken && settings.metaToken.trim() !== '') {
                   fetchMetaAPI(selectedAccountIds, datePreset, customStartDate, customEndDate);
-                } else {
-                  setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
                 }
               }}
-              disabled={loading || loadingAccounts}
+              disabled={loading || loadingAccounts || !settings.metaToken}
               className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 transition-all px-3 py-1.5 rounded-lg text-xs font-medium text-gray-200 disabled:opacity-50 h-[36px]"
-              title="Làm mới dữ liệu từ Meta Ads hoặc Demo"
+              title="Làm mới dữ liệu từ Meta Ads"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${(loading || loadingAccounts) ? 'animate-spin' : ''}`} />
               Làm mới
@@ -2310,16 +2297,7 @@ export default function App() {
               >
                 Cập nhật Token
               </button>
-              <button 
-                onClick={() => {
-                  setError(null);
-                  setIsUsingMock(true);
-                  setData(filterMockByDate(MOCK_DATA, datePreset, customStartDate, customEndDate));
-                }}
-                className="px-2.5 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-xs text-gray-300 transition-all"
-              >
-                Về Demo Mode
-              </button>
+
             </div>
           </div>
         )}
@@ -2389,6 +2367,11 @@ export default function App() {
               {loading ? (
                 <div className="w-full h-full flex justify-center items-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#33CCFF]"></div>
+                </div>
+              ) : chartData.length === 0 ? (
+                <div className="w-full h-full flex flex-col items-center justify-center text-gray-500">
+                  <Activity className="w-8 h-8 mb-2 opacity-30 text-gray-400" />
+                  <p className="text-xs text-gray-400">Chưa có dữ liệu chiến dịch để vẽ biểu đồ</p>
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
@@ -2484,6 +2467,29 @@ export default function App() {
                     <tr>
                       <td colSpan={17} className="px-6 py-8 text-center text-gray-500">
                         Loading campaign data...
+                      </td>
+                    </tr>
+                  ) : displayedCampaigns.length === 0 ? (
+                    <tr>
+                      <td colSpan={17} className="px-6 py-16 text-center text-gray-400">
+                        <div className="flex flex-col items-center justify-center max-w-md mx-auto">
+                          <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3 text-gray-500">
+                            <Activity className="w-6 h-6 text-gray-400" />
+                          </div>
+                          <p className="text-base font-semibold text-white mb-1">Chưa Có Dữ Liệu Chiến Dịch</p>
+                          <p className="text-xs text-gray-400 mb-5 text-center leading-relaxed">
+                            {settings.metaToken 
+                              ? "Không tìm thấy chiến dịch nào từ tài khoản đã chọn hoặc trong khoảng thời gian này."
+                              : "Hệ thống chưa kết nối tài khoản quảng cáo. Vui lòng mở Cài đặt và nhập Meta Access Token để bắt đầu xem báo cáo."}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setIsSettingsOpen(true)}
+                            className="px-5 py-2.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-[#33CCFF] to-[#0AE5D5] text-[#070b14] hover:opacity-90 transition-all shadow-lg shadow-[#33CCFF]/20 cursor-pointer flex items-center gap-2"
+                          >
+                            <Settings className="w-4 h-4" /> Mở Cài Đặt Kết Nối Meta Ads
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ) : displayedCampaigns.map((item) => {
@@ -2822,7 +2828,7 @@ export default function App() {
               <div className="flex items-center gap-3">
                 <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${!isUsingMock && settings.metaToken ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
                 <div>
-                  <span className="font-semibold">{!isUsingMock && settings.metaToken ? 'Trạng thái: Đã kết nối Live API' : 'Trạng thái: Đang ở chế độ Demo'}</span>
+                  <span className="font-semibold">{!isUsingMock && settings.metaToken ? 'Trạng thái: Đã kết nối Live API' : 'Trạng thái: Chưa kết nối API Token'}</span>
                   <p className="opacity-80 text-[11px] mt-0.5">
                     {!isUsingMock && settings.metaToken 
                       ? `Đang quản lý ${adAccounts.filter(a => !MOCK_ACCOUNTS.some(m => m.account_id === a.account_id)).length || adAccounts.length} tài khoản quảng cáo trực tiếp từ Meta.` 
