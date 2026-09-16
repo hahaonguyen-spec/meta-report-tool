@@ -2218,6 +2218,477 @@ export default function App() {
             setActiveReportTab={setActiveReportTab} 
           />
         )}
+
+      {/* --- MODALS --- */}
+
+      {/* Settings Modal */}
+      {isSettingsOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-[#0a0f1c] border border-white/15 rounded-2xl w-full max-w-xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-4 mb-5 border-b border-white/10">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2.5">
+                <Settings className="w-5 h-5 text-[#33CCFF]" />
+                Cài Đặt Kết Nối Trực Tiếp
+              </h2>
+              <button 
+                onClick={() => setIsSettingsOpen(false)}
+                className="text-gray-400 hover:text-white text-lg p-1"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {/* Status indicator inside modal */}
+            <div className={`p-3.5 rounded-xl mb-5 flex items-center justify-between text-xs border ${
+              !isUsingMock && settings.metaToken
+                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
+                : 'bg-amber-500/10 border-amber-500/20 text-amber-300'
+            }`}>
+              <div className="flex items-center gap-3">
+                <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${!isUsingMock && settings.metaToken ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+                <div>
+                  <span className="font-semibold">{!isUsingMock && settings.metaToken ? 'Trạng thái: Đã kết nối Live API' : 'Trạng thái: Đang ở chế độ Demo'}</span>
+                  <p className="opacity-80 text-[11px] mt-0.5">
+                    {!isUsingMock && settings.metaToken 
+                      ? `Đang quản lý ${adAccounts.filter(a => !MOCK_ACCOUNTS.some(m => m.account_id === a.account_id)).length || adAccounts.length} tài khoản quảng cáo trực tiếp từ Meta.` 
+                      : 'Nhập Access Token và thêm tài khoản bên dưới để tải số liệu thực tế.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              {/* Meta Access Token */}
+              <div className="p-4 bg-white/5 border border-white/10 rounded-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider">
+                    Meta Graph API Access Token
+                  </label>
+                  <button 
+                    onClick={() => setIsGuideOpen(true)}
+                    className="text-[11px] text-[#33CCFF] hover:underline flex items-center gap-1"
+                  >
+                    <BookOpen className="w-3 h-3" /> Cách lấy Token
+                  </button>
+                </div>
+
+                <div className="relative">
+                  <input 
+                    type="password"
+                    className="w-full bg-[#070b14] border border-white/15 rounded-lg px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#33CCFF] font-mono tracking-wider"
+                    placeholder="EAAGm0..."
+                    value={settings.metaToken}
+                    onChange={(e) => {
+                      setSettings({...settings, metaToken: e.target.value});
+                      setTokenTestResult(null);
+                    }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-3 pt-1">
+                  <p className="text-[11px] text-gray-500">
+                    Token được lưu an toàn tại Local Storage.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => testMetaToken(settings.metaToken)}
+                    disabled={testingToken || !settings.metaToken}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#33CCFF]/15 hover:bg-[#33CCFF]/25 border border-[#33CCFF]/30 text-[#33CCFF] flex items-center gap-1.5 transition-all disabled:opacity-40 flex-shrink-0"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${testingToken ? 'animate-spin' : ''}`} />
+                    {testingToken ? 'Đang kiểm tra...' : 'Kiểm tra & Quét tài khoản'}
+                  </button>
+                </div>
+
+                {tokenTestResult && (
+                  <div className={`p-2.5 rounded-lg text-xs border ${
+                    tokenTestResult.isWarning
+                      ? 'bg-amber-500/10 border-amber-500/20 text-amber-300'
+                      : tokenTestResult.success 
+                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' 
+                        : 'bg-red-500/10 border-red-500/20 text-red-300'
+                  }`}>
+                    {tokenTestResult.isWarning ? '⚠️ ' : tokenTestResult.success ? '✅ ' : '❌ '}
+                    {tokenTestResult.message}
+                  </div>
+                )}
+              </div>
+
+              {/* Dedicated Ad Accounts Manager */}
+              <div className="p-4 bg-white/5 border border-white/10 rounded-xl space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="block text-xs font-semibold text-white uppercase tracking-wider flex items-center gap-2">
+                      <Briefcase className="w-4 h-4 text-[#33CCFF]" />
+                      Tài Khoản Quảng Cáo Đã Kết Nối ({adAccounts.filter(a => !MOCK_ACCOUNTS.some(m => m.account_id === a.account_id)).length})
+                    </label>
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      Hỗ trợ tự động quét hoặc nhập trực tiếp ID tài khoản cá nhân / BM.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => testMetaToken(settings.metaToken)}
+                    disabled={testingToken || !settings.metaToken}
+                    className="text-[11px] text-[#33CCFF] hover:underline flex items-center gap-1 disabled:opacity-40"
+                    title="Quét lại từ Token"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${testingToken ? 'animate-spin' : ''}`} /> Quét lại
+                  </button>
+                </div>
+
+                {/* Manual Account ID Input */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    className="flex-1 bg-[#070b14] border border-white/15 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 font-mono focus:outline-none focus:border-[#33CCFF]"
+                    placeholder="Nhập ID tài khoản (Ví dụ: act_1234567890 hoặc 1234567890)"
+                    value={manualAccountIdInput}
+                    onChange={(e) => {
+                      setManualAccountIdInput(e.target.value);
+                      setAddAccountFeedback(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addManualAdAccount(manualAccountIdInput);
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => addManualAdAccount(manualAccountIdInput)}
+                    disabled={addingAccount || !manualAccountIdInput.trim()}
+                    className="px-3.5 py-2 bg-[#33CCFF] hover:bg-[#33CCFF]/90 text-[#070b14] font-semibold text-xs rounded-lg transition-all disabled:opacity-40 flex items-center gap-1.5 flex-shrink-0 cursor-pointer"
+                  >
+                    <Plus className={`w-3.5 h-3.5 ${addingAccount ? 'animate-spin' : ''}`} />
+                    {addingAccount ? 'Đang kiểm tra...' : 'Thêm tài khoản'}
+                  </button>
+                </div>
+
+                {/* Add account feedback */}
+                {addAccountFeedback && (
+                  <div className={`p-2.5 rounded-lg text-xs border ${
+                    addAccountFeedback.success 
+                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' 
+                      : 'bg-red-500/10 border-red-500/20 text-red-300'
+                  }`}>
+                    {addAccountFeedback.success ? '✅ ' : '❌ '}
+                    {addAccountFeedback.message}
+                  </div>
+                )}
+
+                {/* List of Connected Accounts */}
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {adAccounts.filter(a => !MOCK_ACCOUNTS.some(m => m.account_id === a.account_id)).length === 0 ? (
+                    <div className="p-3 rounded-lg bg-black/20 border border-dashed border-white/10 text-center text-xs text-gray-400">
+                      Chưa có tài khoản live nào. Hãy nhập ID tài khoản vào ô trên hoặc bấm "Kiểm tra & Quét tài khoản".
+                    </div>
+                  ) : (
+                    adAccounts
+                      .filter(a => !MOCK_ACCOUNTS.some(m => m.account_id === a.account_id))
+                      .map(acc => (
+                        <div 
+                          key={acc.account_id}
+                          className="flex items-center justify-between p-2.5 bg-black/40 border border-white/10 rounded-lg text-xs hover:border-[#33CCFF]/30 transition-all"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0"></span>
+                            <div className="min-w-0">
+                              <p className="font-semibold text-white truncate">{acc.name}</p>
+                              <p className="text-[10px] text-gray-400 font-mono">ID: act_{acc.account_id} • Tiền tệ: {acc.currency || 'USD'}</p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeAdAccount(acc.account_id)}
+                            className="p-1.5 text-gray-400 hover:text-red-400 transition-colors ml-2 flex-shrink-0 cursor-pointer"
+                            title="Xóa tài khoản này"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))
+                  )}
+                </div>
+              </div>
+              
+              {/* Google Sheets Webhook */}
+              <div className="p-4 bg-white/5 border border-white/10 rounded-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider">
+                    Google Sheets Webhook URL (Apps Script)
+                  </label>
+                  <button 
+                    onClick={() => setIsGuideOpen(true)}
+                    className="text-[11px] text-emerald-400 hover:underline flex items-center gap-1"
+                  >
+                    <BookOpen className="w-3 h-3" /> Cách tạo Webhook
+                  </button>
+                </div>
+
+                <input 
+                  type="url"
+                  className="w-full bg-[#070b14] border border-white/15 rounded-lg px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-400 font-mono"
+                  placeholder="https://script.google.com/macros/s/.../exec"
+                  value={settings.sheetWebhook}
+                  onChange={(e) => {
+                    setSettings({...settings, sheetWebhook: e.target.value});
+                    setWebhookTestResult(null);
+                  }}
+                />
+
+                <div className="flex items-center justify-between gap-3 pt-1">
+                  <p className="text-[11px] text-gray-500">
+                    Bấm "Sync to Sheet" ở thanh công cụ để đẩy dữ liệu báo cáo & phễu.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => testWebhook(settings.sheetWebhook)}
+                    disabled={testingWebhook || !settings.sheetWebhook}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 flex items-center gap-1.5 transition-all disabled:opacity-40 flex-shrink-0"
+                  >
+                    <Save className={`w-3.5 h-3.5 ${testingWebhook ? 'animate-spin' : ''}`} />
+                    {testingWebhook ? 'Đang gửi test...' : 'Gửi thử nghiệm'}
+                  </button>
+                </div>
+
+                {webhookTestResult && (
+                  <div className={`p-2.5 rounded-lg text-xs border ${
+                    webhookTestResult.success 
+                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' 
+                      : 'bg-red-500/10 border-red-500/20 text-red-300'
+                  }`}>
+                    {webhookTestResult.success ? '✅ ' : '❌ '}
+                    {webhookTestResult.message}
+                  </div>
+                )}
+              </div>
+
+              {/* Danger Zone / Reset */}
+              <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-xl flex items-center justify-between gap-4">
+                <div>
+                  <h4 className="text-xs font-semibold text-red-400 uppercase tracking-wider">Reset Toàn Bộ Hệ Thống</h4>
+                  <p className="text-[11px] text-gray-400 mt-0.5">Xóa sạch Token, Webhook và các số liệu đã lưu (Yêu cầu xác nhận CAPTCHA).</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={openResetModal}
+                  className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-300 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Reset Toàn Bộ
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-white/10 flex justify-end gap-3">
+              <button 
+                onClick={() => setIsSettingsOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-gray-300 transition-all cursor-pointer"
+              >
+                Đóng
+              </button>
+              <button 
+                onClick={async () => {
+                  setIsSettingsOpen(false);
+                  if (settings.metaToken && settings.metaToken.trim() !== '') {
+                    await fetchAdAccounts(settings.metaToken);
+                    if (selectedAccountIds.length > 0) {
+                      fetchMetaAPI(selectedAccountIds, datePreset, customStartDate, customEndDate);
+                    }
+                  }
+                }}
+                className="px-5 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-[#33CCFF] to-[#0AE5D5] text-[#070b14] hover:opacity-90 transition-all shadow-lg shadow-[#33CCFF]/20 cursor-pointer"
+              >
+                Lưu & Áp Dụng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CAPTCHA Reset Confirmation Modal */}
+      {isResetModalOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-[#0a0f1c] border border-red-500/30 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+            <div className="flex items-center gap-3 text-red-400 mb-4 pb-3 border-b border-red-500/20">
+              <ShieldAlert className="w-6 h-6 flex-shrink-0" />
+              <h2 className="text-lg font-bold text-white">Xác Nhận Xóa Sạch Toàn Bộ</h2>
+            </div>
+
+            <p className="text-xs text-gray-300 mb-4 leading-relaxed">
+              Hành động này sẽ <strong>xóa toàn bộ</strong> Meta Access Token, Google Sheets Webhook, danh sách CRM Profiles và toàn bộ số liệu chuyển đổi đã lưu. Hệ thống sẽ quay về trạng thái mặc định ban đầu và <strong>không thể hoàn tác</strong>.
+            </p>
+
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-4 text-center">
+              <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                Nhập mã bảo mật (CAPTCHA) bên dưới:
+              </label>
+              
+              <div className="flex items-center justify-center gap-3 mb-3">
+                <div className="px-6 py-2 bg-black/60 border border-white/20 rounded-lg text-2xl font-mono font-black text-amber-300 tracking-[0.3em] select-none shadow-inner">
+                  {captchaCode}
+                </div>
+                <button 
+                  type="button" 
+                  onClick={generateCaptcha}
+                  className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all cursor-pointer"
+                  title="Đổi mã khác"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+              </div>
+
+              <input 
+                type="text" 
+                maxLength={4}
+                className="w-full bg-[#070b14] border border-white/20 rounded-lg px-3 py-2 text-center text-sm text-white font-mono tracking-widest uppercase focus:outline-none focus:border-red-400"
+                placeholder="Nhập 4 ký tự vào đây..."
+                value={captchaInput}
+                onChange={(e) => setCaptchaInput(e.target.value)}
+                autoFocus
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsResetModalOpen(false)}
+                className="px-4 py-2 rounded-lg text-xs font-medium bg-white/5 hover:bg-white/10 text-gray-300 transition-colors cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                disabled={captchaInput.trim().toUpperCase() !== captchaCode}
+                onClick={handleConfirmReset}
+                className="px-5 py-2 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-500 text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-red-600/30 cursor-pointer"
+              >
+                Xác Nhận Xóa Sạch
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Profile Create / Edit Modal */}
+      {isProfileModalOpen && (
+        <ProfileModal 
+          isOpen={isProfileModalOpen}
+          editingProfile={editingProfile}
+          adAccounts={adAccounts}
+          onClose={() => setIsProfileModalOpen(false)}
+          onSave={(savedProfile) => {
+            if (editingProfile) {
+              setProfiles(profiles.map(p => p.id === savedProfile.id ? savedProfile : p));
+            } else {
+              setProfiles([...profiles, savedProfile]);
+            }
+            setIsProfileModalOpen(false);
+          }}
+        />
+      )}
+
+      {/* CRM Lead Create / Edit Modal */}
+      {isLeadModalOpen && (
+        <LeadModal 
+          isOpen={isLeadModalOpen}
+          editingLead={editingLead}
+          profiles={profiles}
+          campaigns={data}
+          onClose={() => setIsLeadModalOpen(false)}
+          onSave={(savedLead) => {
+            if (editingLead) {
+              setLeads(leads.map(l => l.id === savedLead.id ? savedLead : l));
+            } else {
+              setLeads([savedLead, ...leads]);
+            }
+            setIsLeadModalOpen(false);
+          }}
+        />
+      )}
+
+      {/* Setup Guide Modal */}
+      {isGuideOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#0a0f1c] border border-white/10 rounded-2xl w-full max-w-2xl p-6 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-6">
+              <BookOpen className="w-5 h-5 text-purple-400" />
+              Setup Guide
+            </h2>
+            
+            <div className="space-y-6 text-sm text-gray-300">
+              <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
+                <h3 className="font-semibold text-white mb-2 text-base flex items-center gap-2">
+                  <span className="bg-[#33CCFF]/20 text-[#33CCFF] w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
+                  Getting Meta Access Token
+                </h3>
+                <ul className="list-disc list-inside space-y-1 ml-1 text-gray-400">
+                  <li>Go to <strong>Meta For Developers</strong> &gt; My Apps.</li>
+                  <li>Select your app or create a new "Business" app.</li>
+                  <li>Add <strong>Marketing API</strong> to your app.</li>
+                  <li>Go to Tools &gt; <strong>Graph API Explorer</strong>.</li>
+                  <li>Select your app, get a Page Access Token or User Token with permissions: <code className="bg-black/50 px-1 py-0.5 rounded text-pink-300">ads_read</code>, <code className="bg-black/50 px-1 py-0.5 rounded text-pink-300">read_insights</code>, <code className="bg-black/50 px-1 py-0.5 rounded text-pink-300">pages_read_engagement</code>.</li>
+                  <li>Copy the token and paste it into the <strong>Settings</strong> modal of this tool.</li>
+                </ul>
+              </div>
+
+              <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
+                <h3 className="font-semibold text-white mb-2 text-base flex items-center gap-2">
+                  <span className="bg-green-500/20 text-green-400 w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
+                  Setting up Google Sheets Sync
+                </h3>
+                <ol className="list-decimal list-inside space-y-2 ml-1 text-gray-400">
+                  <li>Create a new <strong>Google Sheet</strong>.</li>
+                  <li>Go to <strong>Extensions &gt; Apps Script</strong>.</li>
+                  <li>Delete any code there, and paste the code below.</li>
+                  <li>Click <strong>Deploy &gt; New deployment</strong>.</li>
+                  <li>Select type: <strong>Web app</strong>. Execute as: <strong>Me</strong>. Who has access: <strong>Anyone</strong>.</li>
+                  <li>Copy the resulting Web app URL and paste it into the Settings modal.</li>
+                </ol>
+                <div className="mt-3 bg-black/50 p-3 rounded-lg border border-white/5 font-mono text-[11px] text-gray-400 overflow-x-auto">
+<pre>{`function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = JSON.parse(e.postData.contents);
+  
+  // Headers (Run once manually or handle here)
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(["Timestamp", "Date Range", "Campaign Name", "Spend", "Leads", "Account Opens", "Funded Accounts", "Deposit"]);
+  }
+  
+  // Append Campaign Data
+  data.campaigns.forEach(function(c) {
+    sheet.appendRow([
+      data.timestamp,
+      data.dateRange,
+      c.campaignName,
+      c.spend,
+      c.leads,
+      c.accountOpens,
+      c.fundedAccounts,
+      c.deposit
+    ]);
+  });
+  
+  return ContentService.createTextOutput(JSON.stringify({"status": "success"})).setMimeType(ContentService.MimeType.JSON);
+}`}</pre>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 flex justify-end gap-3 sticky bottom-0 bg-[#0a0f1c] pt-4">
+              <button 
+                onClick={() => setIsGuideOpen(false)}
+                className="px-4 py-2 rounded-lg text-sm bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 transition-colors cursor-pointer"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       </div>
     </div>
   );
@@ -3185,475 +3656,6 @@ function FunnelHealthReport({ data, manualData }) {
         </table>
       </div>
       
-      {/* --- MODALS --- */}
-
-      {/* Settings Modal */}
-      {isSettingsOpen && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="bg-[#0a0f1c] border border-white/15 rounded-2xl w-full max-w-xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-4 mb-5 border-b border-white/10">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2.5">
-                <Settings className="w-5 h-5 text-[#33CCFF]" />
-                Cài Đặt Kết Nối Trực Tiếp
-              </h2>
-              <button 
-                onClick={() => setIsSettingsOpen(false)}
-                className="text-gray-400 hover:text-white text-lg p-1"
-              >
-                ✕
-              </button>
-            </div>
-            
-            {/* Status indicator inside modal */}
-            <div className={`p-3.5 rounded-xl mb-5 flex items-center justify-between text-xs border ${
-              !isUsingMock && settings.metaToken
-                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
-                : 'bg-amber-500/10 border-amber-500/20 text-amber-300'
-            }`}>
-              <div className="flex items-center gap-3">
-                <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${!isUsingMock && settings.metaToken ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
-                <div>
-                  <span className="font-semibold">{!isUsingMock && settings.metaToken ? 'Trạng thái: Đã kết nối Live API' : 'Trạng thái: Đang ở chế độ Demo'}</span>
-                  <p className="opacity-80 text-[11px] mt-0.5">
-                    {!isUsingMock && settings.metaToken 
-                      ? `Đang quản lý ${adAccounts.filter(a => !MOCK_ACCOUNTS.some(m => m.account_id === a.account_id)).length || adAccounts.length} tài khoản quảng cáo trực tiếp từ Meta.` 
-                      : 'Nhập Access Token và thêm tài khoản bên dưới để tải số liệu thực tế.'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              {/* Meta Access Token */}
-              <div className="p-4 bg-white/5 border border-white/10 rounded-xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                    Meta Graph API Access Token
-                  </label>
-                  <button 
-                    onClick={() => setIsGuideOpen(true)}
-                    className="text-[11px] text-[#33CCFF] hover:underline flex items-center gap-1"
-                  >
-                    <BookOpen className="w-3 h-3" /> Cách lấy Token
-                  </button>
-                </div>
-
-                <div className="relative">
-                  <input 
-                    type="password"
-                    className="w-full bg-[#070b14] border border-white/15 rounded-lg px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#33CCFF] font-mono tracking-wider"
-                    placeholder="EAAGm0..."
-                    value={settings.metaToken}
-                    onChange={(e) => {
-                      setSettings({...settings, metaToken: e.target.value});
-                      setTokenTestResult(null);
-                    }}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between gap-3 pt-1">
-                  <p className="text-[11px] text-gray-500">
-                    Token được lưu an toàn tại Local Storage.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => testMetaToken(settings.metaToken)}
-                    disabled={testingToken || !settings.metaToken}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#33CCFF]/15 hover:bg-[#33CCFF]/25 border border-[#33CCFF]/30 text-[#33CCFF] flex items-center gap-1.5 transition-all disabled:opacity-40 flex-shrink-0"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${testingToken ? 'animate-spin' : ''}`} />
-                    {testingToken ? 'Đang kiểm tra...' : 'Kiểm tra & Quét tài khoản'}
-                  </button>
-                </div>
-
-                {tokenTestResult && (
-                  <div className={`p-2.5 rounded-lg text-xs border ${
-                    tokenTestResult.isWarning
-                      ? 'bg-amber-500/10 border-amber-500/20 text-amber-300'
-                      : tokenTestResult.success 
-                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' 
-                        : 'bg-red-500/10 border-red-500/20 text-red-300'
-                  }`}>
-                    {tokenTestResult.isWarning ? '⚠️ ' : tokenTestResult.success ? '✅ ' : '❌ '}
-                    {tokenTestResult.message}
-                  </div>
-                )}
-              </div>
-
-              {/* Dedicated Ad Accounts Manager */}
-              <div className="p-4 bg-white/5 border border-white/10 rounded-xl space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="block text-xs font-semibold text-white uppercase tracking-wider flex items-center gap-2">
-                      <Briefcase className="w-4 h-4 text-[#33CCFF]" />
-                      Tài Khoản Quảng Cáo Đã Kết Nối ({adAccounts.filter(a => !MOCK_ACCOUNTS.some(m => m.account_id === a.account_id)).length})
-                    </label>
-                    <p className="text-[11px] text-gray-400 mt-0.5">
-                      Hỗ trợ tự động quét hoặc nhập trực tiếp ID tài khoản cá nhân / BM.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => testMetaToken(settings.metaToken)}
-                    disabled={testingToken || !settings.metaToken}
-                    className="text-[11px] text-[#33CCFF] hover:underline flex items-center gap-1 disabled:opacity-40"
-                    title="Quét lại từ Token"
-                  >
-                    <RefreshCw className={`w-3 h-3 ${testingToken ? 'animate-spin' : ''}`} /> Quét lại
-                  </button>
-                </div>
-
-                {/* Manual Account ID Input */}
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    className="flex-1 bg-[#070b14] border border-white/15 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 font-mono focus:outline-none focus:border-[#33CCFF]"
-                    placeholder="Nhập ID tài khoản (Ví dụ: act_1234567890 hoặc 1234567890)"
-                    value={manualAccountIdInput}
-                    onChange={(e) => {
-                      setManualAccountIdInput(e.target.value);
-                      setAddAccountFeedback(null);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        addManualAdAccount(manualAccountIdInput);
-                      }
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => addManualAdAccount(manualAccountIdInput)}
-                    disabled={addingAccount || !manualAccountIdInput.trim()}
-                    className="px-3.5 py-2 bg-[#33CCFF] hover:bg-[#33CCFF]/90 text-[#070b14] font-semibold text-xs rounded-lg transition-all disabled:opacity-40 flex items-center gap-1.5 flex-shrink-0 cursor-pointer"
-                  >
-                    <Plus className={`w-3.5 h-3.5 ${addingAccount ? 'animate-spin' : ''}`} />
-                    {addingAccount ? 'Đang kiểm tra...' : 'Thêm tài khoản'}
-                  </button>
-                </div>
-
-                {/* Add account feedback */}
-                {addAccountFeedback && (
-                  <div className={`p-2.5 rounded-lg text-xs border ${
-                    addAccountFeedback.success 
-                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' 
-                      : 'bg-red-500/10 border-red-500/20 text-red-300'
-                  }`}>
-                    {addAccountFeedback.success ? '✅ ' : '❌ '}
-                    {addAccountFeedback.message}
-                  </div>
-                )}
-
-                {/* List of Connected Accounts */}
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                  {adAccounts.filter(a => !MOCK_ACCOUNTS.some(m => m.account_id === a.account_id)).length === 0 ? (
-                    <div className="p-3 rounded-lg bg-black/20 border border-dashed border-white/10 text-center text-xs text-gray-400">
-                      Chưa có tài khoản live nào. Hãy nhập ID tài khoản vào ô trên hoặc bấm "Kiểm tra & Quét tài khoản".
-                    </div>
-                  ) : (
-                    adAccounts
-                      .filter(a => !MOCK_ACCOUNTS.some(m => m.account_id === a.account_id))
-                      .map(acc => (
-                        <div 
-                          key={acc.account_id}
-                          className="flex items-center justify-between p-2.5 bg-black/40 border border-white/10 rounded-lg text-xs hover:border-[#33CCFF]/30 transition-all"
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0"></span>
-                            <div className="min-w-0">
-                              <p className="font-semibold text-white truncate">{acc.name}</p>
-                              <p className="text-[10px] text-gray-400 font-mono">ID: act_{acc.account_id} • Tiền tệ: {acc.currency || 'USD'}</p>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeAdAccount(acc.account_id)}
-                            className="p-1.5 text-gray-400 hover:text-red-400 transition-colors ml-2 flex-shrink-0 cursor-pointer"
-                            title="Xóa tài khoản này"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))
-                  )}
-                </div>
-              </div>
-              
-              {/* Google Sheets Webhook */}
-              <div className="p-4 bg-white/5 border border-white/10 rounded-xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                    Google Sheets Webhook URL (Apps Script)
-                  </label>
-                  <button 
-                    onClick={() => setIsGuideOpen(true)}
-                    className="text-[11px] text-emerald-400 hover:underline flex items-center gap-1"
-                  >
-                    <BookOpen className="w-3 h-3" /> Cách tạo Webhook
-                  </button>
-                </div>
-
-                <input 
-                  type="url"
-                  className="w-full bg-[#070b14] border border-white/15 rounded-lg px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-400 font-mono"
-                  placeholder="https://script.google.com/macros/s/.../exec"
-                  value={settings.sheetWebhook}
-                  onChange={(e) => {
-                    setSettings({...settings, sheetWebhook: e.target.value});
-                    setWebhookTestResult(null);
-                  }}
-                />
-
-                <div className="flex items-center justify-between gap-3 pt-1">
-                  <p className="text-[11px] text-gray-500">
-                    Bấm "Sync to Sheet" ở thanh công cụ để đẩy dữ liệu báo cáo & phễu.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => testWebhook(settings.sheetWebhook)}
-                    disabled={testingWebhook || !settings.sheetWebhook}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 flex items-center gap-1.5 transition-all disabled:opacity-40 flex-shrink-0"
-                  >
-                    <Save className={`w-3.5 h-3.5 ${testingWebhook ? 'animate-spin' : ''}`} />
-                    {testingWebhook ? 'Đang gửi test...' : 'Gửi thử nghiệm'}
-                  </button>
-                </div>
-
-                {webhookTestResult && (
-                  <div className={`p-2.5 rounded-lg text-xs border ${
-                    webhookTestResult.success 
-                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' 
-                      : 'bg-red-500/10 border-red-500/20 text-red-300'
-                  }`}>
-                    {webhookTestResult.success ? '✅ ' : '❌ '}
-                    {webhookTestResult.message}
-                  </div>
-                )}
-              </div>
-
-              {/* Danger Zone / Reset */}
-              <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-xl flex items-center justify-between gap-4">
-                <div>
-                  <h4 className="text-xs font-semibold text-red-400 uppercase tracking-wider">Reset Toàn Bộ Hệ Thống</h4>
-                  <p className="text-[11px] text-gray-400 mt-0.5">Xóa sạch Token, Webhook và các số liệu đã lưu (Yêu cầu xác nhận CAPTCHA).</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={openResetModal}
-                  className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-300 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  Reset Toàn Bộ
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-white/10 flex justify-end gap-3">
-              <button 
-                onClick={() => setIsSettingsOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-white/5 hover:bg-white/10 text-gray-300 transition-all cursor-pointer"
-              >
-                Đóng
-              </button>
-              <button 
-                onClick={async () => {
-                  setIsSettingsOpen(false);
-                  if (settings.metaToken && settings.metaToken.trim() !== '') {
-                    await fetchAdAccounts(settings.metaToken);
-                    if (selectedAccountIds.length > 0) {
-                      fetchMetaAPI(selectedAccountIds, datePreset, customStartDate, customEndDate);
-                    }
-                  }
-                }}
-                className="px-5 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-[#33CCFF] to-[#0AE5D5] text-[#070b14] hover:opacity-90 transition-all shadow-lg shadow-[#33CCFF]/20 cursor-pointer"
-              >
-                Lưu & Áp Dụng
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* CAPTCHA Reset Confirmation Modal */}
-      {isResetModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="bg-[#0a0f1c] border border-red-500/30 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
-            <div className="flex items-center gap-3 text-red-400 mb-4 pb-3 border-b border-red-500/20">
-              <ShieldAlert className="w-6 h-6 flex-shrink-0" />
-              <h2 className="text-lg font-bold text-white">Xác Nhận Xóa Sạch Toàn Bộ</h2>
-            </div>
-
-            <p className="text-xs text-gray-300 mb-4 leading-relaxed">
-              Hành động này sẽ <strong>xóa toàn bộ</strong> Meta Access Token, Google Sheets Webhook, danh sách CRM Profiles và toàn bộ số liệu chuyển đổi đã lưu. Hệ thống sẽ quay về trạng thái mặc định ban đầu và <strong>không thể hoàn tác</strong>.
-            </p>
-
-            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-4 text-center">
-              <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                Nhập mã bảo mật (CAPTCHA) bên dưới:
-              </label>
-              
-              <div className="flex items-center justify-center gap-3 mb-3">
-                <div className="px-6 py-2 bg-black/60 border border-white/20 rounded-lg text-2xl font-mono font-black text-amber-300 tracking-[0.3em] select-none shadow-inner">
-                  {captchaCode}
-                </div>
-                <button 
-                  type="button" 
-                  onClick={generateCaptcha}
-                  className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all cursor-pointer"
-                  title="Đổi mã khác"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                </button>
-              </div>
-
-              <input 
-                type="text" 
-                maxLength={4}
-                className="w-full bg-[#070b14] border border-white/20 rounded-lg px-3 py-2 text-center text-sm text-white font-mono tracking-widest uppercase focus:outline-none focus:border-red-400"
-                placeholder="Nhập 4 ký tự vào đây..."
-                value={captchaInput}
-                onChange={(e) => setCaptchaInput(e.target.value)}
-                autoFocus
-              />
-            </div>
-
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsResetModalOpen(false)}
-                className="px-4 py-2 rounded-lg text-xs font-medium bg-white/5 hover:bg-white/10 text-gray-300 transition-colors cursor-pointer"
-              >
-                Hủy bỏ
-              </button>
-              <button
-                type="button"
-                disabled={captchaInput.trim().toUpperCase() !== captchaCode}
-                onClick={handleConfirmReset}
-                className="px-5 py-2 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-500 text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-red-600/30 cursor-pointer"
-              >
-                Xác Nhận Xóa Sạch
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Profile Create / Edit Modal */}
-      {isProfileModalOpen && (
-        <ProfileModal 
-          isOpen={isProfileModalOpen}
-          editingProfile={editingProfile}
-          adAccounts={adAccounts}
-          onClose={() => setIsProfileModalOpen(false)}
-          onSave={(savedProfile) => {
-            if (editingProfile) {
-              setProfiles(profiles.map(p => p.id === savedProfile.id ? savedProfile : p));
-            } else {
-              setProfiles([...profiles, savedProfile]);
-            }
-            setIsProfileModalOpen(false);
-          }}
-        />
-      )}
-
-      {/* CRM Lead Create / Edit Modal */}
-      {isLeadModalOpen && (
-        <LeadModal 
-          isOpen={isLeadModalOpen}
-          editingLead={editingLead}
-          profiles={profiles}
-          campaigns={data}
-          onClose={() => setIsLeadModalOpen(false)}
-          onSave={(savedLead) => {
-            if (editingLead) {
-              setLeads(leads.map(l => l.id === savedLead.id ? savedLead : l));
-            } else {
-              setLeads([savedLead, ...leads]);
-            }
-            setIsLeadModalOpen(false);
-          }}
-        />
-      )}
-
-      {/* Setup Guide Modal */}
-      {isGuideOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#0a0f1c] border border-white/10 rounded-2xl w-full max-w-2xl p-6 shadow-2xl relative max-h-[85vh] overflow-y-auto">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2 mb-6">
-              <BookOpen className="w-5 h-5 text-purple-400" />
-              Setup Guide
-            </h2>
-            
-            <div className="space-y-6 text-sm text-gray-300">
-              <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
-                <h3 className="font-semibold text-white mb-2 text-base flex items-center gap-2">
-                  <span className="bg-[#33CCFF]/20 text-[#33CCFF] w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
-                  Getting Meta Access Token
-                </h3>
-                <ul className="list-disc list-inside space-y-1 ml-1 text-gray-400">
-                  <li>Go to <strong>Meta For Developers</strong> &gt; My Apps.</li>
-                  <li>Select your app or create a new "Business" app.</li>
-                  <li>Add <strong>Marketing API</strong> to your app.</li>
-                  <li>Go to Tools &gt; <strong>Graph API Explorer</strong>.</li>
-                  <li>Select your app, get a Page Access Token or User Token with permissions: <code className="bg-black/50 px-1 py-0.5 rounded text-pink-300">ads_read</code>, <code className="bg-black/50 px-1 py-0.5 rounded text-pink-300">read_insights</code>, <code className="bg-black/50 px-1 py-0.5 rounded text-pink-300">pages_read_engagement</code>.</li>
-                  <li>Copy the token and paste it into the <strong>Settings</strong> modal of this tool.</li>
-                </ul>
-              </div>
-
-              <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
-                <h3 className="font-semibold text-white mb-2 text-base flex items-center gap-2">
-                  <span className="bg-green-500/20 text-green-400 w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
-                  Setting up Google Sheets Sync
-                </h3>
-                <ol className="list-decimal list-inside space-y-2 ml-1 text-gray-400">
-                  <li>Create a new <strong>Google Sheet</strong>.</li>
-                  <li>Go to <strong>Extensions &gt; Apps Script</strong>.</li>
-                  <li>Delete any code there, and paste the code below.</li>
-                  <li>Click <strong>Deploy &gt; New deployment</strong>.</li>
-                  <li>Select type: <strong>Web app</strong>. Execute as: <strong>Me</strong>. Who has access: <strong>Anyone</strong>.</li>
-                  <li>Copy the resulting Web app URL and paste it into the Settings modal.</li>
-                </ol>
-                <div className="mt-3 bg-black/50 p-3 rounded-lg border border-white/5 font-mono text-[11px] text-gray-400 overflow-x-auto">
-<pre>{`function doPost(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var data = JSON.parse(e.postData.contents);
-  
-  // Headers (Run once manually or handle here)
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow(["Timestamp", "Date Range", "Campaign Name", "Spend", "Leads", "Account Opens", "Funded Accounts", "Deposit"]);
-  }
-  
-  // Append Campaign Data
-  data.campaigns.forEach(function(c) {
-    sheet.appendRow([
-      data.timestamp,
-      data.dateRange,
-      c.campaignName,
-      c.spend,
-      c.leads,
-      c.accountOpens,
-      c.fundedAccounts,
-      c.deposit
-    ]);
-  });
-  
-  return ContentService.createTextOutput(JSON.stringify({"status": "success"})).setMimeType(ContentService.MimeType.JSON);
-}`}</pre>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-8 flex justify-end gap-3 sticky bottom-0 bg-[#0a0f1c] pt-4">
-              <button 
-                onClick={() => setIsGuideOpen(false)}
-                className="px-4 py-2 rounded-lg text-sm bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 transition-colors cursor-pointer"
-              >
-                Got it
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
