@@ -462,6 +462,47 @@ export default function App() {
 
   const [loadingBusinesses, setLoadingBusinesses] = useState(false);
   const [isCreateCampaignOpen, setIsCreateCampaignOpen] = useState(false);
+
+  // --- CRM Currency & Custom Exchange Rates ---
+  const [crmCurrency, setCrmCurrency] = useState(() => {
+    return localStorage.getItem('crm_display_currency') || 'VND';
+  });
+  const [customRates, setCustomRates] = useState(() => {
+    try {
+      const saved = localStorage.getItem('crm_custom_rates');
+      return saved ? JSON.parse(saved) : {
+        USD: 1,
+        VND: 25400,
+        THB: 36.5,
+        EUR: 0.92,
+        JPY: 155.0,
+        IDR: 16200,
+        PHP: 58.0,
+        SGD: 1.35,
+        MYR: 4.72
+      };
+    } catch (e) {
+      return { USD: 1, VND: 25400, THB: 36.5, EUR: 0.92, JPY: 155, IDR: 16200, PHP: 58, SGD: 1.35, MYR: 4.72 };
+    }
+  });
+
+  const handleCurrencyChange = (curr) => {
+    setCrmCurrency(curr);
+    localStorage.setItem('crm_display_currency', curr);
+  };
+
+  const handleRateChange = (curr, newRate) => {
+    const num = parseFloat(newRate);
+    if (isNaN(num) || num <= 0) return;
+    const updated = { ...customRates, [curr]: num };
+    setCustomRates(updated);
+    localStorage.setItem('crm_custom_rates', JSON.stringify(updated));
+  };
+
+  // --- Live Dashboard Campaign Filter States ---
+  const [campaignSearchTerm, setCampaignSearchTerm] = useState('');
+  const [campaignStatusFilter, setCampaignStatusFilter] = useState('all'); // 'all' | 'ACTIVE' | 'PAUSED'
+  const [campaignObjectiveFilter, setCampaignObjectiveFilter] = useState('all'); // 'all' | 'OUTCOME_LEADS' | etc.
   const [togglingStatus, setTogglingStatus] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
 
@@ -1731,6 +1772,22 @@ export default function App() {
 
 
   // Compute stats for Header Cards
+  // Filter campaigns for Live Dashboard
+  const displayedCampaigns = data.filter(item => {
+    const s = campaignSearchTerm.trim().toLowerCase();
+    const matchSearch = !s || 
+      (item.campaign_name && item.campaign_name.toLowerCase().includes(s)) || 
+      (item.account_name && item.account_name.toLowerCase().includes(s));
+    const matchStatus = campaignStatusFilter === 'all' || (item.status || 'ACTIVE') === campaignStatusFilter;
+    const matchObjective = campaignObjectiveFilter === 'all' || item.objective === campaignObjectiveFilter;
+    return matchSearch && matchStatus && matchObjective;
+  });
+
+  const displayedSpend = displayedCampaigns.reduce((acc, curr) => acc + curr.spend, 0);
+  const displayedClicks = displayedCampaigns.reduce((acc, curr) => acc + curr.clicks, 0);
+  const displayedLeads = displayedCampaigns.reduce((acc, curr) => acc + curr.leads, 0);
+  const displayedCpl = displayedLeads > 0 ? displayedSpend / displayedLeads : 0;
+
   const totalSpend = data.reduce((acc, curr) => acc + curr.spend, 0);
   const totalClicks = data.reduce((acc, curr) => acc + curr.clicks, 0);
   const totalLeads = data.reduce((acc, curr) => acc + curr.leads, 0);
@@ -2024,6 +2081,76 @@ export default function App() {
               </div>
             )}
 
+            {/* Campaign Search Filter */}
+            <div className="relative flex items-center bg-white/5 border border-white/10 hover:border-white/20 rounded-lg pl-8 pr-2.5 py-1.5 text-xs text-white transition-all h-[36px] min-w-[170px] max-w-[220px]">
+              <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5" />
+              <input 
+                type="text" 
+                placeholder="Tìm tên chiến dịch..." 
+                value={campaignSearchTerm} 
+                onChange={(e) => setCampaignSearchTerm(e.target.value)} 
+                className="bg-transparent text-xs text-white placeholder-gray-500 focus:outline-none w-full"
+              />
+              {campaignSearchTerm && (
+                <button 
+                  onClick={() => setCampaignSearchTerm('')} 
+                  className="text-gray-400 hover:text-white text-xs ml-1 p-0.5"
+                  title="Xóa tìm kiếm"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Campaign Status Filter */}
+            <div className="relative flex items-center bg-white/5 border border-white/10 hover:border-white/20 rounded-lg pr-4 pl-2.5 py-1.5 text-xs text-white transition-all h-[36px]">
+              <Filter className="w-3.5 h-3.5 text-[#0AE5D5] mr-1.5 flex-shrink-0" />
+              <select 
+                value={campaignStatusFilter}
+                onChange={(e) => setCampaignStatusFilter(e.target.value)}
+                className="appearance-none bg-transparent text-white focus:outline-none cursor-pointer pr-3 text-xs font-medium"
+              >
+                <option value="all" className="bg-[#0a0f1c]">Tất cả trạng thái ({data.length})</option>
+                <option value="ACTIVE" className="bg-[#0a0f1c]">🟢 Active ({data.filter(c => (c.status || 'ACTIVE') === 'ACTIVE').length})</option>
+                <option value="PAUSED" className="bg-[#0a0f1c]">⚪ Paused ({data.filter(c => c.status === 'PAUSED').length})</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-2 pointer-events-none" />
+            </div>
+
+            {/* Campaign Objective Filter */}
+            <div className="relative flex items-center bg-white/5 border border-white/10 hover:border-white/20 rounded-lg pr-4 pl-2.5 py-1.5 text-xs text-white transition-all h-[36px]">
+              <Target className="w-3.5 h-3.5 text-purple-400 mr-1.5 flex-shrink-0" />
+              <select 
+                value={campaignObjectiveFilter}
+                onChange={(e) => setCampaignObjectiveFilter(e.target.value)}
+                className="appearance-none bg-transparent text-white focus:outline-none cursor-pointer pr-3 text-xs font-medium"
+              >
+                <option value="all" className="bg-[#0a0f1c]">Tất cả mục tiêu</option>
+                <option value="OUTCOME_LEADS" className="bg-[#0a0f1c]">🎯 Leads</option>
+                <option value="OUTCOME_SALES" className="bg-[#0a0f1c]">💰 Sales</option>
+                <option value="OUTCOME_TRAFFIC" className="bg-[#0a0f1c]">🚀 Traffic</option>
+                <option value="OUTCOME_ENGAGEMENT" className="bg-[#0a0f1c]">💬 Engagement</option>
+                <option value="OUTCOME_AWARENESS" className="bg-[#0a0f1c]">📢 Awareness</option>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-2 pointer-events-none" />
+            </div>
+
+            {/* Reset Dashboard Filters */}
+            {(campaignSearchTerm || campaignStatusFilter !== 'all' || campaignObjectiveFilter !== 'all') && (
+              <button
+                onClick={() => {
+                  setCampaignSearchTerm('');
+                  setCampaignStatusFilter('all');
+                  setCampaignObjectiveFilter('all');
+                }}
+                className="px-2.5 py-1 rounded-lg text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all flex items-center gap-1 cursor-pointer h-[36px]"
+                title="Xóa bộ lọc chiến dịch"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Xóa lọc</span>
+              </button>
+            )}
+
             {/* Account Selector */}
             <div className="relative" ref={dropdownRef}>
               <button
@@ -2219,10 +2346,10 @@ export default function App() {
           <>
             {/* Top Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-              <StatCard title="Total Spend" value={`$${totalSpend.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`} icon={DollarSign} color="#33CCFF" />
-              <StatCard title="Total Clicks" value={totalClicks.toLocaleString()} icon={MousePointerClick} color="#0AE5D5" />
-              <StatCard title="Total Leads" value={totalLeads.toLocaleString()} icon={Users} color="#33CCFF" />
-              <StatCard title="Avg. CPL" value={`$${averageCpl.toFixed(2)}`} icon={TrendingUp} color="#0AE5D5" />
+              <StatCard title="Total Spend" value={`$${displayedSpend.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`} icon={DollarSign} color="#33CCFF" />
+              <StatCard title="Total Clicks" value={displayedClicks.toLocaleString()} icon={MousePointerClick} color="#0AE5D5" />
+              <StatCard title="Total Leads" value={displayedLeads.toLocaleString()} icon={Users} color="#33CCFF" />
+              <StatCard title="Avg. CPL" value={`$${displayedCpl.toFixed(2)}`} icon={TrendingUp} color="#0AE5D5" />
             </div>
 
             {/* Budget & Conversion Health Cards */}
@@ -2359,7 +2486,7 @@ export default function App() {
                         Loading campaign data...
                       </td>
                     </tr>
-                  ) : data.map((item) => {
+                  ) : displayedCampaigns.map((item) => {
                     const mData = manualData[item.campaign_id] || {};
                     const manualAccountOpen = parseFloat(mData.accountOpen) || 0;
                     const manualFundedAccounts = parseFloat(mData.fundedAccounts) || 0;
@@ -2417,7 +2544,7 @@ export default function App() {
                         </td>
 
                         <td className="px-4 py-3 font-medium text-gray-200 print:text-[#070b14]" title={item.campaign_name}>
-                          <div className="truncate max-w-[200px]">{item.campaign_name}</div>
+                          <div className="font-semibold text-white break-words min-w-[240px] max-w-[480px] whitespace-normal leading-snug">{item.campaign_name}</div>
                           <div className="mt-1 flex items-center gap-1.5 flex-wrap">
                             {item.account_name && (
                               <span className="text-[9px] bg-white/10 text-gray-400 px-1.5 py-0.5 rounded uppercase tracking-wider print:text-gray-600 print:bg-gray-100">
@@ -2603,6 +2730,10 @@ export default function App() {
             campaigns={data}
             crmSubTab={crmSubTab}
             setCrmSubTab={setCrmSubTab}
+            crmCurrency={crmCurrency}
+            setCrmCurrency={handleCurrencyChange}
+            customRates={customRates}
+            onRateChange={handleRateChange}
             onOpenAddProfileModal={() => {
               setEditingProfile(null);
               setIsProfileModalOpen(true);
@@ -3083,6 +3214,8 @@ export default function App() {
           editingLead={editingLead}
           profiles={profiles}
           campaigns={data}
+          crmCurrency={crmCurrency}
+          customRates={customRates}
           onClose={() => setIsLeadModalOpen(false)}
           onSave={(savedLead) => {
             if (editingLead) {
@@ -3333,7 +3466,7 @@ function CampaignOverviewReport({ data }) {
 
               return (
                 <tr key={item.campaign_id} className="hover:bg-white/[0.04] transition-colors">
-                  <td className="px-4 py-3 font-medium text-gray-200 max-w-[200px] truncate" title={item.campaign_name}>{item.campaign_name}</td>
+                  <td className="px-4 py-3 font-medium text-gray-200 min-w-[240px] max-w-[480px] break-words whitespace-normal leading-snug font-medium text-gray-200" title={item.campaign_name}>{item.campaign_name}</td>
                   <td className="px-4 py-3 text-gray-500">
                     <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded uppercase tracking-wider">{item.account_name || '—'}</span>
                   </td>
@@ -3629,7 +3762,7 @@ function ROIRevenueReport({ data, manualData }) {
           <tbody className="divide-y divide-white/5 text-xs">
             {campaignRoi.map(item => (
               <tr key={item.campaign_id} className="hover:bg-white/[0.04] transition-colors">
-                <td className="px-4 py-3 font-medium text-gray-200 max-w-[200px] truncate" title={item.campaign_name}>{item.campaign_name}</td>
+                <td className="px-4 py-3 font-medium text-gray-200 min-w-[240px] max-w-[480px] break-words whitespace-normal leading-snug font-medium text-gray-200" title={item.campaign_name}>{item.campaign_name}</td>
                 <td className="px-4 py-3 text-right text-gray-300">${item.spend.toFixed(2)}</td>
                 <td className="px-4 py-3 text-right text-gray-400">{item.leads}</td>
                 <td className="px-4 py-3 text-right text-[#33CCFF] font-medium">{item.acct || '—'}</td>
@@ -4173,6 +4306,10 @@ function CRMModule({
   campaigns,
   crmSubTab,
   setCrmSubTab,
+  crmCurrency = 'VND',
+  setCrmCurrency,
+  customRates = {},
+  onRateChange,
   onOpenAddProfileModal,
   onEditProfile,
   onOpenAddLeadModal,
@@ -4183,11 +4320,46 @@ function CRMModule({
   const [filterStage, setFilterStage] = useState('all');
   const [filterProfile, setFilterProfile] = useState('all');
   const [filterSource, setFilterSource] = useState('all');
+  const [filterDeposit, setFilterDeposit] = useState('all'); // 'all' | 'has_deposit' | 'no_deposit'
+  const [filterTime, setFilterTime] = useState('all'); // 'all' | 'today' | '7d' | '30d' | 'this_month'
+  const [filterCampaign, setFilterCampaign] = useState('all');
 
-  // Filter leads
+  // Currency Formatter with Custom Rate
+  const formatMoney = (amountInUsd) => {
+    const rate = customRates[crmCurrency] || 1;
+    const val = (parseFloat(amountInUsd) || 0) * rate;
+    if (crmCurrency === 'VND') {
+      return `${Math.round(val).toLocaleString('vi-VN')} ₫`;
+    } else if (crmCurrency === 'THB') {
+      return `${val.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ฿`;
+    } else if (crmCurrency === 'EUR') {
+      return `€${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    } else if (crmCurrency === 'JPY') {
+      return `¥${Math.round(val).toLocaleString('ja-JP')}`;
+    } else if (crmCurrency === 'IDR') {
+      return `Rp ${Math.round(val).toLocaleString('id-ID')}`;
+    } else if (crmCurrency === 'PHP') {
+      return `₱${val.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    } else if (crmCurrency === 'SGD') {
+      return `S$${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    } else if (crmCurrency === 'MYR') {
+      return `RM ${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    } else {
+      return `$${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+  };
+
+  // Unique campaigns for filter
+  const availableCampaigns = Array.from(new Set([
+    ...leads.map(l => l.campaign).filter(Boolean),
+    ...(campaigns || []).map(c => c.campaign_name).filter(Boolean)
+  ]));
+
+  // Filter leads with extended options
   const filteredLeads = leads.filter(l => {
-    const s = searchTerm.toLowerCase();
+    const s = searchTerm.trim().toLowerCase();
     const matchSearch = 
+      !s ||
       l.name.toLowerCase().includes(s) ||
       (l.phone && l.phone.toLowerCase().includes(s)) ||
       (l.email && l.email.toLowerCase().includes(s)) ||
@@ -4196,8 +4368,41 @@ function CRMModule({
     const matchStage = filterStage === 'all' || l.status === filterStage;
     const matchProfile = filterProfile === 'all' || l.assignedTo === filterProfile;
     const matchSource = filterSource === 'all' || l.source === filterSource;
-    return matchSearch && matchStage && matchProfile && matchSource;
+
+    // Deposit filter
+    const dep = parseFloat(l.deposit) || 0;
+    const matchDeposit = 
+      filterDeposit === 'all' ? true :
+      filterDeposit === 'has_deposit' ? dep > 0 :
+      dep === 0;
+
+    // Time filter
+    let matchTime = true;
+    if (filterTime !== 'all' && l.createdAt) {
+      const leadDate = new Date(l.createdAt);
+      const now = new Date();
+      if (filterTime === 'today') {
+        matchTime = leadDate.toDateString() === now.toDateString();
+      } else if (filterTime === '7d') {
+        const d7 = new Date();
+        d7.setDate(d7.getDate() - 7);
+        matchTime = leadDate >= d7;
+      } else if (filterTime === '30d') {
+        const d30 = new Date();
+        d30.setDate(d30.getDate() - 30);
+        matchTime = leadDate >= d30;
+      } else if (filterTime === 'this_month') {
+        matchTime = leadDate.getMonth() === now.getMonth() && leadDate.getFullYear() === now.getFullYear();
+      }
+    }
+
+    // Campaign filter
+    const matchCampaign = filterCampaign === 'all' || l.campaign === filterCampaign;
+
+    return matchSearch && matchStage && matchProfile && matchSource && matchDeposit && matchTime && matchCampaign;
   });
+
+  const hasActiveFilters = searchTerm || filterStage !== 'all' || filterProfile !== 'all' || filterSource !== 'all' || filterDeposit !== 'all' || filterTime !== 'all' || filterCampaign !== 'all';
 
   // Calculate CRM Stats
   const totalLeads = leads.length;
@@ -4344,8 +4549,43 @@ function CRMModule({
           </button>
         </div>
 
+        {/* Currency Switcher & Custom Rate Tool */}
+        <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs">
+          <DollarSign className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+          <span className="text-gray-400 text-[11px] font-medium hidden sm:inline">Tiền tệ:</span>
+          <select
+            value={crmCurrency}
+            onChange={(e) => setCrmCurrency && setCrmCurrency(e.target.value)}
+            className="bg-transparent text-emerald-300 font-bold focus:outline-none cursor-pointer text-xs"
+          >
+            <option value="VND" className="bg-[#0a0f1c]">VND (₫)</option>
+            <option value="USD" className="bg-[#0a0f1c]">USD ($)</option>
+            <option value="THB" className="bg-[#0a0f1c]">THB (฿)</option>
+            <option value="EUR" className="bg-[#0a0f1c]">EUR (€)</option>
+            <option value="JPY" className="bg-[#0a0f1c]">JPY (¥)</option>
+            <option value="IDR" className="bg-[#0a0f1c]">IDR (Rp)</option>
+            <option value="PHP" className="bg-[#0a0f1c]">PHP (₱)</option>
+            <option value="SGD" className="bg-[#0a0f1c]">SGD (S$)</option>
+            <option value="MYR" className="bg-[#0a0f1c]">MYR (RM)</option>
+          </select>
+
+          {crmCurrency !== 'USD' && (
+            <div className="flex items-center gap-1 pl-2 border-l border-white/10 text-[11px] text-gray-400">
+              <span>1$ =</span>
+              <input
+                type="number"
+                value={customRates[crmCurrency] || 1}
+                onChange={(e) => onRateChange && onRateChange(crmCurrency, e.target.value)}
+                className="w-20 bg-black/40 border border-white/15 rounded px-1.5 py-0.5 text-white font-mono text-xs focus:outline-none focus:border-emerald-400"
+                title="Tùy chỉnh tỷ giá quy đổi cho loại tiền tệ này"
+              />
+              <span className="font-semibold text-emerald-300">{crmCurrency}</span>
+            </div>
+          )}
+        </div>
+
         {crmSubTab === 'pipeline' && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={handleExportCSV}
               className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-medium rounded-lg border border-white/10 flex items-center gap-1.5 transition-all cursor-pointer"
@@ -4411,7 +4651,7 @@ function CRMModule({
               </div>
               <div className="min-w-0">
                 <p className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider">Tổng Tiền Nạp</p>
-                <p className="text-xl font-black text-cyan-300">${totalFundedDeposit.toLocaleString()}</p>
+                <p className="text-xl font-black text-cyan-300">{formatMoney(totalFundedDeposit)}</p>
               </div>
             </div>
           </div>
@@ -4455,6 +4695,79 @@ function CRMModule({
                   <option key={p.id} value={p.id} className="bg-[#0a0f1c]">{p.name} ({p.role})</option>
                 ))}
               </select>
+
+              {/* Filter Source */}
+              <select
+                className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#33CCFF] h-[36px] cursor-pointer"
+                value={filterSource}
+                onChange={(e) => setFilterSource(e.target.value)}
+              >
+                <option value="all" className="bg-[#0a0f1c]">Tất cả nguồn</option>
+                <option value="Facebook Ads / Form" className="bg-[#0a0f1c]">Facebook Ads / Form</option>
+                <option value="Website / Funnel" className="bg-[#0a0f1c]">Website / Funnel</option>
+                <option value="Zalo / Chat" className="bg-[#0a0f1c]">Zalo / Chat</option>
+                <option value="Hotline" className="bg-[#0a0f1c]">Hotline</option>
+                <option value="Giới thiệu / Referral" className="bg-[#0a0f1c]">Giới thiệu / Referral</option>
+                <option value="Khác" className="bg-[#0a0f1c]">Khác</option>
+              </select>
+
+              {/* Filter Deposit Status */}
+              <select
+                className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#33CCFF] h-[36px] cursor-pointer"
+                value={filterDeposit}
+                onChange={(e) => setFilterDeposit(e.target.value)}
+              >
+                <option value="all" className="bg-[#0a0f1c]">Tất cả tiền nạp</option>
+                <option value="has_deposit" className="bg-[#0a0f1c]">🟢 Đã nạp tiền (&gt; 0)</option>
+                <option value="no_deposit" className="bg-[#0a0f1c]">⚪ Chưa nạp tiền (= 0)</option>
+              </select>
+
+              {/* Filter Date Created */}
+              <select
+                className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#33CCFF] h-[36px] cursor-pointer"
+                value={filterTime}
+                onChange={(e) => setFilterTime(e.target.value)}
+              >
+                <option value="all" className="bg-[#0a0f1c]">Mọi thời gian</option>
+                <option value="today" className="bg-[#0a0f1c]">Hôm nay</option>
+                <option value="7d" className="bg-[#0a0f1c]">7 ngày qua</option>
+                <option value="30d" className="bg-[#0a0f1c]">30 ngày qua</option>
+                <option value="this_month" className="bg-[#0a0f1c]">Tháng này</option>
+              </select>
+
+              {/* Filter Campaign */}
+              {availableCampaigns.length > 0 && (
+                <select
+                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#33CCFF] h-[36px] cursor-pointer max-w-[180px] truncate"
+                  value={filterCampaign}
+                  onChange={(e) => setFilterCampaign(e.target.value)}
+                >
+                  <option value="all" className="bg-[#0a0f1c]">Tất cả chiến dịch</option>
+                  {availableCampaigns.map(c => (
+                    <option key={c} value={c} className="bg-[#0a0f1c]">{c}</option>
+                  ))}
+                </select>
+              )}
+
+              {/* Reset Filters */}
+              {hasActiveFilters && (
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setFilterStage('all');
+                    setFilterProfile('all');
+                    setFilterSource('all');
+                    setFilterDeposit('all');
+                    setFilterTime('all');
+                    setFilterCampaign('all');
+                  }}
+                  className="px-2.5 py-1 rounded-lg text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all flex items-center gap-1 cursor-pointer h-[36px]"
+                  title="Xóa tất cả bộ lọc CRM"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Xóa lọc</span>
+                </button>
+              )}
             </div>
 
             {/* View Mode Toggle (Kanban vs Table) */}
@@ -4649,7 +4962,7 @@ function CRMModule({
                                 {lead.source}
                               </span>
                               {lead.campaign && (
-                                <p className="text-[10px] text-gray-500 mt-0.5 truncate max-w-[140px]">{lead.campaign}</p>
+                                <p className="text-[10px] text-gray-400 mt-0.5 font-medium break-words leading-tight" title={lead.campaign}>{lead.campaign}</p>
                               )}
                             </td>
                             <td className="px-4 py-3">
@@ -4879,7 +5192,7 @@ function CRMModule({
 // ======================== LEAD CREATE / EDIT MODAL ===================
 // =====================================================================
 
-function LeadModal({ isOpen, editingLead, profiles, campaigns, onClose, onSave }) {
+function LeadModal({ isOpen, editingLead, profiles, campaigns, crmCurrency = 'VND', customRates = {}, onClose, onSave }) {
   const [name, setName] = useState(editingLead ? editingLead.name : '');
   const [phone, setPhone] = useState(editingLead ? editingLead.phone : '');
   const [email, setEmail] = useState(editingLead ? editingLead.email : '');
@@ -5007,15 +5320,26 @@ function LeadModal({ isOpen, editingLead, profiles, campaigns, onClose, onSave }
               </select>
             </div>
             <div>
-              <label className="block text-gray-300 font-semibold mb-1">Tiền Nạp ($ USD)</label>
-              <input 
-                type="number" 
-                min="0"
-                step="any"
-                value={deposit}
-                onChange={(e) => setDeposit(e.target.value)}
-                className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-[#33CCFF]"
-              />
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-gray-300 font-semibold">Tiền Nạp ($ USD)</label>
+                {crmCurrency !== 'USD' && (
+                  <span className="text-emerald-300 font-mono text-[10px]">
+                    ≈ {((parseFloat(deposit) || 0) * (customRates[crmCurrency] || 1)).toLocaleString()} {crmCurrency}
+                  </span>
+                )}
+              </div>
+              <div className="relative">
+                <span className="absolute left-3 top-2 text-gray-500 font-bold">$</span>
+                <input 
+                  type="number" 
+                  min="0"
+                  step="any"
+                  value={deposit}
+                  onChange={(e) => setDeposit(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full bg-[#070b14] border border-white/15 rounded-xl pl-7 pr-3 py-2 text-white font-mono focus:outline-none focus:border-[#33CCFF]"
+                />
+              </div>
             </div>
             <div>
               <label className="block text-gray-300 font-semibold mb-1">Người Phụ Trách</label>
