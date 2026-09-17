@@ -150,20 +150,21 @@ export default function MarketingAnalyticsView({
   return (
     <div className="space-y-6">
       {/* Top Banner: Marketing Intelligence & AI Trigger */}
-      <div className="bg-gradient-to-r from-blue-900/40 via-indigo-900/30 to-purple-900/40 border border-[#33CCFF]/30 rounded-3xl p-6 shadow-2xl backdrop-blur-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="space-y-1">
+      <div className="insure-glass rounded-3xl p-6 relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-5 border border-emerald-500/20 shadow-2xl">
+        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600"></div>
+        <div className="space-y-1.5 z-10">
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-[#33CCFF]/20 text-[#33CCFF] border border-[#33CCFF]/30 text-[10px] font-bold uppercase tracking-wider">
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider font-levents">
               Marketing Performance Hub
             </span>
             <span className="text-xs text-gray-400">
               Cập nhật số liệu tiếp thị đa kênh theo thời gian thực
             </span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
+          <h2 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2 uppercase font-levents">
             Phân Tích Dữ Liệu Marketing & Phễu Chuyển Đổi
           </h2>
-          <p className="text-xs text-gray-300 max-w-2xl">
+          <p className="text-xs text-gray-300 max-w-2xl leading-relaxed">
             Đo lường toàn diện hiệu quả chi phí quảng cáo (CAC, CPL, ROAS), phát hiện chính xác điểm nghẽn rơi rụng khách hàng và tối ưu hóa ngân sách.
           </p>
         </div>
@@ -172,9 +173,9 @@ export default function MarketingAnalyticsView({
         <button
           type="button"
           onClick={onOpenGeminiAudit}
-          className="px-5 py-3 rounded-2xl bg-gradient-to-r from-purple-500 via-pink-500 to-amber-500 hover:opacity-95 text-white font-bold text-xs shadow-xl shadow-purple-500/25 flex items-center gap-2 transition-all cursor-pointer flex-shrink-0 group"
+          className="px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:opacity-95 text-white font-bold text-xs shadow-lg shadow-emerald-950/40 flex items-center gap-2 transition-all cursor-pointer flex-shrink-0 group z-10 uppercase font-levents"
         >
-          <Sparkles className="w-4 h-4 text-amber-200 group-hover:rotate-12 transition-transform" />
+          <Sparkles className="w-4 h-4 text-emerald-200 group-hover:rotate-12 transition-transform" />
           <span>Gemini AI Phân Tích & Đề Xuất Chiến Lược</span>
         </button>
       </div>
@@ -182,56 +183,56 @@ export default function MarketingAnalyticsView({
       {/* Primary KPI Grid (6 Core Marketing Metrics) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
         {/* Total Ad Spend */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 shadow-xl">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Ngân Sách Quảng Cáo</span>
-          <p className="text-lg sm:text-xl font-black text-white mt-1">{formatMoney(totalAdSpend)}</p>
-          <p className="text-[10px] text-gray-500 mt-1">{campaigns.length} chiến dịch đang chạy</p>
+        <div className="insure-glass insure-glass-hover rounded-2xl sm:rounded-3xl p-4 shadow-xl border border-emerald-500/15">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 font-levents">Ngân Sách Quảng Cáo</span>
+          <p className="text-lg sm:text-xl font-mono font-black text-white mt-1">{formatMoney(totalAdSpend)}</p>
+          <p className="text-[10px] text-gray-400 mt-1">{campaigns.length} chiến dịch</p>
         </div>
 
         {/* Cost Per Lead (CPL) */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 shadow-xl">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Chi Phí / Lead (CPL)</span>
-          <p className="text-lg sm:text-xl font-black text-[#33CCFF] mt-1">${cpl}</p>
+        <div className="insure-glass insure-glass-hover rounded-2xl sm:rounded-3xl p-4 shadow-xl border border-emerald-500/15">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 font-levents">Chi Phí / Lead (CPL)</span>
+          <p className="text-lg sm:text-xl font-mono font-black text-emerald-400 mt-1">${cpl}</p>
           <p className="text-[10px] text-gray-400 mt-1">{totalLeads} khách tiềm năng</p>
         </div>
 
         {/* Customer Acquisition Cost (CAC) */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 shadow-xl">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Chi Phí / Khách (CAC)</span>
-          <p className="text-lg sm:text-xl font-black text-amber-300 mt-1">${cac.toLocaleString()}</p>
-          <p className="text-[10px] text-gray-400 mt-1">{fundedCount} khách đã nạp tiền</p>
+        <div className="insure-glass insure-glass-hover rounded-2xl sm:rounded-3xl p-4 shadow-xl border border-emerald-500/15">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 font-levents">Chi Phí / Khách (CAC)</span>
+          <p className="text-lg sm:text-xl font-mono font-black text-amber-300 mt-1">${cac.toLocaleString()}</p>
+          <p className="text-[10px] text-gray-400 mt-1">{fundedCount} khách đã nạp</p>
         </div>
 
         {/* Total Deposit / Revenue */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 shadow-xl">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Tổng Doanh Thu Nạp</span>
-          <p className="text-lg sm:text-xl font-black text-emerald-400 mt-1">{formatMoney(totalDeposit)}</p>
-          <p className="text-[10px] text-emerald-500/80 mt-1">ARPU: ${arpu.toLocaleString()}/khách</p>
+        <div className="insure-glass insure-glass-hover rounded-2xl sm:rounded-3xl p-4 shadow-xl border border-emerald-500/15">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 font-levents">Tổng Doanh Thu Nạp</span>
+          <p className="text-lg sm:text-xl font-mono font-black text-emerald-400 mt-1">{formatMoney(totalDeposit)}</p>
+          <p className="text-[10px] text-emerald-400/80 mt-1">ARPU: ${arpu.toLocaleString()}</p>
         </div>
 
         {/* ROAS */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 shadow-xl">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Tỷ Suất ROAS</span>
-          <p className={`text-lg sm:text-xl font-black mt-1 ${parseFloat(roas) >= 2 ? 'text-emerald-400' : 'text-amber-300'}`}>
+        <div className="insure-glass insure-glass-hover rounded-2xl sm:rounded-3xl p-4 shadow-xl border border-emerald-500/15">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 font-levents">Tỷ Suất ROAS</span>
+          <p className={`text-lg sm:text-xl font-mono font-black mt-1 ${parseFloat(roas) >= 2 ? 'text-emerald-400' : 'text-[#F59E0B]'}`}>
             {roas}x
           </p>
           <p className="text-[10px] text-gray-400 mt-1">ROI: {roi}%</p>
         </div>
 
         {/* Funnel Conversion Rate */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 shadow-xl">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Tỷ Lệ Chốt Lead</span>
-          <p className="text-lg sm:text-xl font-black text-purple-300 mt-1">{leadToFundedRate}%</p>
+        <div className="insure-glass insure-glass-hover rounded-2xl sm:rounded-3xl p-4 shadow-xl border border-emerald-500/15">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 font-levents">Tỷ Lệ Chốt Lead</span>
+          <p className="text-lg sm:text-xl font-mono font-black text-emerald-300 mt-1">{leadToFundedRate}%</p>
           <p className="text-[10px] text-gray-400 mt-1">Won Rate: {((wonCount / Math.max(totalLeads, 1)) * 100).toFixed(1)}%</p>
         </div>
       </div>
 
       {/* SECTION 2: MULTI-STAGE FUNNEL DROP-OFF AUDIT */}
-      <div className="bg-[#0a0f1c]/90 border border-white/10 rounded-3xl p-6 shadow-2xl">
+      <div className="insure-glass rounded-3xl p-6 shadow-2xl border border-emerald-500/20">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
           <div>
             <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <Activity className="w-5 h-5 text-[#33CCFF]" />
+              <Activity className="w-5 h-5 text-emerald-400" />
               Phễu Chuyển Đổi & Đo Lường Rơi Rụng (Funnel Drop-Off Matrix)
             </h3>
             <p className="text-xs text-gray-400 mt-0.5">
@@ -255,7 +256,7 @@ export default function MarketingAnalyticsView({
 
               <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-[11px]">
                 <span className="text-gray-400">Hiệu suất:</span>
-                <span className="font-bold text-[#33CCFF]">{step.rate}</span>
+                <span className="font-bold text-emerald-400">{step.rate}</span>
               </div>
 
               {idx > 0 && (
@@ -272,7 +273,7 @@ export default function MarketingAnalyticsView({
       {/* SECTION 3: CHARTS ROW (TREND & REVENUE VS SPEND) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Trend Over Time (Spend vs Leads vs Revenue) */}
-        <div className="bg-[#0a0f1c]/90 border border-white/10 rounded-3xl p-6 shadow-2xl">
+        <div className="insure-glass border border-emerald-500/20 rounded-3xl p-6 shadow-2xl">
           <h3 className="text-sm font-bold text-white mb-1 flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-emerald-400" />
             Xu Hướng Hiệu Quả Marketing Theo Tuần
@@ -283,8 +284,8 @@ export default function MarketingAnalyticsView({
               <AreaChart data={trendData}>
                 <defs>
                   <linearGradient id="spendGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#059669" stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor="#059669" stopOpacity={0}/>
                   </linearGradient>
                   <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
@@ -295,21 +296,21 @@ export default function MarketingAnalyticsView({
                 <XAxis dataKey="date" stroke="#6b7280" fontSize={11} />
                 <YAxis stroke="#6b7280" fontSize={11} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#0d1424', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                  contentStyle={{ backgroundColor: '#070d09', borderColor: 'rgba(16,185,129,0.25)', borderRadius: '12px' }}
                   formatter={(val, name) => [`$${val.toLocaleString()}`, name]}
                 />
                 <Legend />
                 <Area type="monotone" dataKey="revenue" name="Doanh Thu Nạp ($)" stroke="#10b981" fillOpacity={1} fill="url(#revGrad)" strokeWidth={2} />
-                <Area type="monotone" dataKey="spend" name="Chi Phí Ads ($)" stroke="#ef4444" fillOpacity={1} fill="url(#spendGrad)" strokeWidth={2} />
+                <Area type="monotone" dataKey="spend" name="Chi Phí Ads ($)" stroke="#059669" fillOpacity={1} fill="url(#spendGrad)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Spend vs Revenue by Source BarChart */}
-        <div className="bg-[#0a0f1c]/90 border border-white/10 rounded-3xl p-6 shadow-2xl">
+        <div className="insure-glass border border-emerald-500/20 rounded-3xl p-6 shadow-2xl">
           <h3 className="text-sm font-bold text-white mb-1 flex items-center gap-2">
-            <BarChart2 className="w-4 h-4 text-cyan-400" />
+            <BarChart2 className="w-4 h-4 text-emerald-400" />
             So Sánh Chi Phí & Doanh Thu Theo Kênh Tiếp Thị
           </h3>
           <p className="text-xs text-gray-400 mb-4">Đánh giá kênh nào mang lại hiệu quả sinh lời cao nhất</p>
@@ -320,11 +321,11 @@ export default function MarketingAnalyticsView({
                 <XAxis dataKey="name" stroke="#6b7280" fontSize={11} />
                 <YAxis stroke="#6b7280" fontSize={11} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#0d1424', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                  contentStyle={{ backgroundColor: '#070d09', borderColor: 'rgba(16,185,129,0.25)', borderRadius: '12px' }}
                   formatter={(val, name) => [`$${val.toLocaleString()}`, name]}
                 />
                 <Legend />
-                <Bar dataKey="Chi Phí Ads" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="Chi Phí Ads" fill="#059669" radius={[6, 6, 0, 0]} />
                 <Bar dataKey="Doanh Thu Nạp" fill="#10b981" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -333,17 +334,17 @@ export default function MarketingAnalyticsView({
       </div>
 
       {/* SECTION 4: SOURCE PERFORMANCE BREAKDOWN TABLE */}
-      <div className="bg-[#0a0f1c]/90 border border-white/10 rounded-3xl p-6 shadow-2xl">
+      <div className="insure-glass border border-emerald-500/20 rounded-3xl p-6 shadow-2xl">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <Target className="w-5 h-5 text-pink-400" />
+          <h3 className="text-base font-bold text-white flex items-center gap-2 font-levents uppercase">
+            <Target className="w-5 h-5 text-emerald-400" />
             Bảng Ma Trận Hiệu Suất Kênh Tiếp Thị (Marketing Channel Matrix)
           </h3>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs whitespace-nowrap">
-            <thead className="bg-black/40 text-gray-400 uppercase text-[10px] tracking-wider border-b border-white/10">
+            <thead className="bg-black/40 text-gray-400 uppercase text-[10px] tracking-wider border-b border-white/10 font-levents">
               <tr>
                 <th className="px-4 py-3">Kênh Tiếp Thị</th>
                 <th className="px-4 py-3 text-center">Số Leads</th>
@@ -359,16 +360,16 @@ export default function MarketingAnalyticsView({
               {sourceAnalysis.map((src, idx) => (
                 <tr key={idx} className="hover:bg-white/[0.02] transition-colors">
                   <td className="px-4 py-3 font-semibold text-white flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-cyan-400" />
+                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
                     {src.name}
                   </td>
                   <td className="px-4 py-3 text-center font-bold text-white">{src.leads}</td>
                   <td className="px-4 py-3 text-center font-bold text-emerald-400">{src.funded}</td>
-                  <td className="px-4 py-3 text-center font-semibold text-purple-300">{src.conversionRate}%</td>
+                  <td className="px-4 py-3 text-center font-semibold text-emerald-300">{src.conversionRate}%</td>
                   <td className="px-4 py-3 text-right font-mono text-gray-300">${src.estSpend.toLocaleString()}</td>
                   <td className="px-4 py-3 text-right font-mono font-bold text-emerald-400">${src.deposit.toLocaleString()}</td>
                   <td className="px-4 py-3 text-right font-mono text-amber-300">${src.cac.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-right font-mono font-bold text-[#33CCFF]">
+                  <td className="px-4 py-3 text-right font-mono font-bold text-emerald-400">
                     {src.roas}x
                   </td>
                 </tr>

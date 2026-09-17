@@ -32,17 +32,17 @@ export default function AdPostDetailModal({
   );
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-      <div className="bg-[#0a0f1c] border border-white/15 rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-3 sm:p-5 animate-in fade-in duration-200">
+      <div className="bg-[#070d09] border border-emerald-500/25 rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/[0.02]">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-white/10 bg-white/[0.02]">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-md flex-shrink-0">
               <Layers className="w-5 h-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-white">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-sm sm:text-base font-bold text-white truncate uppercase font-levents">
                   Chi Tiết Bài Post Chạy Quảng Cáo (Ad Creative)
                 </h2>
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
@@ -53,23 +53,22 @@ export default function AdPostDetailModal({
                   {adPost.status || 'ACTIVE'}
                 </span>
               </div>
-              <p className="text-xs text-gray-400">
-                Chiến dịch: <span className="text-[#33CCFF] font-medium">{adPost.campaignName}</span> • ID Bài viết: <code className="text-gray-300">{adPost.postId || adPost.id}</code>
+              <p className="text-[11px] sm:text-xs text-gray-400 truncate">
+                Chiến dịch: <span className="text-emerald-400 font-medium">{adPost.campaignName}</span> • ID: <code className="text-gray-300">{adPost.postId || adPost.id}</code>
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             {adPost.permalinkUrl && (
               <a
                 href={adPost.permalinkUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-xl text-blue-300 text-xs font-semibold transition-colors"
-                title="Xem trực tiếp trên Facebook"
+                className="hidden xs:flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 border border-emerald-500/30 transition-all text-xs font-semibold"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
-                Mở Trên Facebook
+                <span>Xem trên FB</span>
               </a>
             )}
             <button 
@@ -82,46 +81,46 @@ export default function AdPostDetailModal({
         </div>
 
         {/* Body content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 text-xs custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 text-xs custom-scrollbar">
           {/* Key Metrics Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="bg-white/[0.02] border border-white/10 rounded-xl p-3 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-[#33CCFF]/10 text-[#33CCFF] flex items-center justify-center">
+            <div className="bg-white/[0.02] border border-emerald-500/15 rounded-2xl p-3 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
                 <Users className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-[10px] text-gray-400 uppercase">Leads Thu Về</p>
+                <p className="text-[10px] text-gray-400 uppercase font-levents">Leads Thu Về</p>
                 <p className="text-base font-bold text-white font-mono">{adPost.metrics?.leadsCount || matchingLeads.length || 0}</p>
               </div>
             </div>
 
-            <div className="bg-white/[0.02] border border-white/10 rounded-xl p-3 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+            <div className="bg-white/[0.02] border border-emerald-500/15 rounded-2xl p-3 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
                 <DollarSign className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-[10px] text-gray-400 uppercase">Chi Phí Đã Chạy</p>
+                <p className="text-[10px] text-gray-400 uppercase font-levents">Chi Phí Đã Chạy</p>
                 <p className="text-base font-bold text-emerald-400 font-mono">${(adPost.metrics?.spend || 0).toLocaleString()}</p>
               </div>
             </div>
 
-            <div className="bg-white/[0.02] border border-white/10 rounded-xl p-3 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center">
+            <div className="bg-white/[0.02] border border-emerald-500/15 rounded-2xl p-3 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
                 <Target className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-[10px] text-gray-400 uppercase">Giá Mỗi Lead (CPL)</p>
-                <p className="text-base font-bold text-purple-300 font-mono">${adPost.metrics?.cpl || '8.5'}</p>
+                <p className="text-[10px] text-gray-400 uppercase font-levents">Giá Mỗi Lead (CPL)</p>
+                <p className="text-base font-bold text-emerald-300 font-mono">${adPost.metrics?.cpl || '8.5'}</p>
               </div>
             </div>
 
-            <div className="bg-white/[0.02] border border-white/10 rounded-xl p-3 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-pink-500/10 text-pink-400 flex items-center justify-center">
+            <div className="bg-white/[0.02] border border-emerald-500/15 rounded-2xl p-3 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
                 <Award className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-[10px] text-gray-400 uppercase">Tương Tác Xã Hội</p>
-                <p className="text-base font-bold text-pink-300 font-mono">{((adPost.metrics?.reactions || 0) + (adPost.metrics?.comments || 0)).toLocaleString()}</p>
+                <p className="text-[10px] text-gray-400 uppercase font-levents">Tương Tác Xã Hội</p>
+                <p className="text-base font-bold text-teal-300 font-mono">{((adPost.metrics?.reactions || 0) + (adPost.metrics?.comments || 0)).toLocaleString()}</p>
               </div>
             </div>
           </div>
@@ -129,7 +128,7 @@ export default function AdPostDetailModal({
           {/* Main Content Layout: Left = Facebook Feed Mockup, Right = Target Audience & Lead List */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left: Facebook Feed Card Mockup */}
-            <div className="lg:col-span-7 bg-[#0c1222] border border-white/15 rounded-2xl p-4 shadow-xl flex flex-col space-y-3.5">
+            <div className="lg:col-span-7 bg-[#070d09] border border-emerald-500/25 rounded-2xl p-4 shadow-xl flex flex-col space-y-3.5">
               {/* Facebook Page Header */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
@@ -166,12 +165,12 @@ export default function AdPostDetailModal({
                     className="w-full max-h-72 object-cover object-center"
                   />
                   {adPost.callToAction && (
-                    <div className="p-3 bg-[#0a0f1c] border-t border-white/10 flex items-center justify-between">
+                    <div className="p-3 bg-[#070d09] border-t border-white/10 flex items-center justify-between">
                       <div className="truncate pr-2">
                         <p className="text-[10px] text-gray-400 uppercase truncate">metareport.internal</p>
                         <p className="font-bold text-white text-xs truncate">{adPost.headline}</p>
                       </div>
-                      <span className="px-3 py-1.5 bg-[#33CCFF] hover:bg-[#33CCFF]/90 text-black font-bold rounded-lg text-xs flex-shrink-0">
+                      <span className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs flex-shrink-0 transition-colors">
                         {adPost.callToAction.split(' ')[0]}
                       </span>
                     </div>
@@ -182,7 +181,7 @@ export default function AdPostDetailModal({
               {/* Social Interactions bar */}
               <div className="flex items-center justify-between pt-2 border-t border-white/10 text-[11px] text-gray-400">
                 <div className="flex items-center gap-1">
-                  <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center text-white text-[9px]">
+                  <div className="w-4 h-4 rounded-full bg-emerald-600 flex items-center justify-center text-white text-[9px]">
                     <ThumbsUp className="w-2.5 h-2.5" />
                   </div>
                   <span>{(adPost.metrics?.reactions || 1200).toLocaleString()} lượt thích</span>
@@ -210,9 +209,9 @@ export default function AdPostDetailModal({
             {/* Right: Targeting Audience & Leads from this ad */}
             <div className="lg:col-span-5 space-y-4">
               {/* Target Audience Card */}
-              <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-4 space-y-2">
-                <h4 className="font-bold text-white flex items-center gap-2 text-xs">
-                  <Target className="w-4 h-4 text-amber-400" />
+              <div className="bg-white/[0.02] border border-emerald-500/15 rounded-2xl p-4 space-y-2">
+                <h4 className="font-bold text-white flex items-center gap-2 text-xs uppercase font-levents">
+                  <Target className="w-4 h-4 text-emerald-400" />
                   Chân Dung Đối Tượng Nhắm Tới (Targeting)
                 </h4>
                 <p className="text-gray-300 text-[11px] leading-relaxed">
@@ -225,10 +224,10 @@ export default function AdPostDetailModal({
               </div>
 
               {/* Associated Leads from this Post */}
-              <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-4 space-y-3">
+              <div className="bg-white/[0.02] border border-emerald-500/15 rounded-2xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-white flex items-center gap-2 text-xs">
-                    <Users className="w-4 h-4 text-[#33CCFF]" />
+                  <h4 className="font-bold text-white flex items-center gap-2 text-xs uppercase font-levents">
+                    <Users className="w-4 h-4 text-emerald-400" />
                     Khách Hàng Đăng Ký Từ Bài Post Này ({matchingLeads.length})
                   </h4>
                   <span className="text-[10px] text-gray-500">Gần nhất</span>
@@ -246,16 +245,14 @@ export default function AdPostDetailModal({
                         onClick={() => {
                           if (onSelectLead) onSelectLead(l);
                         }}
-                        className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-[#33CCFF]/30 transition-all cursor-pointer flex items-center justify-between"
+                        className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-emerald-500/30 transition-all cursor-pointer flex items-center justify-between"
                       >
                         <div>
                           <p className="font-semibold text-white">{l.name}</p>
                           <p className="text-[10px] text-gray-400 font-mono">{l.phone || l.email}</p>
                         </div>
                         <div className="text-right">
-                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                            l.status === 'funded' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-blue-500/20 text-blue-300'
-                          }`}>
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                             ${(l.deposit || 0).toLocaleString()}
                           </span>
                           <p className="text-[9px] text-gray-500 mt-0.5">{l.createdAt}</p>

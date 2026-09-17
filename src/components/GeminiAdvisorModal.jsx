@@ -123,16 +123,16 @@ export default function GeminiAdvisorModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-3 sm:p-6">
-      <div className="bg-[#0a0f1c] border border-white/15 rounded-3xl w-full max-w-4xl shadow-2xl relative max-h-[92vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-3 sm:p-6 animate-in fade-in duration-200">
+      <div className="bg-[#070d09] border border-emerald-500/25 rounded-3xl w-full max-w-4xl shadow-2xl relative max-h-[92vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="p-5 border-b border-white/10 bg-gradient-to-r from-purple-900/30 via-[#0a0f1c] to-blue-900/30 flex items-center justify-between gap-4">
+        <div className="p-5 border-b border-white/10 bg-gradient-to-r from-emerald-950/40 via-[#070d09] to-teal-950/30 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white shadow-lg shadow-purple-500/25 flex-shrink-0">
-              <Sparkles className="w-6 h-6 text-amber-200" />
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-md flex-shrink-0">
+              <Sparkles className="w-6 h-6 text-emerald-200" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2 uppercase font-levents">
                 Trợ Lý Chiến Lược Marketing & CRM (Gemini AI)
               </h2>
               <p className="text-xs text-gray-400">
@@ -209,7 +209,7 @@ export default function GeminiAdvisorModal({
                 type="button"
                 onClick={handleRunAudit}
                 disabled={loadingAudit}
-                className="px-3.5 py-1.5 rounded-lg bg-[#33CCFF]/15 hover:bg-[#33CCFF]/25 border border-[#33CCFF]/30 text-[#33CCFF] font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40 text-[11px] cursor-pointer"
+                className="px-3.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40 text-[11px] cursor-pointer font-levents uppercase"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${loadingAudit ? 'animate-spin' : ''}`} />
                 {loadingAudit ? 'Đang phân tích...' : 'Phân Tích Lại'}
@@ -322,7 +322,7 @@ export default function GeminiAdvisorModal({
                   placeholder="Hỏi Gemini về cách tối ưu chi phí, nâng cao tỷ lệ chốt đơn..."
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
-                  className="flex-1 bg-[#070b14] border border-white/15 rounded-2xl px-4 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#33CCFF]"
+                  className="flex-1 bg-[#070b14] border border-white/15 rounded-2xl px-4 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-400"
                 />
                 <button
                   type="submit"

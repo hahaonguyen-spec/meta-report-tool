@@ -138,18 +138,18 @@ export default function AuthLogin({ profiles, onLogin }) {
   return (
     <div className="min-h-screen bg-[#070b14] text-white flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden">
       {/* Background decorative glowing orbs */}
-      <div className="absolute top-1/4 -left-32 w-96 h-96 bg-[#33CCFF]/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute top-10 right-1/3 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/4 -left-32 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-teal-800/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-10 right-1/3 w-64 h-64 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="w-full max-w-md relative z-10">
         {/* Brand Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-[#33CCFF]/20 to-[#0AE5D5]/10 border border-[#33CCFF]/30 shadow-xl shadow-[#33CCFF]/10 mb-3">
-            <Shield className="w-7 h-7 text-[#33CCFF]" />
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-600/10 border border-emerald-500/30 shadow-xl shadow-emerald-950/20 mb-3">
+            <Shield className="w-7 h-7 text-emerald-400" />
           </div>
-          <h1 className="text-2xl font-black tracking-tight text-white flex items-center justify-center gap-2">
-            META CRM & ANALYTICS <Sparkles className="w-4 h-4 text-[#33CCFF]" />
+          <h1 className="text-2xl font-black tracking-tight text-white flex items-center justify-center gap-2 uppercase font-levents">
+            META CRM & ANALYTICS <Sparkles className="w-4 h-4 text-emerald-400" />
           </h1>
           <p className="text-xs text-gray-400 mt-1">
             Hệ thống Báo Cáo Hiệu Quả Marketing & Quản Trị Khách Hàng Tích Hợp AI
@@ -157,15 +157,15 @@ export default function AuthLogin({ profiles, onLogin }) {
         </div>
 
         {/* Auth Card */}
-        <div className="bg-[#0a0f1c]/90 border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
+        <div className="insure-glass border border-emerald-500/25 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
           {/* Tab Switcher */}
           <div className="flex rounded-xl bg-white/5 p-1 mb-6 border border-white/10">
             <button
               type="button"
               onClick={() => { setIsRegisterTab(false); setError(''); }}
-              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all uppercase font-levents ${
                 !isRegisterTab
-                  ? 'bg-gradient-to-r from-[#33CCFF] to-[#0AE5D5] text-[#070b14] shadow-md'
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md'
                   : 'text-gray-400 hover:text-white'
               }`}
             >
@@ -174,9 +174,9 @@ export default function AuthLogin({ profiles, onLogin }) {
             <button
               type="button"
               onClick={() => { setIsRegisterTab(true); setError(''); }}
-              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
+              className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all uppercase font-levents ${
                 isRegisterTab
-                  ? 'bg-gradient-to-r from-[#33CCFF] to-[#0AE5D5] text-[#070b14] shadow-md'
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md'
                   : 'text-gray-400 hover:text-white'
               }`}
             >
@@ -206,7 +206,7 @@ export default function AuthLogin({ profiles, onLogin }) {
                     placeholder="admin@metareport.vn hoặc Tên"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-[#070b14] border border-white/15 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#33CCFF] transition-all"
+                    className="w-full bg-[#070b14] border border-white/15 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-400 transition-all"
                   />
                 </div>
               </div>
@@ -227,7 +227,7 @@ export default function AuthLogin({ profiles, onLogin }) {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-[#070b14] border border-white/15 rounded-xl pl-10 pr-10 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#33CCFF] transition-all"
+                    className="w-full bg-[#070b14] border border-white/15 rounded-xl pl-10 pr-10 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-400 transition-all"
                   />
                   <button
                     type="button"
@@ -245,18 +245,18 @@ export default function AuthLogin({ profiles, onLogin }) {
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="rounded bg-white/10 border-white/20 text-[#33CCFF] focus:ring-0 cursor-pointer"
+                    className="rounded bg-white/10 border-white/20 text-emerald-400 focus:ring-0 cursor-pointer"
                   />
                   Ghi nhớ đăng nhập
                 </label>
-                <span className="text-[11px] text-[#33CCFF] hover:underline cursor-pointer" onClick={() => setEmail('admin@metareport.vn')}>
+                <span className="text-[11px] text-emerald-400 hover:underline cursor-pointer" onClick={() => setEmail('admin@metareport.vn')}>
                   Dùng tài khoản Admin
                 </span>
               </div>
 
               <button
                 type="submit"
-                className="w-full mt-2 py-3 rounded-xl bg-gradient-to-r from-[#33CCFF] to-[#0AE5D5] text-[#070b14] font-bold text-xs shadow-lg shadow-[#33CCFF]/20 hover:opacity-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full mt-2 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-xs shadow-lg shadow-emerald-950/40 hover:opacity-95 transition-all flex items-center justify-center gap-2 cursor-pointer uppercase font-levents"
               >
                 Đăng Nhập Vào Hệ Thống <ArrowRight className="w-4 h-4" />
               </button>
@@ -276,7 +276,7 @@ export default function AuthLogin({ profiles, onLogin }) {
                     placeholder="VD: Trần Hoàng Anh"
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
-                    className="w-full bg-[#070b14] border border-white/15 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#33CCFF]"
+                    className="w-full bg-[#070b14] border border-white/15 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-400"
                   />
                 </div>
               </div>
@@ -293,7 +293,7 @@ export default function AuthLogin({ profiles, onLogin }) {
                     placeholder="hoanganh@company.com"
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
-                    className="w-full bg-[#070b14] border border-white/15 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#33CCFF]"
+                    className="w-full bg-[#070b14] border border-white/15 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-400"
                   />
                 </div>
               </div>
@@ -308,7 +308,7 @@ export default function AuthLogin({ profiles, onLogin }) {
                     placeholder="Tùy chọn"
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
-                    className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#33CCFF]"
+                    className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-400"
                   />
                 </div>
                 <div>
@@ -318,12 +318,12 @@ export default function AuthLogin({ profiles, onLogin }) {
                   <select
                     value={regRole}
                     onChange={(e) => setRegRole(e.target.value)}
-                    className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#33CCFF] cursor-pointer"
+                    className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-400 cursor-pointer"
                   >
-                    <option value="Media Buyer" className="bg-[#0a0f1c]">Media Buyer</option>
-                    <option value="Sales Specialist" className="bg-[#0a0f1c]">Sales Specialist</option>
-                    <option value="Admin" className="bg-[#0a0f1c]">Quản trị viên (Admin)</option>
-                    <option value="Client" className="bg-[#0a0f1c]">Khách hàng / Client</option>
+                    <option value="Media Buyer" className="bg-[#070d09]">Media Buyer</option>
+                    <option value="Sales Specialist" className="bg-[#070d09]">Sales Specialist</option>
+                    <option value="Admin" className="bg-[#070d09]">Quản trị viên (Admin)</option>
+                    <option value="Client" className="bg-[#070d09]">Khách hàng / Client</option>
                   </select>
                 </div>
               </div>
@@ -337,13 +337,13 @@ export default function AuthLogin({ profiles, onLogin }) {
                   placeholder="VD: Phụ trách thị trường Đông Nam Á..."
                   value={regNotes}
                   onChange={(e) => setRegNotes(e.target.value)}
-                  className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#33CCFF]"
+                  className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-400"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full mt-2 py-3 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-400 text-[#070b14] font-bold text-xs shadow-lg shadow-emerald-500/20 hover:opacity-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full mt-2 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-xs shadow-lg shadow-emerald-950/40 hover:opacity-95 transition-all flex items-center justify-center gap-2 cursor-pointer uppercase font-levents"
               >
                 <UserPlus className="w-4 h-4" /> Hoàn Tất Đăng Ký & Vào Hệ Thống
               </button>
@@ -362,13 +362,13 @@ export default function AuthLogin({ profiles, onLogin }) {
                   key={demo.id}
                   type="button"
                   onClick={() => handleQuickLogin(demo)}
-                  className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#33CCFF]/30 transition-all text-left flex items-center gap-2 cursor-pointer group"
+                  className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-emerald-500/30 transition-all text-left flex items-center gap-2 cursor-pointer group"
                 >
                   <span className={`w-7 h-7 rounded-lg bg-gradient-to-r ${demo.color} flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 shadow-sm`}>
                     {demo.name.charAt(0)}
                   </span>
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-white truncate group-hover:text-[#33CCFF] transition-colors">
+                    <p className="text-xs font-semibold text-white truncate group-hover:text-emerald-400 transition-colors">
                       {demo.name}
                     </p>
                     <p className="text-[10px] text-gray-400 truncate">{demo.role}</p>

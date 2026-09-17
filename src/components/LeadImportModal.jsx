@@ -85,16 +85,16 @@ export default function LeadImportModal({ isOpen, onClose, onImportLeads, active
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
-      <div className="bg-[#0a0f1c] border border-white/15 rounded-3xl w-full max-w-2xl p-6 shadow-2xl relative max-h-[90vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+      <div className="bg-[#070d09] border border-emerald-500/25 rounded-3xl w-full max-w-2xl p-6 shadow-2xl relative max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-[#33CCFF]/15 border border-[#33CCFF]/30 flex items-center justify-center text-[#33CCFF]">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
               <Upload className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">Nhập Khách Hàng Từ File CSV</h2>
+              <h2 className="text-base font-bold text-white uppercase font-levents">Nhập Khách Hàng Từ File CSV</h2>
               <p className="text-xs text-gray-400">Tải lên danh sách khách hàng tiềm năng để đưa nhanh vào CRM</p>
             </div>
           </div>
@@ -121,7 +121,7 @@ export default function LeadImportModal({ isOpen, onClose, onImportLeads, active
           </div>
 
           {/* File Upload Zone */}
-          <div className="border-2 border-dashed border-white/20 rounded-2xl p-6 text-center hover:border-[#33CCFF]/50 transition-all bg-[#070b14]/50">
+          <div className="border-2 border-dashed border-white/20 rounded-2xl p-6 text-center hover:border-emerald-500/50 transition-all bg-[#070b14]/50">
             <input
               type="file"
               accept=".csv"
@@ -195,7 +195,7 @@ export default function LeadImportModal({ isOpen, onClose, onImportLeads, active
             type="button"
             disabled={parsedRows.length === 0}
             onClick={handleExecuteImport}
-            className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#33CCFF] to-[#0AE5D5] text-[#070b14] font-bold shadow-lg shadow-[#33CCFF]/20 hover:opacity-90 transition-all disabled:opacity-40 cursor-pointer flex items-center gap-1.5"
+            className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold uppercase font-levents shadow-lg shadow-emerald-950/40 hover:opacity-95 transition-all disabled:opacity-40 cursor-pointer flex items-center gap-1.5"
           >
             <CheckCircle2 className="w-4 h-4" /> Xác Nhận Nhập ({parsedRows.length} Leads)
           </button>

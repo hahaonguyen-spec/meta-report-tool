@@ -195,16 +195,16 @@ export default function LeadDetailModal({
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-3 sm:p-6 animate-in fade-in duration-200">
-      <div className="bg-[#0a0f1c] border border-white/15 rounded-3xl w-full max-w-3xl shadow-2xl relative max-h-[92vh] flex flex-col overflow-hidden">
+      <div className="bg-[#070d09] border border-emerald-500/25 rounded-3xl w-full max-w-3xl shadow-2xl relative max-h-[92vh] flex flex-col overflow-hidden">
         {/* Top Header */}
         <div className="p-5 border-b border-white/10 bg-white/[0.02] flex items-start justify-between gap-4">
           <div className="flex items-center gap-3.5 min-w-0">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#33CCFF]/20 to-[#0AE5D5]/10 border border-[#33CCFF]/30 flex items-center justify-center text-[#33CCFF] font-bold text-lg flex-shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-600/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-lg flex-shrink-0 font-levents">
               {name.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-lg font-bold text-white truncate">{name}</h2>
+                <h2 className="text-lg font-bold text-white truncate font-levents">{name}</h2>
                 {/* Priority Selector */}
                 <select
                   value={priority}
@@ -213,12 +213,12 @@ export default function LeadDetailModal({
                   className={`text-[11px] font-bold rounded-lg px-2 py-0.5 border cursor-pointer focus:outline-none ${
                     priority === 'hot' ? 'bg-red-500/20 text-red-300 border-red-500/40' :
                     priority === 'warm' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
-                    'bg-blue-500/20 text-blue-300 border-blue-500/40'
+                    'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                   }`}
                 >
-                  <option value="hot" className="bg-[#0a0f1c]">🔥 Khách Nóng (Hot)</option>
-                  <option value="warm" className="bg-[#0a0f1c]">⚡ Tiềm Năng (Warm)</option>
-                  <option value="cold" className="bg-[#0a0f1c]">❄️ Đang Theo Dõi (Cold)</option>
+                  <option value="hot" className="bg-[#070d09]">🔥 Khách Nóng (Hot)</option>
+                  <option value="warm" className="bg-[#070d09]">⚡ Tiềm Năng (Warm)</option>
+                  <option value="cold" className="bg-[#070d09]">❄️ Đang Theo Dõi (Cold)</option>
                 </select>
 
                 {/* Stage Selector */}
@@ -229,7 +229,7 @@ export default function LeadDetailModal({
                   className={`text-[11px] font-semibold rounded-lg px-2.5 py-0.5 border cursor-pointer focus:outline-none ${currentStageObj.color}`}
                 >
                   {stages.map(s => (
-                    <option key={s.id} value={s.id} className="bg-[#0a0f1c] text-white">{s.label}</option>
+                    <option key={s.id} value={s.id} className="bg-[#070d09] text-white">{s.label}</option>
                   ))}
                 </select>
               </div>
@@ -237,7 +237,7 @@ export default function LeadDetailModal({
               <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-2 flex-wrap">
                 <span>Nguồn: <strong className="text-gray-300">{lead.source || 'Facebook Ads'}</strong></span>
                 {lead.campaign && (
-                  <span>• Chiến dịch: <strong className="text-[#33CCFF]">{lead.campaign}</strong></span>
+                  <span>• Chiến dịch: <strong className="text-emerald-400">{lead.campaign}</strong></span>
                 )}
                 <span>• Ngày nhận: {lead.createdAt || 'Mới đây'}</span>
               </p>
@@ -288,28 +288,28 @@ export default function LeadDetailModal({
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setCurrentTab('details')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
-                currentTab === 'details' ? 'bg-[#33CCFF]/20 text-[#33CCFF] border border-[#33CCFF]/30' : 'text-gray-400 hover:text-white'
+              className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer uppercase font-levents text-xs ${
+                currentTab === 'details' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-gray-400 hover:text-white'
               }`}
             >
               Hồ Sơ & Chi Tiết
             </button>
             <button
               onClick={() => setCurrentTab('timeline')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
-                currentTab === 'timeline' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'text-gray-400 hover:text-white'
+              className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer uppercase font-levents text-xs ${
+                currentTab === 'timeline' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-gray-400 hover:text-white'
               }`}
             >
-              Nhật Ký Chăm Sóc ({activities.length})
+              Lịch Sử Chăm Sóc
             </button>
             <button
               onClick={() => setCurrentTab('ai_pitch')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1 cursor-pointer ${
-                currentTab === 'ai_pitch' ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-pink-300 border border-pink-500/30' : 'text-gray-400 hover:text-white'
+              className={`px-3 py-1.5 rounded-xl font-medium transition-all flex items-center gap-1 cursor-pointer uppercase font-levents text-xs ${
+                currentTab === 'ai_pitch' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-gray-400 hover:text-white'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5 text-pink-400" />
-              AI Soạn Kịch Bản
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              Kịch Bản AI
             </button>
           </div>
         </div>
@@ -345,7 +345,7 @@ export default function LeadDetailModal({
                   <button
                     type="button"
                     onClick={() => onOpenAdPost && onOpenAdPost(adPost)}
-                    className="px-3.5 py-1.5 bg-[#33CCFF]/15 hover:bg-[#33CCFF]/25 border border-[#33CCFF]/40 text-[#33CCFF] rounded-xl text-xs font-semibold flex items-center gap-1.5 flex-shrink-0 transition-all cursor-pointer shadow-sm"
+                    className="px-3.5 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 flex-shrink-0 transition-all cursor-pointer shadow-sm uppercase font-levents"
                   >
                     <ExternalLink className="w-3 h-3" />
                     Xem Chi Tiết Bài Post
@@ -361,7 +361,7 @@ export default function LeadDetailModal({
                     disabled={!canEdit}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-[#33CCFF] disabled:opacity-60"
+                    className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-emerald-400 disabled:opacity-60"
                   />
                 </div>
                 <div>
@@ -374,7 +374,7 @@ export default function LeadDetailModal({
                     disabled={!canEdit || !canViewSensitive}
                     value={canViewSensitive ? phone : maskPhoneNumber(phone)}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3.5 py-2 text-white font-mono focus:outline-none focus:border-[#33CCFF] disabled:opacity-60"
+                    className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3.5 py-2 text-white font-mono focus:outline-none focus:border-emerald-400 disabled:opacity-60"
                   />
                 </div>
               </div>
@@ -390,7 +390,7 @@ export default function LeadDetailModal({
                     disabled={!canEdit || !canViewSensitive}
                     value={canViewSensitive ? email : maskEmail(email)}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-[#33CCFF] disabled:opacity-60"
+                    className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-emerald-400 disabled:opacity-60"
                   />
                 </div>
                 <div>
@@ -399,10 +399,10 @@ export default function LeadDetailModal({
                     value={assignedTo}
                     disabled={!canAssign}
                     onChange={(e) => setAssignedTo(e.target.value)}
-                    className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-[#33CCFF] cursor-pointer disabled:opacity-60"
+                    className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-emerald-400 cursor-pointer disabled:opacity-60"
                   >
                     {profiles.map(p => (
-                      <option key={p.id} value={p.id} className="bg-[#0a0f1c]">{p.name} ({p.role})</option>
+                      <option key={p.id} value={p.id} className="bg-[#070d09]">{p.name} ({p.role})</option>
                     ))}
                   </select>
                 </div>
@@ -421,7 +421,7 @@ export default function LeadDetailModal({
                       disabled={!canEdit}
                       value={deposit}
                       onChange={(e) => setDeposit(e.target.value)}
-                      className="w-full bg-[#070b14] border border-white/15 rounded-xl pl-8 pr-3.5 py-2 text-white font-mono focus:outline-none focus:border-[#33CCFF] disabled:opacity-60"
+                      className="w-full bg-[#070b14] border border-white/15 rounded-xl pl-8 pr-3.5 py-2 text-white font-mono focus:outline-none focus:border-emerald-400 disabled:opacity-60"
                     />
                   </div>
                 </div>
@@ -444,28 +444,22 @@ export default function LeadDetailModal({
               {/* Tags Section */}
               <div>
                 <label className="block text-gray-400 font-semibold mb-1.5 flex items-center gap-1.5">
-                  <Tag className="w-3.5 h-3.5 text-[#33CCFF]" />
+                  <Tag className="w-3.5 h-3.5 text-emerald-400" />
                   Thẻ Phân Loại (Tags)
                 </label>
                 <div className="flex flex-wrap items-center gap-2 mb-2">
-                  {tags.map(t => (
-                    <span 
-                      key={t}
-                      className="px-2.5 py-1 rounded-lg bg-white/10 border border-white/15 text-gray-200 text-[11px] flex items-center gap-1.5 font-medium"
-                    >
-                      {t}
+                  {tags.map((t, idx) => (
+                    <span key={idx} className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-xs font-mono text-emerald-300 flex items-center gap-1.5">
+                      #{t}
                       {canEdit && (
-                        <button 
-                          type="button"
-                          onClick={() => handleRemoveTag(t)}
-                          className="text-gray-400 hover:text-red-400"
-                        >
-                          ×
+                        <button type="button" onClick={() => handleRemoveTag(t)} className="text-gray-400 hover:text-red-400 cursor-pointer">
+                          <X className="w-3 h-3" />
                         </button>
                       )}
                     </span>
                   ))}
                 </div>
+
                 {canEdit && (
                   <div className="flex gap-2">
                     <input
@@ -474,7 +468,7 @@ export default function LeadDetailModal({
                       value={tagInput}
                       onChange={(e) => setTagInput(e.target.value)}
                       onKeyDown={handleAddTag}
-                      className="flex-1 bg-[#070b14] border border-white/15 rounded-xl px-3.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#33CCFF]"
+                      className="flex-1 bg-[#070b14] border border-white/15 rounded-xl px-3.5 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-400"
                     />
                     <button
                       type="button"
@@ -496,7 +490,7 @@ export default function LeadDetailModal({
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Ghi chú về nhu cầu, khẩu vị đầu tư, sở thích của khách..."
-                  className="w-full bg-[#070b14] border border-white/15 rounded-xl p-3 text-white focus:outline-none focus:border-[#33CCFF] disabled:opacity-60"
+                  className="w-full bg-[#070b14] border border-white/15 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-400 disabled:opacity-60"
                 />
               </div>
             </div>
@@ -549,11 +543,11 @@ export default function LeadDetailModal({
                       placeholder="Nhập nội dung tương tác (VD: Đã gọi trao đổi về chính sách nạp rút, khách hẹn thứ 6 gọi lại)..."
                       value={newLogNote}
                       onChange={(e) => setNewLogNote(e.target.value)}
-                      className="flex-1 bg-[#070b14] border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-[#33CCFF]"
+                      className="flex-1 bg-[#070b14] border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-400"
                     />
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:opacity-90 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-indigo-500/20 transition-all flex-shrink-0 cursor-pointer"
+                      className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:opacity-90 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-950/40 transition-all flex-shrink-0 cursor-pointer font-levents uppercase"
                     >
                       <Send className="w-3.5 h-3.5" /> Ghi Lại
                     </button>
@@ -565,11 +559,11 @@ export default function LeadDetailModal({
               <div className="space-y-3 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-white/10 pl-2">
                 {activities.map((act) => (
                   <div key={act.id} className="relative flex items-start gap-3.5 pl-6 group">
-                    <div className={`absolute left-2.5 top-1.5 w-3.5 h-3.5 rounded-full border-2 border-[#0a0f1c] flex items-center justify-center -translate-x-1/2 ${
+                    <div className={`absolute left-2.5 top-1.5 w-3.5 h-3.5 rounded-full border-2 border-[#070d09] flex items-center justify-center -translate-x-1/2 ${
                       act.type === 'call' ? 'bg-emerald-500' :
                       act.type === 'zalo' ? 'bg-blue-500' :
                       act.type === 'email' ? 'bg-purple-500' :
-                      act.type === 'created' ? 'bg-[#33CCFF]' :
+                      act.type === 'created' ? 'bg-emerald-500' :
                       'bg-amber-500'
                     }`} />
                     <div className="flex-1 bg-white/[0.02] border border-white/10 rounded-2xl p-3.5 space-y-1">
@@ -591,11 +585,11 @@ export default function LeadDetailModal({
           {/* TAB 3: AI PITCH GENERATOR */}
           {currentTab === 'ai_pitch' && (
             <div className="space-y-4">
-              <div className="bg-gradient-to-r from-purple-950/40 via-[#0a0f1c] to-pink-950/30 border border-purple-500/30 rounded-2xl p-4 space-y-3 shadow-xl">
+              <div className="bg-gradient-to-r from-emerald-950/40 via-[#070d09] to-teal-950/30 border border-emerald-500/30 rounded-2xl p-4 space-y-3 shadow-xl">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <h3 className="font-bold text-white flex items-center gap-2 text-sm">
-                      <Sparkles className="w-4 h-4 text-pink-400" />
+                    <h3 className="font-bold text-white flex items-center gap-2 text-sm font-levents uppercase">
+                      <Sparkles className="w-4 h-4 text-emerald-400" />
                       Trợ Lý AI Tạo Kịch Bản Telesales & Chốt Deal
                     </h3>
                     <p className="text-xs text-gray-400 mt-0.5">
@@ -606,7 +600,7 @@ export default function LeadDetailModal({
                     type="button"
                     onClick={handleGeneratePitch}
                     disabled={generatingPitch || !canUseAi}
-                    className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-purple-500/20 transition-all disabled:opacity-40 flex-shrink-0 cursor-pointer"
+                    className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:opacity-90 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-950/40 transition-all disabled:opacity-40 flex-shrink-0 cursor-pointer font-levents uppercase"
                   >
                     <Sparkles className={`w-3.5 h-3.5 ${generatingPitch ? 'animate-spin' : ''}`} />
                     {generatingPitch ? 'Đang soạn kịch bản...' : aiPitch ? 'Tạo Kịch Bản Mới' : 'Tạo Kịch Bản Tư Vấn'}
@@ -629,15 +623,15 @@ export default function LeadDetailModal({
               </div>
 
               {aiPitch && (
-                <div className="bg-[#070b14] border border-purple-500/30 rounded-2xl p-4 relative">
+                <div className="bg-[#070b14] border border-emerald-500/30 rounded-2xl p-4 relative">
                   <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/10">
-                    <span className="text-xs font-semibold text-pink-300 uppercase tracking-wider">
+                    <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider font-levents">
                       Gợi Ý Kịch Bản Dành Riêng Cho: {name}
                     </span>
                     <button
                       type="button"
                       onClick={() => copyToClipboard(aiPitch)}
-                      className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 text-gray-200 text-[11px] flex items-center gap-1 font-medium transition-all cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 text-gray-200 text-[11px] flex items-center gap-1 font-medium transition-all cursor-pointer font-levents"
                     >
                       <Copy className="w-3 h-3" />
                       {copiedPitch ? 'Đã sao chép!' : 'Sao chép nội dung'}
@@ -665,7 +659,7 @@ export default function LeadDetailModal({
             <button
               type="button"
               onClick={handleSave}
-              className="px-6 py-2 rounded-xl bg-gradient-to-r from-[#33CCFF] to-[#0AE5D5] text-[#070b14] font-bold shadow-lg shadow-[#33CCFF]/20 hover:opacity-90 transition-all cursor-pointer flex items-center gap-1.5"
+              className="px-6 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold uppercase font-levents shadow-lg shadow-emerald-950/40 hover:opacity-95 transition-all cursor-pointer flex items-center gap-1.5"
             >
               <CheckCircle2 className="w-4 h-4" /> Lưu Thay Đổi
             </button>
