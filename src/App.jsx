@@ -2,7 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
-import { TrendingUp, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Image as ImageIcon, ArrowRight, UsersRound, Save, Download, Upload, RotateCcw, CheckCircle2, Settings, BookOpen, UserPlus, ShieldAlert, Key, Copy, Trash2, Edit3, UserCheck, Shield, Plus, Phone, Mail, MessageSquare, Filter, Kanban, ListFilter, ArrowUpDown, PlusCircle, CheckSquare, Award, Search, PhoneCall, Building2, Play, Pause, Zap, Power, ExternalLink, ShieldCheck, HelpCircle } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Image as ImageIcon, ArrowRight, UsersRound, Save, Download, Upload, RotateCcw, CheckCircle2, Settings, BookOpen, UserPlus, ShieldAlert, Key, Copy, Trash2, Edit3, UserCheck, Shield, Plus, Phone, Mail, MessageSquare, Filter, Kanban, ListFilter, ArrowUpDown, PlusCircle, CheckSquare, Award, Search, PhoneCall, Building2, Play, Pause, Zap, Power, ExternalLink, ShieldCheck, HelpCircle, Sparkles, Bot, LogOut, Flame, Clock, Tag, Layers, Lock } from 'lucide-react';
+import AuthLogin from './components/AuthLogin';
+import LeadDetailModal from './components/LeadDetailModal';
+import LeadImportModal from './components/LeadImportModal';
+import MarketingAnalyticsView from './components/MarketingAnalyticsView';
+import GeminiAdvisorModal from './components/GeminiAdvisorModal';
+import RolePermissionModal from './components/RolePermissionModal';
+import AdPostDetailModal from './components/AdPostDetailModal';
+import { testGeminiConnection } from './services/geminiService';
+import { hasPermission, maskPhoneNumber, maskEmail, getUserAllowedLeads, ROLE_PERMISSIONS_PRESET } from './constants/permissions';
+import { getAllAdPosts, getAdPostForLead } from './services/adPostService';
 
 const MOCK_ACCOUNTS = [
   { account_id: 'mock_1', name: 'Demo Account - Lead Gen Asia', currency: 'USD' },
@@ -91,31 +101,61 @@ const DEFAULT_PROFILES = [
     id: 'prof_admin',
     name: 'Nguyễn Hạo Hà',
     email: 'admin@metareport.vn',
+    password: 'password123',
     role: 'Admin',
     status: 'Active',
     assignedAccounts: ['mock_1', 'mock_2', 'mock_3'],
     notes: 'Quản trị viên hệ thống & Tổng hợp số liệu toàn diện',
-    avatarBg: 'bg-gradient-to-r from-blue-500 to-cyan-500'
+    avatarBg: 'bg-gradient-to-r from-blue-500 to-cyan-500',
+    customPermissions: ROLE_PERMISSIONS_PRESET['Admin']
   },
   {
     id: 'prof_buyer1',
     name: 'Media Buyer Vietnam',
     email: 'buyer.vn@agency.com',
+    password: 'password123',
     role: 'Media Buyer',
     status: 'Active',
     assignedAccounts: ['mock_1'],
     notes: 'Chuyên trách chiến dịch Lead Gen thị trường VN',
-    avatarBg: 'bg-gradient-to-r from-emerald-500 to-teal-500'
+    avatarBg: 'bg-gradient-to-r from-emerald-500 to-teal-500',
+    customPermissions: ROLE_PERMISSIONS_PRESET['Media Buyer']
+  },
+  {
+    id: 'prof_sales_lead',
+    name: 'Trần Thu Trang',
+    email: 'manager.sales@metareport.vn',
+    password: 'password123',
+    role: 'Sales Manager',
+    status: 'Active',
+    assignedAccounts: ['mock_1', 'mock_2'],
+    notes: 'Trưởng nhóm kinh doanh, quản lý phân bổ leads và doanh thu',
+    avatarBg: 'bg-gradient-to-r from-rose-500 to-orange-500',
+    customPermissions: ROLE_PERMISSIONS_PRESET['Sales Manager']
+  },
+  {
+    id: 'prof_sales',
+    name: 'Sales Specialist',
+    email: 'sales@metareport.vn',
+    password: 'password123',
+    role: 'Sales Specialist',
+    status: 'Active',
+    assignedAccounts: ['mock_1', 'mock_2'],
+    notes: 'Chuyên viên tư vấn & Chăm sóc khách hàng VIP',
+    avatarBg: 'bg-gradient-to-r from-amber-500 to-orange-500',
+    customPermissions: ROLE_PERMISSIONS_PRESET['Sales Specialist']
   },
   {
     id: 'prof_client',
     name: 'Client VIP Alpha',
     email: 'client.alpha@enterprise.com',
+    password: 'password123',
     role: 'Client',
     status: 'Active',
     assignedAccounts: ['mock_2'],
-    notes: 'Khách hàng theo dõi ngân sách và ROI hàng tuần',
-    avatarBg: 'bg-gradient-to-r from-purple-500 to-pink-500'
+    notes: 'Khách hàng theo dõi ngân sách và ROI hàng tuần (SĐT & Email tự che mờ)',
+    avatarBg: 'bg-gradient-to-r from-purple-500 to-pink-500',
+    customPermissions: ROLE_PERMISSIONS_PRESET['Client']
   }
 ];
 
@@ -137,9 +177,16 @@ const DEFAULT_CRM_LEADS = [
     source: 'Facebook Ads / Form',
     campaign: 'VN_LeadGen_Campaign1',
     status: 'funded',
+    priority: 'hot',
     deposit: 1200,
     assignedTo: 'prof_admin',
+    followUpDate: '2026-04-25',
+    tags: ['VIP', 'CopyTrade', 'Đã Nạp'],
     notes: 'Đã hoàn tất mở tài khoản MT5, nạp lần đầu 1,200 USD. Quan tâm copy-trade.',
+    activities: [
+      { id: 'act_1_1', type: 'call', title: 'Cuộc gọi chốt nạp', note: 'Khách nạp thành công 1,200 USD, yêu cầu vào nhóm VIP tín hiệu', timestamp: '2026-04-15 10:30', author: 'Nguyễn Hạo Hà' },
+      { id: 'act_1_2', type: 'note', title: 'Hoàn tất KYC', note: 'Đã duyệt giấy tờ tùy thân và tài khoản ngân hàng', timestamp: '2026-04-14 16:00', author: 'Nguyễn Hạo Hà' }
+    ],
     createdAt: '2026-04-12',
     updatedAt: '2026-04-15'
   },
@@ -151,9 +198,15 @@ const DEFAULT_CRM_LEADS = [
     source: 'Facebook Ads / Form',
     campaign: 'VN_LeadGen_Campaign1',
     status: 'account_opened',
+    priority: 'hot',
     deposit: 0,
     assignedTo: 'prof_buyer1',
+    followUpDate: '2026-04-20',
+    tags: ['Nóng', 'Chờ Nạp', 'Crypto'],
     notes: 'Đã xác minh KYC xong. Đang chờ tư vấn chiến lược nạp tiền.',
+    activities: [
+      { id: 'act_2_1', type: 'zalo', title: 'Nhắn Zalo gửi hướng dẫn nạp', note: 'Gửi bảng phí và hướng dẫn nạp qua ngân hàng nội địa', timestamp: '2026-04-16 11:20', author: 'Media Buyer Vietnam' }
+    ],
     createdAt: '2026-04-14',
     updatedAt: '2026-04-16'
   },
@@ -165,9 +218,15 @@ const DEFAULT_CRM_LEADS = [
     source: 'Website / Funnel',
     campaign: 'VN_IBAcquisition_Gold',
     status: 'contacting',
+    priority: 'warm',
     deposit: 0,
-    assignedTo: 'prof_admin',
+    assignedTo: 'prof_sales',
+    followUpDate: '2026-04-22',
+    tags: ['Quan Tâm Vàng', 'Webinar'],
     notes: 'Đã gọi lần 1, khách hẹn tối nay gửi tài liệu hướng dẫn qua Zalo.',
+    activities: [
+      { id: 'act_3_1', type: 'call', title: 'Cuộc gọi giới thiệu sản phẩm', note: 'Khách quan tâm vàng giao ngay, hẹn gửi tài liệu tối nay', timestamp: '2026-04-16 14:00', author: 'Sales Specialist' }
+    ],
     createdAt: '2026-04-16',
     updatedAt: '2026-04-16'
   },
@@ -179,9 +238,15 @@ const DEFAULT_CRM_LEADS = [
     source: 'Facebook Ads / Form',
     campaign: 'TH_IBAcquisition_April',
     status: 'won',
+    priority: 'hot',
     deposit: 3000,
     assignedTo: 'prof_buyer1',
+    followUpDate: '2026-05-01',
+    tags: ['VIP Diamond', 'IB Lớn'],
     notes: 'Khách VIP nạp 3,000 USD, đã vào nhóm tín hiệu Premium.',
+    activities: [
+      { id: 'act_4_1', type: 'call', title: 'Chào mừng khách VIP', note: 'Đã bàn giao tài khoản Premium và add nhóm Telegram', timestamp: '2026-04-10 09:30', author: 'Media Buyer Vietnam' }
+    ],
     createdAt: '2026-04-05',
     updatedAt: '2026-04-10'
   },
@@ -193,9 +258,15 @@ const DEFAULT_CRM_LEADS = [
     source: 'Zalo / Chat',
     campaign: 'VN_LeadGen_Campaign1',
     status: 'new',
+    priority: 'warm',
     deposit: 0,
-    assignedTo: 'prof_admin',
+    assignedTo: 'prof_sales',
+    followUpDate: '2026-04-21',
+    tags: ['Ebook', 'Mới'],
     notes: 'Lead mới từ form đăng ký nhận Ebook đầu tư.',
+    activities: [
+      { id: 'act_5_1', type: 'created', title: 'Lead mới từ Form Ebook', note: 'Hệ thống tự động ghi nhận', timestamp: '2026-04-17 08:15', author: 'Hệ thống' }
+    ],
     createdAt: '2026-04-17',
     updatedAt: '2026-04-17'
   },
@@ -207,9 +278,15 @@ const DEFAULT_CRM_LEADS = [
     source: 'Giới thiệu / Referral',
     campaign: 'VN_IBAcquisition_Gold',
     status: 'lost',
+    priority: 'cold',
     deposit: 0,
     assignedTo: 'prof_buyer1',
+    followUpDate: '',
+    tags: ['Bất Động Sản', 'Hẹn Qúy Sau'],
     notes: 'Khách đổi ý sang đầu tư bất động sản, hẹn liên hệ lại quý sau.',
+    activities: [
+      { id: 'act_6_1', type: 'call', title: 'Cuộc gọi chăm sóc', note: 'Khách tạm dừng vì bận dự án BĐS, hẹn quý 3 gọi lại', timestamp: '2026-04-11 15:40', author: 'Media Buyer Vietnam' }
+    ],
     createdAt: '2026-04-08',
     updatedAt: '2026-04-11'
   }
@@ -358,13 +435,23 @@ export default function App() {
     }
   }, [manualData]);
 
-  // --- Personal Settings (Token, Webhook, Saved Accounts) ---
+  // --- Personal Settings (Token, Webhook, Gemini Key, Saved Accounts) ---
   const [settings, setSettings] = useState(() => {
     try {
       const saved = localStorage.getItem('meta_report_settings');
-      return saved ? JSON.parse(saved) : { metaToken: '', sheetWebhook: '', savedAccounts: [] };
+      const fallbackGeminiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          metaToken: parsed.metaToken || '',
+          sheetWebhook: parsed.sheetWebhook || '',
+          geminiApiKey: parsed.geminiApiKey || fallbackGeminiKey,
+          savedAccounts: parsed.savedAccounts || []
+        };
+      }
+      return { metaToken: '', sheetWebhook: '', geminiApiKey: fallbackGeminiKey, savedAccounts: [] };
     } catch (e) {
-      return { metaToken: '', sheetWebhook: '', savedAccounts: [] };
+      return { metaToken: '', sheetWebhook: '', geminiApiKey: import.meta.env.VITE_GEMINI_API_KEY || '', savedAccounts: [] };
     }
   });
   
@@ -373,6 +460,26 @@ export default function App() {
       localStorage.setItem('meta_report_settings', JSON.stringify(settings));
     } catch (e) {}
   }, [settings]);
+
+  const [testingGemini, setTestingGemini] = useState(false);
+  const [geminiTestResult, setGeminiTestResult] = useState(null);
+
+  const testGeminiKey = async (key) => {
+    if (!key || !key.trim()) {
+      setGeminiTestResult({ success: false, message: 'Vui lòng nhập Google Gemini API Key trước khi kiểm tra.' });
+      return;
+    }
+    setTestingGemini(true);
+    setGeminiTestResult(null);
+    try {
+      const res = await testGeminiConnection(key);
+      setGeminiTestResult(res);
+    } catch (err) {
+      setGeminiTestResult({ success: false, message: err.message });
+    } finally {
+      setTestingGemini(false);
+    }
+  };
 
   // Accounts state initialized with saved accounts if present, else empty
   const [adAccounts, setAdAccounts] = useState(() => {
@@ -543,13 +650,46 @@ export default function App() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [editingProfile, setEditingProfile] = useState(null);
 
+  // --- User Authentication State ---
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('meta_report_auth_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+
+  const handleLogin = (user, remember = true, isNew = false) => {
+    setCurrentUser(user);
+    setActiveProfileId(user.id);
+    if (remember) {
+      try {
+        localStorage.setItem('meta_report_auth_user', JSON.stringify(user));
+      } catch (e) {}
+    }
+    if (isNew) {
+      setProfiles(prev => {
+        if (prev.some(p => p.id === user.id || p.email === user.email)) return prev;
+        return [user, ...prev];
+      });
+    }
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    try {
+      localStorage.removeItem('meta_report_auth_user');
+    } catch (e) {}
+  };
+
   // --- CRM Leads & Pipeline State ---
   const [leads, setLeads] = useState(() => {
     try {
       const saved = localStorage.getItem('meta_report_crm_leads');
-      return saved ? JSON.parse(saved) : [];
+      return (saved && JSON.parse(saved).length > 0) ? JSON.parse(saved) : DEFAULT_CRM_LEADS;
     } catch (e) {
-      return [];
+      return DEFAULT_CRM_LEADS;
     }
   });
 
@@ -562,6 +702,14 @@ export default function App() {
   const [crmSubTab, setCrmSubTab] = useState('pipeline'); // 'pipeline', 'analytics', 'profiles'
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
   const [editingLead, setEditingLead] = useState(null);
+
+  // --- Extended CRM & AI Modals State ---
+  const [isLeadDetailOpen, setIsLeadDetailOpen] = useState(false);
+  const [selectedLeadForDetail, setSelectedLeadForDetail] = useState(null);
+  const [isLeadImportOpen, setIsLeadImportOpen] = useState(false);
+  const [isGeminiAdvisorOpen, setIsGeminiAdvisorOpen] = useState(false);
+  const [selectedAdPost, setSelectedAdPost] = useState(null);
+  const [isAdPostModalOpen, setIsAdPostModalOpen] = useState(false);
 
   // --- Backup & Restore ---
   const handleBackupData = () => {
@@ -1519,6 +1667,10 @@ export default function App() {
 
   // --- 1. ads_management: Bật / Tắt Chiến Dịch Trực Tiếp Trên Meta Ads ---
   const toggleCampaignStatus = async (campaignId, currentStatus) => {
+    if (!hasPermission(currentUser, 'ads:control')) {
+      alert("Bạn không có quyền bật/tắt chiến dịch quảng cáo! Vui lòng liên hệ Admin để được cấp quyền ads:control.");
+      return;
+    }
     const newStatus = (currentStatus === 'ACTIVE') ? 'PAUSED' : 'ACTIVE';
     setTogglingStatus(campaignId);
 
@@ -1567,6 +1719,10 @@ export default function App() {
 
   // --- 2. ads_management: Đồng Bộ Ngân Sách Lên Meta Ads ---
   const updateCampaignBudgetOnMeta = async (campaignId, budgetUsd, budgetType = 'daily', currency = 'USD') => {
+    if (!hasPermission(currentUser, 'ads:control')) {
+      alert("Bạn không có quyền điều chỉnh ngân sách chiến dịch! Vui lòng liên hệ Admin để được cấp quyền ads:control.");
+      return;
+    }
     const numBudget = parseFloat(budgetUsd);
     if (isNaN(numBudget) || numBudget <= 0) {
       alert("Vui lòng nhập số tiền ngân sách hợp lệ!");
@@ -1825,6 +1981,16 @@ export default function App() {
     };
   });
 
+  // Authentication Guard: Show Login Screen if not logged in
+  if (!currentUser) {
+    return (
+      <AuthLogin
+        profiles={profiles}
+        onLogin={handleLogin}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#070b14] text-white p-6 font-sans print:bg-white print:text-[#070b14] print:m-0 print:p-0">
       {/* Background glow effects */}
@@ -1982,6 +2148,15 @@ export default function App() {
               <Settings className="w-3.5 h-3.5" />
               Cài đặt
             </button>
+            {/* Gemini AI Trigger */}
+            <button
+              onClick={() => setIsGeminiAdvisorOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-amber-500/20 hover:from-purple-500/30 hover:to-amber-500/30 text-amber-200 border border-purple-500/30 shadow-lg shadow-purple-500/10 transition-all cursor-pointer group"
+              title="Mở Trợ Lý AI Tiếp Thị & CRM (Gemini)"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300 group-hover:rotate-12 transition-transform" />
+              <span>AI Advisor</span>
+            </button>
             <button
               onClick={openResetModal}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all cursor-pointer"
@@ -1989,6 +2164,15 @@ export default function App() {
             >
               <RotateCcw className="w-3.5 h-3.5" />
               Reset
+            </button>
+            {/* Logout Button */}
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 transition-all cursor-pointer"
+              title="Đăng xuất khỏi tài khoản"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Đăng xuất</span>
             </button>
           </div>
         </header>
@@ -2008,6 +2192,12 @@ export default function App() {
             <FileText className="w-4 h-4"/> Báo Cáo & Funnel
           </button>
           <button 
+            onClick={() => setActiveTab('analytics')} 
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${activeTab === 'analytics' ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-pink-300 border border-pink-500/30 shadow-lg shadow-pink-500/10' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+          >
+            <TrendingUp className="w-4 h-4 text-pink-400"/> Phân Tích Marketing
+          </button>
+          <button 
             onClick={() => setActiveTab('crm')} 
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${activeTab === 'crm' ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 shadow-lg shadow-indigo-500/5' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
           >
@@ -2024,6 +2214,16 @@ export default function App() {
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${activeTab === 'organic' ? 'bg-pink-500/15 text-pink-400 border border-pink-500/30 shadow-lg shadow-pink-500/5' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
           >
             <UsersRound className="w-4 h-4"/> Organic Fanpages
+          </button>
+          <button 
+            onClick={() => {
+              setSelectedAdPost(getAllAdPosts()[0]);
+              setIsAdPostModalOpen(true);
+            }} 
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all text-gray-400 hover:text-white hover:bg-white/5 border border-white/5 hover:border-white/15 cursor-pointer"
+            title="Xem toàn bộ mẫu creatives và bài post chạy quảng cáo Meta"
+          >
+            <Layers className="w-4 h-4 text-[#33CCFF]"/> Bài Post Ads
           </button>
         </div>
 
@@ -2724,6 +2924,14 @@ export default function App() {
 
         </div>
         </>
+        ) : activeTab === 'analytics' ? (
+          <MarketingAnalyticsView
+            campaigns={data}
+            leads={leads}
+            crmCurrency={crmCurrency}
+            customRates={customRates}
+            onOpenGeminiAudit={() => setIsGeminiAdvisorOpen(true)}
+          />
         ) : activeTab === 'crm' ? (
           <CRMModule 
             leads={leads} 
@@ -2740,6 +2948,11 @@ export default function App() {
             setCrmCurrency={handleCurrencyChange}
             customRates={customRates}
             onRateChange={handleRateChange}
+            currentUser={currentUser}
+            onOpenAdPost={(post) => {
+              setSelectedAdPost(post || getAllAdPosts()[0]);
+              setIsAdPostModalOpen(true);
+            }}
             onOpenAddProfileModal={() => {
               setEditingProfile(null);
               setIsProfileModalOpen(true);
@@ -2756,6 +2969,13 @@ export default function App() {
               setEditingLead(l);
               setIsLeadModalOpen(true);
             }}
+            onOpenLeadDetail={(l) => {
+              setSelectedLeadForDetail(l);
+              setIsLeadDetailOpen(true);
+            }}
+            onOpenImportModal={() => setIsLeadImportOpen(true)}
+            onOpenGeminiAdvisor={() => setIsGeminiAdvisorOpen(true)}
+            geminiApiKey={settings.geminiApiKey}
           />
         ) : activeTab === 'bm' ? (
           <BusinessManagerHub 
@@ -2799,6 +3019,95 @@ export default function App() {
           adAccounts={adAccounts}
           onClose={() => setIsCreateCampaignOpen(false)}
           onCreateCampaign={createNewCampaign}
+        />
+      )}
+
+      {/* Lead Detail & Timeline Modal */}
+      {isLeadDetailOpen && selectedLeadForDetail && (
+        <LeadDetailModal
+          lead={selectedLeadForDetail}
+          profiles={profiles}
+          stages={CRM_STAGES}
+          crmCurrency={crmCurrency}
+          customRates={customRates}
+          geminiApiKey={settings.geminiApiKey}
+          currentUser={currentUser}
+          onOpenAdPost={(post) => {
+            setSelectedAdPost(post);
+            setIsAdPostModalOpen(true);
+          }}
+          onClose={() => {
+            setIsLeadDetailOpen(false);
+            setSelectedLeadForDetail(null);
+          }}
+          onSaveLead={(updatedLead) => {
+            setLeads(prev => prev.map(l => l.id === updatedLead.id ? updatedLead : l));
+            setIsLeadDetailOpen(false);
+            setSelectedLeadForDetail(null);
+          }}
+        />
+      )}
+
+      {/* Lead CSV Import Modal */}
+      {isLeadImportOpen && (
+        <LeadImportModal
+          isOpen={isLeadImportOpen}
+          onClose={() => setIsLeadImportOpen(false)}
+          activeProfileId={activeProfileId}
+          onImportLeads={(newLeads) => {
+            setLeads(prev => [...newLeads, ...prev]);
+          }}
+        />
+      )}
+
+      {/* Ad Post Creative Detail Modal */}
+      {isAdPostModalOpen && (
+        <AdPostDetailModal
+          isOpen={isAdPostModalOpen}
+          adPost={selectedAdPost}
+          leads={leads}
+          onClose={() => setIsAdPostModalOpen(false)}
+          onSelectLead={(l) => {
+            setIsAdPostModalOpen(false);
+            setSelectedLeadForDetail(l);
+            setIsLeadDetailOpen(true);
+          }}
+        />
+      )}
+
+      {/* Gemini AI Advisor Modal */}
+      {isGeminiAdvisorOpen && (
+        <GeminiAdvisorModal
+          isOpen={isGeminiAdvisorOpen}
+          onClose={() => setIsGeminiAdvisorOpen(false)}
+          apiKey={settings.geminiApiKey}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          marketingContext={{
+            totalSpend: (data || []).reduce((s, c) => s + (parseFloat(c.spend) || 0), 0),
+            totalImpressions: (data || []).reduce((s, c) => s + (parseInt(c.impressions) || 0), 0),
+            totalClicks: (data || []).reduce((s, c) => s + (parseInt(c.clicks) || 0), 0),
+            ctr: (data || []).reduce((s, c) => s + (parseInt(c.impressions) || 0), 0) > 0 ? (((data || []).reduce((s, c) => s + (parseInt(c.clicks) || 0), 0) / (data || []).reduce((s, c) => s + (parseInt(c.impressions) || 0), 0)) * 100).toFixed(2) : 0,
+            totalLeads: leads.length,
+            cpl: leads.length > 0 ? Math.round((data || []).reduce((s, c) => s + (parseFloat(c.spend) || 0), 0) / leads.length) : 0,
+            fundedLeadsCount: leads.filter(l => l.status === 'funded' || l.status === 'won').length,
+            cac: leads.filter(l => l.status === 'funded' || l.status === 'won').length > 0 ? Math.round((data || []).reduce((s, c) => s + (parseFloat(c.spend) || 0), 0) / leads.filter(l => l.status === 'funded' || l.status === 'won').length) : 0,
+            totalDeposit: leads.reduce((s, l) => s + (parseFloat(l.deposit) || 0), 0),
+            arpu: leads.filter(l => l.status === 'funded' || l.status === 'won').length > 0 ? Math.round(leads.reduce((s, l) => s + (parseFloat(l.deposit) || 0), 0) / leads.filter(l => l.status === 'funded' || l.status === 'won').length) : 0,
+            roas: (data || []).reduce((s, c) => s + (parseFloat(c.spend) || 0), 0) > 0 ? (leads.reduce((s, l) => s + (parseFloat(l.deposit) || 0), 0) / (data || []).reduce((s, c) => s + (parseFloat(c.spend) || 0), 0)).toFixed(2) : '0',
+            winRate: leads.length > 0 ? ((leads.filter(l => l.status === 'won').length / leads.length) * 100).toFixed(1) : 0,
+            campaignsSummary: (data || []).map(c => ({
+              name: c.campaign_name,
+              spend: c.spend,
+              clicks: c.clicks,
+              leads: c.leads,
+              status: c.status
+            })),
+            sourceData: ['Facebook Ads / Form', 'Website / Funnel', 'Zalo / Chat', 'Hotline', 'Giới thiệu / Referral'].map(src => ({
+              source: src,
+              leadsCount: leads.filter(l => l.source === src).length,
+              fundedCount: leads.filter(l => l.source === src && (l.status === 'funded' || l.status === 'won')).length
+            }))
+          }}
         />
       )}
 
@@ -3088,6 +3397,63 @@ export default function App() {
                 )}
               </div>
 
+              {/* Google Gemini AI API Configuration */}
+              <div className="p-4 bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-white/5 border border-purple-500/20 rounded-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-pink-300 uppercase tracking-wider flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-pink-400" />
+                    Google Gemini AI API Key (Trợ Lý Tiếp Thị & CRM)
+                  </label>
+                  <a
+                    href="https://aistudio.google.com/app/apikey"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] text-[#33CCFF] hover:underline flex items-center gap-1"
+                  >
+                    <ExternalLink className="w-3 h-3" /> Lấy Key tại Google AI Studio
+                  </a>
+                </div>
+
+                <div className="relative">
+                  <input 
+                    type="password"
+                    className="w-full bg-[#070b14] border border-white/15 rounded-lg px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-400 font-mono tracking-wider"
+                    placeholder="AIzaSy..."
+                    value={settings.geminiApiKey || ''}
+                    onChange={(e) => {
+                      setSettings({...settings, geminiApiKey: e.target.value});
+                      setGeminiTestResult(null);
+                    }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-3 pt-1">
+                  <p className="text-[11px] text-gray-500">
+                    Phục vụ phân tích phễu, đề xuất chiến lược tối ưu và soạn kịch bản tư vấn Lead.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => testGeminiKey(settings.geminiApiKey)}
+                    disabled={testingGemini || !settings.geminiApiKey}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 flex items-center gap-1.5 transition-all disabled:opacity-40 flex-shrink-0 cursor-pointer"
+                  >
+                    <Sparkles className={`w-3.5 h-3.5 ${testingGemini ? 'animate-spin' : ''}`} />
+                    {testingGemini ? 'Đang kiểm tra...' : 'Kiểm tra API Key'}
+                  </button>
+                </div>
+
+                {geminiTestResult && (
+                  <div className={`p-2.5 rounded-lg text-xs border ${
+                    geminiTestResult.success 
+                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' 
+                      : 'bg-red-500/10 border-red-500/20 text-red-300'
+                  }`}>
+                    {geminiTestResult.success ? '✅ ' : '❌ '}
+                    {geminiTestResult.message}
+                  </div>
+                )}
+              </div>
+
               {/* Danger Zone / Reset */}
               <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-xl flex items-center justify-between gap-4">
                 <div>
@@ -3195,9 +3561,9 @@ export default function App() {
         </div>
       )}
 
-      {/* Profile Create / Edit Modal */}
+      {/* Profile Create / Edit Modal (RBAC Enhanced) */}
       {isProfileModalOpen && (
-        <ProfileModal 
+        <RolePermissionModal 
           isOpen={isProfileModalOpen}
           editingProfile={editingProfile}
           adAccounts={adAccounts}
@@ -3205,6 +3571,13 @@ export default function App() {
           onSave={(savedProfile) => {
             if (editingProfile) {
               setProfiles(profiles.map(p => p.id === savedProfile.id ? savedProfile : p));
+              if (currentUser && currentUser.id === savedProfile.id) {
+                const updatedCurrent = { ...currentUser, ...savedProfile };
+                setCurrentUser(updatedCurrent);
+                try {
+                  localStorage.setItem('meta_report_auth_user', JSON.stringify(updatedCurrent));
+                } catch (e) {}
+              }
             } else {
               setProfiles([...profiles, savedProfile]);
             }
@@ -4316,10 +4689,16 @@ function CRMModule({
   setCrmCurrency,
   customRates = {},
   onRateChange,
+  currentUser,
+  onOpenAdPost,
   onOpenAddProfileModal,
   onEditProfile,
   onOpenAddLeadModal,
-  onEditLead
+  onEditLead,
+  onOpenLeadDetail,
+  onOpenImportModal,
+  onOpenGeminiAdvisor,
+  geminiApiKey
 }) {
   const [viewMode, setViewMode] = useState('kanban'); // 'kanban' | 'table'
   const [searchTerm, setSearchTerm] = useState('');
@@ -4329,6 +4708,24 @@ function CRMModule({
   const [filterDeposit, setFilterDeposit] = useState('all'); // 'all' | 'has_deposit' | 'no_deposit'
   const [filterTime, setFilterTime] = useState('all'); // 'all' | 'today' | '7d' | '30d' | 'this_month'
   const [filterCampaign, setFilterCampaign] = useState('all');
+  const [quickFilter, setQuickFilter] = useState('all'); // 'all' | 'hot' | 'due_today' | 'overdue' | 'funded'
+  const [sortField, setSortField] = useState('newest'); // 'newest' | 'deposit_desc' | 'name_asc' | 'due_asc'
+  const [selectedLeadIds, setSelectedLeadIds] = useState([]);
+
+  // Lọc leads theo phân quyền RBAC của người dùng
+  const allowedLeads = getUserAllowedLeads(leads, currentUser);
+
+  // Quyền hạn chi tiết
+  const canCreateLead = hasPermission(currentUser, 'leads:create');
+  const canEditLead = hasPermission(currentUser, 'leads:edit');
+  const canDeleteLead = hasPermission(currentUser, 'leads:delete');
+  const canExportLeads = hasPermission(currentUser, 'leads:export');
+  const canAssignLead = hasPermission(currentUser, 'leads:assign');
+  const canChangeStage = hasPermission(currentUser, 'leads:change_stage');
+  const canViewSensitive = hasPermission(currentUser, 'leads:view_sensitive');
+  const canViewAdCreatives = hasPermission(currentUser, 'ads:view_creatives');
+  const canManageUsers = hasPermission(currentUser, 'system:manage_users');
+  const canUseAiAdvisor = hasPermission(currentUser, 'ai:use_strategic_audit');
 
   // Currency Formatter with Custom Rate
   const formatMoney = (amountInUsd) => {
@@ -4357,12 +4754,12 @@ function CRMModule({
 
   // Unique campaigns for filter
   const availableCampaigns = Array.from(new Set([
-    ...leads.map(l => l.campaign).filter(Boolean),
+    ...allowedLeads.map(l => l.campaign).filter(Boolean),
     ...(campaigns || []).map(c => c.campaign_name).filter(Boolean)
   ]));
 
   // Filter leads with extended options
-  const filteredLeads = leads.filter(l => {
+  const filteredLeads = allowedLeads.filter(l => {
     const s = searchTerm.trim().toLowerCase();
     const matchSearch = 
       !s ||
@@ -4405,19 +4802,121 @@ function CRMModule({
     // Campaign filter
     const matchCampaign = filterCampaign === 'all' || l.campaign === filterCampaign;
 
-    return matchSearch && matchStage && matchProfile && matchSource && matchDeposit && matchTime && matchCampaign;
+    // Quick filter check
+    let matchQuick = true;
+    const todayStr = new Date().toISOString().slice(0, 10);
+    if (quickFilter === 'hot') {
+      matchQuick = l.priority === 'hot';
+    } else if (quickFilter === 'due_today') {
+      matchQuick = l.followUpDate === todayStr;
+    } else if (quickFilter === 'overdue') {
+      matchQuick = Boolean(l.followUpDate && l.followUpDate < todayStr);
+    } else if (quickFilter === 'funded') {
+      matchQuick = (parseFloat(l.deposit) || 0) > 0;
+    }
+
+    return matchSearch && matchStage && matchProfile && matchSource && matchDeposit && matchTime && matchCampaign && matchQuick;
   });
+
+  // Sort leads
+  const sortedLeads = [...filteredLeads].sort((a, b) => {
+    if (sortField === 'deposit_desc') return (parseFloat(b.deposit) || 0) - (parseFloat(a.deposit) || 0);
+    if (sortField === 'name_asc') return (a.name || '').localeCompare(b.name || '');
+    if (sortField === 'due_asc') return (a.followUpDate || '9999').localeCompare(b.followUpDate || '9999');
+    return (b.createdAt || '').localeCompare(a.createdAt || '');
+  });
+
+  // Bulk actions helpers
+  const toggleSelectLead = (id) => {
+    setSelectedLeadIds(prev => 
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedLeadIds.length === filteredLeads.length && filteredLeads.length > 0) {
+      setSelectedLeadIds([]);
+    } else {
+      setSelectedLeadIds(filteredLeads.map(l => l.id));
+    }
+  };
+
+  const handleBulkStageChange = (newStage) => {
+    if (!canChangeStage) {
+      alert("Bạn không có quyền chuyển đổi giai đoạn phễu!");
+      return;
+    }
+    if (!newStage) return;
+    setLeads(prev => prev.map(l => selectedLeadIds.includes(l.id) ? { ...l, status: newStage, updatedAt: new Date().toISOString().slice(0, 10) } : l));
+    setSelectedLeadIds([]);
+  };
+
+  const handleBulkAssign = (newProfId) => {
+    if (!canAssignLead) {
+      alert("Bạn không có quyền phân công nhân sự!");
+      return;
+    }
+    if (!newProfId) return;
+    setLeads(prev => prev.map(l => selectedLeadIds.includes(l.id) ? { ...l, assignedTo: newProfId, updatedAt: new Date().toISOString().slice(0, 10) } : l));
+    setSelectedLeadIds([]);
+  };
+
+  const handleBulkDelete = () => {
+    if (!canDeleteLead) {
+      alert("Bạn không có quyền xóa khách hàng!");
+      return;
+    }
+    if (window.confirm(`Bạn có chắc muốn xóa ${selectedLeadIds.length} khách hàng đã chọn?`)) {
+      setLeads(prev => prev.filter(l => !selectedLeadIds.includes(l.id)));
+      setSelectedLeadIds([]);
+    }
+  };
+
+  const handleBulkExport = () => {
+    if (!canExportLeads) {
+      alert("Bạn không có quyền xuất dữ liệu khách hàng!");
+      return;
+    }
+    const leadsToExport = allowedLeads.filter(l => selectedLeadIds.includes(l.id));
+    if (leadsToExport.length === 0) return;
+    const headers = ["ID", "Tên Khách Hàng", "Số Điện Thoại", "Email", "Nguồn", "Chiến Dịch", "Giai Đoạn", "Tiền Nạp (USD)", "Độ Ưu Tiên", "Phụ Trách", "Ghi Chú"];
+    const rows = leadsToExport.map(l => {
+      const assignedProf = profiles.find(p => p.id === l.assignedTo);
+      const stageObj = CRM_STAGES.find(s => s.id === l.status);
+      return [
+        l.id,
+        `"${(l.name || '').replace(/"/g, '""')}"`,
+        `"${canViewSensitive ? (l.phone || '') : maskPhoneNumber(l.phone)}"`,
+        `"${canViewSensitive ? (l.email || '') : maskEmail(l.email)}"`,
+        `"${l.source || ''}"`,
+        `"${l.campaign || ''}"`,
+        `"${stageObj ? stageObj.label : l.status}"`,
+        l.deposit || 0,
+        l.priority || 'warm',
+        `"${assignedProf ? assignedProf.name : 'Chưa gán'}"`,
+        `"${(l.notes || '').replace(/"/g, '""')}"`
+      ].join(",");
+    });
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(","), ...rows].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `crm_selected_${selectedLeadIds.length}_leads.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
 
   const hasActiveFilters = searchTerm || filterStage !== 'all' || filterProfile !== 'all' || filterSource !== 'all' || filterDeposit !== 'all' || filterTime !== 'all' || filterCampaign !== 'all';
 
-  // Calculate CRM Stats
-  const totalLeads = leads.length;
-  const newCount = leads.filter(l => l.status === 'new').length;
-  const contactingCount = leads.filter(l => l.status === 'contacting').length;
-  const accountOpenedCount = leads.filter(l => l.status === 'account_opened').length;
-  const fundedLeads = leads.filter(l => l.status === 'funded' || l.status === 'won');
-  const totalFundedDeposit = leads.reduce((acc, l) => acc + (parseFloat(l.deposit) || 0), 0);
-  const winCount = leads.filter(l => l.status === 'won').length;
+  // Calculate CRM Stats from allowedLeads
+  const totalLeads = allowedLeads.length;
+  const newCount = allowedLeads.filter(l => l.status === 'new').length;
+  const contactingCount = allowedLeads.filter(l => l.status === 'contacting').length;
+  const accountOpenedCount = allowedLeads.filter(l => l.status === 'account_opened').length;
+  const fundedLeads = allowedLeads.filter(l => l.status === 'funded' || l.status === 'won');
+  const totalFundedDeposit = allowedLeads.reduce((acc, l) => acc + (parseFloat(l.deposit) || 0), 0);
+  const winCount = allowedLeads.filter(l => l.status === 'won').length;
   const winRate = totalLeads > 0 ? ((winCount / totalLeads) * 100).toFixed(1) : '0';
   const fundedConversionRate = totalLeads > 0 ? ((fundedLeads.length / totalLeads) * 100).toFixed(1) : '0';
 
@@ -4553,6 +5052,17 @@ function CRMModule({
             <Users className="w-4 h-4" />
             Hồ Sơ & Phân Quyền ({profiles.length})
           </button>
+          <button
+            onClick={() => setCrmSubTab('ad_posts')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              crmSubTab === 'ad_posts'
+                ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/20'
+                : 'text-gray-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            Bài Post Quảng Cáo ({getAllAdPosts().length})
+          </button>
         </div>
 
         {/* Currency Switcher & Custom Rate Tool */}
@@ -4592,26 +5102,50 @@ function CRMModule({
 
         {crmSubTab === 'pipeline' && (
           <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={handleExportCSV}
-              className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-medium rounded-lg border border-white/10 flex items-center gap-1.5 transition-all cursor-pointer"
-              title="Xuất file CSV"
-            >
-              <Download className="w-3.5 h-3.5" /> Xuất CSV
-            </button>
-            <button
-              onClick={handleSyncFromCampaigns}
-              className="px-3 py-1.5 bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 text-xs font-medium rounded-lg border border-indigo-500/30 flex items-center gap-1.5 transition-all cursor-pointer"
-              title="Đồng bộ Lead từ chiến dịch Meta Ads"
-            >
-              <RefreshCw className="w-3.5 h-3.5" /> Đồng bộ từ Ads
-            </button>
-            <button
-              onClick={onOpenAddLeadModal}
-              className="px-3.5 py-1.5 bg-gradient-to-r from-[#33CCFF] to-[#0AE5D5] text-[#070b14] text-xs font-bold rounded-lg shadow-lg shadow-[#33CCFF]/20 hover:opacity-90 flex items-center gap-1.5 transition-all cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" /> Thêm Khách Hàng
-            </button>
+            {canExportLeads && (
+              <button
+                onClick={handleExportCSV}
+                className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-medium rounded-lg border border-white/10 flex items-center gap-1.5 transition-all cursor-pointer"
+                title="Xuất file CSV"
+              >
+                <Download className="w-3.5 h-3.5" /> Xuất CSV
+              </button>
+            )}
+            {canCreateLead && (
+              <button
+                onClick={onOpenImportModal}
+                className="px-3 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 text-xs font-medium rounded-lg border border-emerald-500/30 flex items-center gap-1.5 transition-all cursor-pointer"
+                title="Tải lên danh sách Lead từ tệp CSV"
+              >
+                <Upload className="w-3.5 h-3.5" /> Nhập CSV
+              </button>
+            )}
+            {canUseAiAdvisor && (
+              <button
+                onClick={onOpenGeminiAdvisor}
+                className="px-3 py-1.5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-pink-300 text-xs font-bold rounded-lg border border-pink-500/30 flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-purple-500/10"
+                title="Phân tích phễu và xin tư vấn chiến lược từ Gemini AI"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" /> Trợ Lý Gemini AI
+              </button>
+            )}
+            {canCreateLead && (
+              <button
+                onClick={handleSyncFromCampaigns}
+                className="px-3 py-1.5 bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 text-xs font-medium rounded-lg border border-indigo-500/30 flex items-center gap-1.5 transition-all cursor-pointer"
+                title="Đồng bộ Lead từ chiến dịch Meta Ads"
+              >
+                <RefreshCw className="w-3.5 h-3.5" /> Đồng bộ từ Ads
+              </button>
+            )}
+            {canCreateLead && (
+              <button
+                onClick={onOpenAddLeadModal}
+                className="px-3.5 py-1.5 bg-gradient-to-r from-[#33CCFF] to-[#0AE5D5] text-[#070b14] text-xs font-bold rounded-lg shadow-lg shadow-[#33CCFF]/20 hover:opacity-90 flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" /> Thêm Khách Hàng
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -4755,6 +5289,18 @@ function CRMModule({
                 </select>
               )}
 
+              {/* Sort Selector */}
+              <select
+                className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#33CCFF] h-[36px] cursor-pointer"
+                value={sortField}
+                onChange={(e) => setSortField(e.target.value)}
+              >
+                <option value="newest" className="bg-[#0a0f1c]">Mới nhất trước</option>
+                <option value="deposit_desc" className="bg-[#0a0f1c]">Tiền nạp cao nhất</option>
+                <option value="due_asc" className="bg-[#0a0f1c]">Hạn chăm sóc gần nhất</option>
+                <option value="name_asc" className="bg-[#0a0f1c]">Tên A-Z</option>
+              </select>
+
               {/* Reset Filters */}
               {hasActiveFilters && (
                 <button
@@ -4766,6 +5312,7 @@ function CRMModule({
                     setFilterDeposit('all');
                     setFilterTime('all');
                     setFilterCampaign('all');
+                    setQuickFilter('all');
                   }}
                   className="px-2.5 py-1 rounded-lg text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all flex items-center gap-1 cursor-pointer h-[36px]"
                   title="Xóa tất cả bộ lọc CRM"
@@ -4796,6 +5343,133 @@ function CRMModule({
               </button>
             </div>
           </div>
+
+          {/* Quick Filter Chips */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs no-scrollbar">
+            <span className="text-gray-400 font-semibold text-[11px] flex-shrink-0">Lọc nhanh:</span>
+            <button
+              type="button"
+              onClick={() => setQuickFilter('all')}
+              className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer whitespace-nowrap ${
+                quickFilter === 'all'
+                  ? 'bg-white/20 text-white border border-white/30 font-bold'
+                  : 'bg-white/5 text-gray-400 hover:text-white'
+              }`}
+            >
+              Tất cả ({leads.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setQuickFilter('hot')}
+              className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                quickFilter === 'hot'
+                  ? 'bg-red-500/20 text-red-300 border border-red-500/40 font-bold'
+                  : 'bg-white/5 text-gray-400 hover:text-red-300'
+              }`}
+            >
+              <Flame className="w-3.5 h-3.5 text-red-400" />
+              Lead Nóng ({leads.filter(l => l.priority === 'hot').length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setQuickFilter('due_today')}
+              className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                quickFilter === 'due_today'
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold'
+                  : 'bg-white/5 text-gray-400 hover:text-amber-300'
+              }`}
+            >
+              <Clock className="w-3.5 h-3.5 text-amber-400" />
+              Hôm nay cần gọi ({leads.filter(l => l.followUpDate === new Date().toISOString().slice(0, 10)).length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setQuickFilter('overdue')}
+              className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                quickFilter === 'overdue'
+                  ? 'bg-red-500/20 text-red-300 border border-red-500/40 font-bold'
+                  : 'bg-white/5 text-gray-400 hover:text-red-300'
+              }`}
+            >
+              <AlertCircle className="w-3.5 h-3.5 text-red-400" />
+              Quá hạn ({leads.filter(l => l.followUpDate && l.followUpDate < new Date().toISOString().slice(0, 10)).length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setQuickFilter('funded')}
+              className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                quickFilter === 'funded'
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold'
+                  : 'bg-white/5 text-gray-400 hover:text-emerald-300'
+              }`}
+            >
+              <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+              Đã nạp tiền ({leads.filter(l => (parseFloat(l.deposit) || 0) > 0).length})
+            </button>
+          </div>
+
+          {/* Bulk Actions Bar */}
+          {selectedLeadIds.length > 0 && (
+            <div className="bg-gradient-to-r from-indigo-900/90 to-blue-900/90 border border-[#33CCFF]/40 rounded-2xl p-3 px-4 shadow-2xl flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-white font-bold">
+                <CheckSquare className="w-4 h-4 text-[#33CCFF]" />
+                <span>Đã chọn {selectedLeadIds.length} khách hàng</span>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <select
+                  defaultValue=""
+                  onChange={(e) => {
+                    handleBulkStageChange(e.target.value);
+                    e.target.value = "";
+                  }}
+                  className="bg-black/40 border border-white/20 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none cursor-pointer"
+                >
+                  <option value="" disabled>Chuyển giai đoạn...</option>
+                  {CRM_STAGES.map(s => (
+                    <option key={s.id} value={s.id} className="bg-[#0a0f1c]">{s.label}</option>
+                  ))}
+                </select>
+
+                <select
+                  defaultValue=""
+                  onChange={(e) => {
+                    handleBulkAssign(e.target.value);
+                    e.target.value = "";
+                  }}
+                  className="bg-black/40 border border-white/20 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none cursor-pointer"
+                >
+                  <option value="" disabled>Gán nhân sự...</option>
+                  {profiles.map(p => (
+                    <option key={p.id} value={p.id} className="bg-[#0a0f1c]">{p.name}</option>
+                  ))}
+                </select>
+
+                <button
+                  type="button"
+                  onClick={handleBulkExport}
+                  className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium flex items-center gap-1 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" /> Xuất CSV
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleBulkDelete}
+                  className="px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-300 font-medium flex items-center gap-1 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Xóa đã chọn
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedLeadIds([])}
+                  className="px-2.5 py-1.5 rounded-xl text-gray-400 hover:text-white font-medium cursor-pointer"
+                >
+                  Bỏ chọn
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* KANBAN BOARD VIEW */}
           {viewMode === 'kanban' ? (
@@ -4834,45 +5508,73 @@ function CRMModule({
                       ) : (
                         stageLeads.map(lead => {
                           const assignedProf = profiles.find(p => p.id === lead.assignedTo);
+                          const isDueToday = lead.followUpDate === new Date().toISOString().slice(0, 10);
+                          const isOverdue = Boolean(lead.followUpDate && lead.followUpDate < new Date().toISOString().slice(0, 10));
+
                           return (
                             <div 
                               key={lead.id}
-                              className="bg-black/40 hover:bg-black/60 border border-white/10 hover:border-[#33CCFF]/40 rounded-xl p-3 transition-all shadow-md group relative"
+                              className="bg-black/40 hover:bg-black/60 border border-white/10 hover:border-[#33CCFF]/40 rounded-xl p-3 transition-all shadow-md group relative cursor-pointer"
+                              onClick={() => onOpenLeadDetail && onOpenLeadDetail(lead)}
                             >
                               <div className="flex items-start justify-between gap-2 mb-1.5">
-                                <h4 className="font-bold text-xs text-white group-hover:text-[#33CCFF] transition-colors truncate">
-                                  {lead.name}
-                                </h4>
-                                <div className="flex items-center gap-1 flex-shrink-0">
-                                  <button
-                                    onClick={() => onEditLead(lead)}
-                                    className="p-1 text-gray-400 hover:text-white transition-colors cursor-pointer"
-                                    title="Sửa thông tin"
-                                  >
-                                    <Edit3 className="w-3 h-3" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteLead(lead.id)}
-                                    className="p-1 text-gray-400 hover:text-red-400 transition-colors cursor-pointer"
-                                    title="Xóa khách"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </button>
+                                <div className="min-w-0 flex items-center gap-1.5">
+                                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                    lead.priority === 'hot' ? 'bg-red-500/20 text-red-300 border border-red-500/30' :
+                                    lead.priority === 'warm' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                                    'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                                  }`}>
+                                    {lead.priority === 'hot' ? '🔥' : lead.priority === 'warm' ? '⚡' : '❄️'}
+                                  </span>
+                                  <h4 className="font-bold text-xs text-white group-hover:text-[#33CCFF] transition-colors truncate">
+                                    {lead.name}
+                                  </h4>
+                                </div>
+                                <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                                  {canEditLead && (
+                                    <button
+                                      onClick={() => onEditLead(lead)}
+                                      className="p-1 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                                      title="Sửa thông tin"
+                                    >
+                                      <Edit3 className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                  {canDeleteLead && (
+                                    <button
+                                      onClick={() => handleDeleteLead(lead.id)}
+                                      className="p-1 text-gray-400 hover:text-red-400 transition-colors cursor-pointer"
+                                      title="Xóa khách"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  )}
                                 </div>
                               </div>
 
                               {/* Contact & Source */}
                               <div className="space-y-1 mb-2 text-[11px] text-gray-400">
                                 {lead.phone && (
-                                  <div className="flex items-center gap-1.5 text-gray-300">
-                                    <Phone className="w-3 h-3 text-emerald-400 flex-shrink-0" />
-                                    <span className="font-mono">{lead.phone}</span>
+                                  <div className="flex items-center justify-between text-gray-300">
+                                    <div className="flex items-center gap-1.5">
+                                      <Phone className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+                                      <span className="font-mono">{canViewSensitive ? lead.phone : maskPhoneNumber(lead.phone)}</span>
+                                    </div>
+                                    {canViewSensitive && (
+                                      <a
+                                        href={`tel:${lead.phone}`}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="text-[10px] text-emerald-400 hover:underline"
+                                      >
+                                        Gọi
+                                      </a>
+                                    )}
                                   </div>
                                 )}
                                 {lead.email && (
                                   <div className="flex items-center gap-1.5 truncate">
                                     <Mail className="w-3 h-3 text-cyan-400 flex-shrink-0" />
-                                    <span className="truncate">{lead.email}</span>
+                                    <span className="truncate">{canViewSensitive ? lead.email : maskEmail(lead.email)}</span>
                                   </div>
                                 )}
                                 <div className="flex items-center justify-between text-[10px] pt-1">
@@ -4885,6 +5587,43 @@ function CRMModule({
                                     </span>
                                   )}
                                 </div>
+
+                                {canViewAdCreatives && (
+                                  <div className="pt-1 flex items-center justify-between">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onOpenAdPost(getAdPostForLead(lead));
+                                      }}
+                                      className="text-[10px] text-[#33CCFF] hover:underline flex items-center gap-1 cursor-pointer"
+                                      title="Xem bài post quảng cáo Facebook tương ứng"
+                                    >
+                                      <Layers className="w-3 h-3" /> Bài post ads
+                                    </button>
+                                  </div>
+                                )}
+
+                                {lead.followUpDate && (
+                                  <div className={`text-[10px] flex items-center gap-1 font-mono pt-0.5 ${
+                                    isDueToday ? 'text-amber-300 font-bold' :
+                                    isOverdue ? 'text-red-400 font-bold' :
+                                    'text-gray-400'
+                                  }`}>
+                                    <Clock className="w-3 h-3" />
+                                    {isDueToday ? 'Hôm nay hẹn gọi' : isOverdue ? `Quá hạn (${lead.followUpDate})` : `Hẹn: ${lead.followUpDate}`}
+                                  </div>
+                                )}
+
+                                {lead.tags && lead.tags.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 pt-1">
+                                    {lead.tags.slice(0, 2).map((t, idx) => (
+                                      <span key={idx} className="text-[9px] bg-white/5 border border-white/10 px-1.5 py-0.2 rounded text-gray-300">
+                                        #{t}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
 
                               {/* Notes */}
@@ -4895,7 +5634,7 @@ function CRMModule({
                               )}
 
                               {/* Footer: Assigned & Stage Transition */}
-                              <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-1 text-[10px]">
+                              <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-1 text-[10px]" onClick={(e) => e.stopPropagation()}>
                                 <div className="flex items-center gap-1 text-gray-400 truncate">
                                   <span className={`w-4 h-4 rounded-full ${assignedProf ? assignedProf.avatarBg : 'bg-blue-500'} flex items-center justify-center text-[8px] font-bold text-white flex-shrink-0`}>
                                     {assignedProf ? assignedProf.name.charAt(0).toUpperCase() : 'U'}
@@ -4930,7 +5669,16 @@ function CRMModule({
                 <table className="w-full text-left text-xs whitespace-nowrap">
                   <thead className="bg-black/40 text-gray-400 uppercase text-[10px] tracking-wider border-b border-white/10">
                     <tr>
+                      <th className="px-4 py-3 w-8">
+                        <input
+                          type="checkbox"
+                          checked={sortedLeads.length > 0 && selectedLeadIds.length === sortedLeads.length}
+                          onChange={toggleSelectAll}
+                          className="rounded bg-white/10 border-white/20 text-[#33CCFF] focus:ring-0 cursor-pointer"
+                        />
+                      </th>
                       <th className="px-4 py-3">Khách Hàng</th>
+                      <th className="px-4 py-3">Ưu Tiên & Hạn Chăm Sóc</th>
                       <th className="px-4 py-3">Liên Hệ</th>
                       <th className="px-4 py-3">Nguồn & Chiến Dịch</th>
                       <th className="px-4 py-3">Giai Đoạn Phễu</th>
@@ -4941,27 +5689,80 @@ function CRMModule({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
-                    {filteredLeads.length === 0 ? (
+                    {sortedLeads.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                        <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
                           Không tìm thấy khách hàng nào phù hợp với bộ lọc.
                         </td>
                       </tr>
                     ) : (
-                      filteredLeads.map(lead => {
+                      sortedLeads.map(lead => {
                         const assignedProf = profiles.find(p => p.id === lead.assignedTo);
                         const stageObj = CRM_STAGES.find(s => s.id === lead.status) || CRM_STAGES[0];
+                        const isOverdue = lead.followUpDate && new Date(lead.followUpDate) < new Date(new Date().setHours(0,0,0,0));
                         return (
-                          <tr key={lead.id} className="hover:bg-white/[0.02] transition-colors">
-                            <td className="px-4 py-3 font-semibold text-white">
-                              {lead.name}
-                              {lead.notes && (
-                                <p className="text-[10px] font-normal text-gray-400 truncate max-w-xs">{lead.notes}</p>
-                              )}
+                          <tr key={lead.id} className={`hover:bg-white/[0.02] transition-colors ${selectedLeadIds.includes(lead.id) ? 'bg-[#33CCFF]/5' : ''}`}>
+                            <td className="px-4 py-3">
+                              <input
+                                type="checkbox"
+                                checked={selectedLeadIds.includes(lead.id)}
+                                onChange={() => toggleSelectLead(lead.id)}
+                                className="rounded bg-white/10 border-white/20 text-[#33CCFF] focus:ring-0 cursor-pointer"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <div>
+                                <button
+                                  onClick={() => onOpenLeadDetail && onOpenLeadDetail(lead)}
+                                  className="font-semibold text-white hover:text-[#33CCFF] transition-colors text-left flex items-center gap-1 group cursor-pointer"
+                                >
+                                  {lead.name}
+                                  <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-[#33CCFF]" />
+                                </button>
+                                {lead.tags && lead.tags.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {lead.tags.map((t, idx) => (
+                                      <span key={idx} className="px-1.5 py-0.2 text-[9px] bg-white/5 border border-white/10 rounded text-gray-400">
+                                        {t}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                                {lead.notes && (
+                                  <p className="text-[10px] font-normal text-gray-400 truncate max-w-xs mt-0.5">{lead.notes}</p>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex flex-col gap-1 items-start">
+                                {lead.priority === 'hot' && (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 flex items-center gap-1">
+                                    <Flame className="w-3 h-3 text-red-500" /> Hot
+                                  </span>
+                                )}
+                                {lead.priority === 'warm' && (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                                    ⚡ Warm
+                                  </span>
+                                )}
+                                {(!lead.priority || lead.priority === 'cold') && (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20 flex items-center gap-1">
+                                    ❄️ Cold
+                                  </span>
+                                )}
+                                {lead.followUpDate ? (
+                                  <span className={`text-[10px] flex items-center gap-1 font-mono ${isOverdue ? 'text-rose-400 font-bold' : 'text-gray-400'}`}>
+                                    <Clock className="w-2.5 h-2.5" />
+                                    {lead.followUpDate} {isOverdue && '(Trễ)'}
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] text-gray-600 italic">Chưa hẹn</span>
+                                )}
+                              </div>
                             </td>
                             <td className="px-4 py-3 text-gray-300">
-                              <p>{lead.phone || '-'}</p>
-                              <p className="text-[10px] text-gray-500">{lead.email || '-'}</p>
+                              <p className="font-mono">{canViewSensitive ? (lead.phone || '-') : maskPhoneNumber(lead.phone)}</p>
+                              <p className="text-[10px] text-gray-500">{canViewSensitive ? (lead.email || '-') : maskEmail(lead.email)}</p>
                             </td>
                             <td className="px-4 py-3">
                               <span className="px-2 py-0.5 bg-white/5 border border-white/10 rounded text-[11px] text-gray-300">
@@ -4970,10 +5771,21 @@ function CRMModule({
                               {lead.campaign && (
                                 <p className="text-[10px] text-gray-400 mt-0.5 font-medium break-words leading-tight" title={lead.campaign}>{lead.campaign}</p>
                               )}
+                              {canViewAdCreatives && (
+                                <button
+                                  type="button"
+                                  onClick={() => onOpenAdPost(getAdPostForLead(lead))}
+                                  className="text-[10px] text-[#33CCFF] hover:underline flex items-center gap-1 mt-1 cursor-pointer"
+                                  title="Xem mẫu quảng cáo Facebook của lead này"
+                                >
+                                  <Layers className="w-2.5 h-2.5" /> Xem Post Ads
+                                </button>
+                              )}
                             </td>
                             <td className="px-4 py-3">
                               <select
-                                className={`text-[11px] font-medium rounded-lg px-2 py-1 border bg-transparent cursor-pointer focus:outline-none ${stageObj.color}`}
+                                disabled={!canChangeStage}
+                                className={`text-[11px] font-medium rounded-lg px-2 py-1 border bg-transparent cursor-pointer focus:outline-none ${stageObj.color} disabled:opacity-60`}
                                 value={lead.status}
                                 onChange={(e) => handleStageChange(lead.id, e.target.value)}
                               >
@@ -4999,19 +5811,30 @@ function CRMModule({
                             <td className="px-4 py-3 text-center">
                               <div className="flex items-center justify-center gap-1.5">
                                 <button
-                                  onClick={() => onEditLead(lead)}
+                                  onClick={() => onOpenLeadDetail && onOpenLeadDetail(lead)}
                                   className="p-1.5 text-gray-400 hover:text-[#33CCFF] transition-colors cursor-pointer"
-                                  title="Chỉnh sửa"
+                                  title="Chi tiết lead & Kịch bản AI"
                                 >
-                                  <Edit3 className="w-3.5 h-3.5" />
+                                  <ExternalLink className="w-3.5 h-3.5" />
                                 </button>
-                                <button
-                                  onClick={() => handleDeleteLead(lead.id)}
-                                  className="p-1.5 text-gray-400 hover:text-red-400 transition-colors cursor-pointer"
-                                  title="Xóa"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                                {canEditLead && (
+                                  <button
+                                    onClick={() => onEditLead(lead)}
+                                    className="p-1.5 text-gray-400 hover:text-emerald-400 transition-colors cursor-pointer"
+                                    title="Chỉnh sửa"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                                {canDeleteLead && (
+                                  <button
+                                    onClick={() => handleDeleteLead(lead.id)}
+                                    className="p-1.5 text-gray-400 hover:text-red-400 transition-colors cursor-pointer"
+                                    title="Xóa"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -5178,17 +6001,104 @@ function CRMModule({
         </div>
       )}
 
-      {/* SUB-TAB 3: PROFILES MANAGER */}
+      {/* SUB-TAB 3: PROFILES MANAGER (RBAC) */}
       {crmSubTab === 'profiles' && (
-        <CRMProfilesManager 
-          profiles={profiles} 
-          setProfiles={setProfiles} 
-          activeProfileId={activeProfileId} 
-          setActiveProfileId={setActiveProfileId} 
-          adAccounts={adAccounts}
-          onOpenAddModal={onOpenAddProfileModal}
-          onEditProfile={onEditProfile}
-        />
+        !canManageUsers ? (
+          <div className="bg-[#0a0f1c]/90 border border-amber-500/30 rounded-2xl p-8 text-center space-y-3 max-w-lg mx-auto shadow-2xl my-8">
+            <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto">
+              <Lock className="w-7 h-7" />
+            </div>
+            <h3 className="text-base font-bold text-white">Khu Vực Phân Quyền Bị Khóa</h3>
+            <p className="text-xs text-gray-400 leading-relaxed">
+              Tài khoản hiện tại (<strong className="text-white">{currentUser?.name}</strong> - vai trò <strong className="text-amber-300">{currentUser?.role}</strong>) chưa được cấp quyền quản lý nhân sự & phân quyền hệ thống (<code className="text-[#33CCFF] font-mono">system:manage_users</code>).
+            </p>
+            <p className="text-[11px] text-gray-500">
+              Vui lòng liên hệ Admin / Giám đốc để được nâng cấp quyền hạn.
+            </p>
+          </div>
+        ) : (
+          <CRMProfilesManager 
+            profiles={profiles} 
+            setProfiles={setProfiles} 
+            activeProfileId={activeProfileId} 
+            setActiveProfileId={setActiveProfileId} 
+            adAccounts={adAccounts}
+            onOpenAddModal={onOpenAddProfileModal}
+            onEditProfile={onEditProfile}
+          />
+        )
+      )}
+
+      {/* SUB-TAB 4: AD POST CREATIVE HUB */}
+      {crmSubTab === 'ad_posts' && (
+        <div className="space-y-4">
+          <div className="bg-[#0a0f1c]/80 border border-white/10 rounded-2xl p-5 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <Layers className="w-5 h-5 text-[#33CCFF]" />
+                Thư Viện Bài Post Chạy Quảng Cáo (Ad Creatives & Posts)
+              </h2>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Xem toàn bộ các mẫu bài viết, banner quảng cáo Facebook đang chạy, tỷ lệ tương tác và số lượng leads sinh ra.
+              </p>
+            </div>
+            <span className="px-3 py-1 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 text-xs font-semibold">
+              {getAllAdPosts().length} Mẫu Creatives Đang Chạy
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {getAllAdPosts().map(post => (
+              <div 
+                key={post.id} 
+                className="bg-[#0c1222] border border-white/10 hover:border-[#33CCFF]/40 rounded-2xl p-4 shadow-xl flex flex-col justify-between space-y-3 transition-all"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <img src={post.pageAvatar} alt={post.pageName} className="w-8 h-8 rounded-full border border-white/10 object-cover" />
+                      <div>
+                        <p className="text-xs font-bold text-white">{post.pageName}</p>
+                        <p className="text-[10px] text-gray-400">Chiến dịch: <span className="text-[#33CCFF] font-medium">{post.campaignName}</span></p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                      {post.status}
+                    </span>
+                  </div>
+
+                  <p className="font-bold text-white text-xs mb-1 line-clamp-1">{post.headline}</p>
+                  <p className="text-gray-300 text-xs line-clamp-2 leading-relaxed mb-3">{post.message}</p>
+
+                  {post.imageUrl && (
+                    <div className="rounded-xl overflow-hidden border border-white/10 relative max-h-48 bg-black/40">
+                      <img src={post.imageUrl} alt={post.headline} className="w-full h-44 object-cover" />
+                      <div className="absolute bottom-2 right-2 px-2.5 py-1 bg-black/80 backdrop-blur-md rounded-lg text-[10px] font-bold text-white border border-white/10">
+                        {post.callToAction.split(' ')[0]}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-3 text-gray-300 font-mono text-[11px]">
+                    <span>🎯 <strong className="text-white">{post.metrics?.leadsCount}</strong> leads</span>
+                    <span>💰 <strong className="text-emerald-400">${post.metrics?.spend}</strong></span>
+                    <span>⚡ CPL: <strong className="text-purple-300">${post.metrics?.cpl}</strong></span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => onOpenAdPost(post)}
+                    className="px-3 py-1.5 bg-[#33CCFF]/15 hover:bg-[#33CCFF]/25 border border-[#33CCFF]/30 text-[#33CCFF] rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <ExternalLink className="w-3 h-3" /> Chi Tiết
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
@@ -5515,6 +6425,7 @@ function CRMProfilesManager({
               <tr>
                 <th className="px-4 py-3">Hồ sơ người dùng</th>
                 <th className="px-4 py-3">Vai trò</th>
+                <th className="px-4 py-3">Quyền hạn (RBAC)</th>
                 <th className="px-4 py-3">Tài khoản được gán</th>
                 <th className="px-4 py-3">Ghi chú</th>
                 <th className="px-4 py-3 text-center">Trạng thái</th>
@@ -5529,6 +6440,8 @@ function CRMProfilesManager({
                   p.role === 'Media Buyer' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' :
                   p.role === 'Client' ? 'bg-purple-500/15 text-purple-400 border-purple-500/30' :
                   'bg-amber-500/15 text-amber-400 border-amber-500/30';
+
+                const permCount = p.customPermissions ? p.customPermissions.length : (ROLE_PERMISSIONS_PRESET[p.role] ? ROLE_PERMISSIONS_PRESET[p.role].length : 17);
 
                 return (
                   <tr key={p.id} className={`hover:bg-white/5 transition-colors ${isActive ? 'bg-white/[0.02]' : ''}`}>
@@ -5555,6 +6468,15 @@ function CRMProfilesManager({
                       <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${roleBadge}`}>
                         {p.role}
                       </span>
+                    </td>
+
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+                        <span className="font-mono text-gray-300 text-[11px] font-semibold">
+                          {permCount}/17 quyền
+                        </span>
+                      </div>
                     </td>
 
                     <td className="px-4 py-3">
@@ -5597,10 +6519,11 @@ function CRMProfilesManager({
                         ) : null}
                         <button
                           onClick={() => onEditProfile(p)}
-                          className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-all cursor-pointer"
-                          title="Chỉnh sửa profile"
+                          className="px-2.5 py-1 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg text-cyan-300 hover:text-white transition-all cursor-pointer flex items-center gap-1 font-semibold"
+                          title="Cấu hình hồ sơ và phân quyền chi tiết (RBAC)"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
+                          <span>Phân quyền</span>
                         </button>
                         {profiles.length > 1 && (
                           <button

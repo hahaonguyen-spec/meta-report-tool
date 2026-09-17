@@ -1,0 +1,5 @@
+Name,Phone,Email,Source,Status,Expected Value,Assigned To,Product,Ad Post ID,Notes
+Nguyen Van An,0912345678,an.nguyen@example.com,Facebook Ads,new,15000000,Sarah Jenkins,Khoá học Lập trình Web,post_meta_01,Quan tâm gói Pro
+Tran Thi Bich,0987654321,bich.tran@example.com,Facebook Ads,contacted,25000000,Alex Morgan,Combo Marketing AI,post_meta_02,Đã gọi tư vấn lần 1
+Le Hoang Long,0903112233,long.le@example.com,Google Ads,qualified,50000000,Sarah Jenkins,Giải pháp Doanh nghiệp,post_meta_01,Khách hẹn demo chiều thứ 6
+Pham Minh Duc,0978998877,duc.pham@example.com,Organic,won,32000000,Alex Morgan,Khoá học Lập trình Web,post_meta_03,Đã thanh toán chuyển khoản
