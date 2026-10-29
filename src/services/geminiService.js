@@ -1,7 +1,34 @@
 // Google Gemini API Service for Marketing & CRM Insights
 
-const DEFAULT_GEMINI_MODEL = 'gemini-1.5-flash';
-const GEMINI_FALLBACK_MODELS = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'];
+export const AVAILABLE_GEMINI_MODELS = [
+  { 
+    id: 'gemini-2.0-flash', 
+    name: 'Gemini 2.0 Flash', 
+    badge: 'Mới nhất & Siêu tốc', 
+    desc: 'Thế hệ AI mới nhất, tốc độ phản hồi cực nhanh, xử lý suy luận logic sắc bén' 
+  },
+  { 
+    id: 'gemini-1.5-flash', 
+    name: 'Gemini 1.5 Flash', 
+    badge: 'Tiêu chuẩn', 
+    desc: 'Cân bằng giữa tốc độ và chi phí tài nguyên, xử lý ngữ cảnh tốt' 
+  },
+  { 
+    id: 'gemini-1.5-pro', 
+    name: 'Gemini 1.5 Pro', 
+    badge: 'Chuyên sâu', 
+    desc: 'Lập luận toán học & phân tích chiến lược nhiều tầng sâu' 
+  },
+  { 
+    id: 'gemini-2.0-flash-lite', 
+    name: 'Gemini 2.0 Flash Lite', 
+    badge: 'Nhẹ & Nhanh', 
+    desc: 'Độ trễ thấp nhất cho các tác vụ tóm tắt ngắn' 
+  }
+];
+
+export const DEFAULT_GEMINI_MODEL = 'gemini-2.0-flash';
+export const GEMINI_FALLBACK_MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
 
 /**
  * Helper to call Gemini REST API
@@ -77,12 +104,13 @@ async function callGemini(apiKey, prompt, systemInstruction = '', model = DEFAUL
 /**
  * 1. Test Gemini API Key Connection
  */
-export async function testGeminiConnection(apiKey) {
+export async function testGeminiConnection(apiKey, model = DEFAULT_GEMINI_MODEL) {
   try {
     const res = await callGemini(
       apiKey,
       'Xin chào! Hãy phản hồi đúng 1 câu ngắn: "Kết nối Gemini API thành công."',
-      'Bạn là trợ lý kiểm tra kết nối API.'
+      'Bạn là trợ lý kiểm tra kết nối API.',
+      model
     );
     return { success: true, message: res.trim() };
   } catch (error) {
@@ -93,7 +121,7 @@ export async function testGeminiConnection(apiKey) {
 /**
  * 2. Phân Tích Toàn Diện Dữ Liệu Marketing & CRM (Marketing Diagnostic & Strategic Recommendations)
  */
-export async function analyzeMarketingData(apiKey, contextData) {
+export async function analyzeMarketingData(apiKey, contextData, model = DEFAULT_GEMINI_MODEL) {
   const systemInstruction = `
 Bạn là một Giám Đốc Tiếp Thị (Chief Marketing Officer - CMO) và Chuyên Gia Tối Ưu Tăng Trưởng (Growth Hacker) hàng đầu chuyên về Performance Marketing và Quản Trị Khách Hàng (CRM).
 Nhiệm vụ của bạn là nhận số liệu tiếp thị thực tế và đưa ra bản phân tích sâu sắc, logic, thực chiến bằng tiếng Việt, giúp tối ưu chi phí quảng cáo (Ad Spend), giảm giá mỗi khách hàng tiềm năng (CPL), giảm chi phí thu hút khách hàng (CAC), tăng tỷ lệ chuyển đổi và nhân đôi tỷ suất sinh lời (ROAS / ROI).
@@ -148,13 +176,13 @@ ${JSON.stringify(contextData.sourceData || [], null, 2)}
 Hãy phân tích thật sắc bén, chuyên sâu và đưa ra phương hướng hành động cụ thể để chúng tôi áp dụng ngay hôm nay!
 `;
 
-  return await callGemini(apiKey, prompt, systemInstruction);
+  return await callGemini(apiKey, prompt, systemInstruction, model);
 }
 
 /**
  * 3. Soạn Kịch Bản Tư Vấn Bán Hàng & Xử Lý Từ Chối Cho Lead Cụ Thể
  */
-export async function generateLeadPitch(apiKey, leadData) {
+export async function generateLeadPitch(apiKey, leadData, model = DEFAULT_GEMINI_MODEL) {
   const systemInstruction = `
 Bạn là Trưởng nhóm Telesales / Chuyên gia Tư vấn Chuyển đổi Lead đỉnh cao.
 Nhiệm vụ của bạn là dựa vào hồ sơ của một khách hàng tiềm năng (Lead) để xây dựng:
@@ -183,13 +211,13 @@ Thông tin khách hàng:
 Hãy soạn kịch bản tư vấn và phương án chốt chuyển đổi tối ưu nhất cho khách hàng này!
 `;
 
-  return await callGemini(apiKey, prompt, systemInstruction);
+  return await callGemini(apiKey, prompt, systemInstruction, model);
 }
 
 /**
  * 4. Trợ Lý AI Marketing Hỏi Đáp Tương Tác (Chatbot)
  */
-export async function chatWithGeminiAdvisor(apiKey, chatHistory, userMessage, contextSummary) {
+export async function chatWithGeminiAdvisor(apiKey, chatHistory, userMessage, contextSummary, model = DEFAULT_GEMINI_MODEL) {
   const systemInstruction = `
 Bạn là "Gemini Marketing & CRM AI Advisor" - Trợ lý thông minh cao cấp tích hợp trong Meta Report Tool & CRM.
 Bạn am hiểu sâu sắc về:
@@ -212,5 +240,5 @@ Hãy trả lời trực diện, súc tích, chuyên nghiệp, đưa ra các gợ
 
   const fullPrompt = `${previousTurns ? `Lịch sử hội thoại trước:\n${previousTurns}\n\n` : ''}Người dùng hỏi: ${userMessage}`;
 
-  return await callGemini(apiKey, fullPrompt, systemInstruction);
+  return await callGemini(apiKey, fullPrompt, systemInstruction, model);
 }

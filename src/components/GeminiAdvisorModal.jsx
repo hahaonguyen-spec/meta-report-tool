@@ -3,7 +3,7 @@ import {
   Sparkles, Bot, Send, Copy, RefreshCw, AlertCircle, 
   MessageSquare, TrendingUp, Check, ExternalLink, ShieldCheck, ChevronRight 
 } from 'lucide-react';
-import { analyzeMarketingData, chatWithGeminiAdvisor } from '../services/geminiService';
+import { analyzeMarketingData, chatWithGeminiAdvisor, AVAILABLE_GEMINI_MODELS, DEFAULT_GEMINI_MODEL } from '../services/geminiService';
 
 export default function GeminiAdvisorModal({ 
   isOpen, 
@@ -13,6 +13,18 @@ export default function GeminiAdvisorModal({
   marketingContext 
 }) {
   const [activeTab, setActiveTab] = useState('audit'); // 'audit' | 'chat'
+  
+  // Model Selection State
+  const [selectedModel, setSelectedModel] = useState(() => {
+    return localStorage.getItem('gemini_selected_model') || DEFAULT_GEMINI_MODEL;
+  });
+
+  const handleModelChange = (modelId) => {
+    setSelectedModel(modelId);
+    try {
+      localStorage.setItem('gemini_selected_model', modelId);
+    } catch (e) {}
+  };
   
   // Audit State
   const [auditResult, setAuditResult] = useState('');
@@ -25,7 +37,7 @@ export default function GeminiAdvisorModal({
     {
       id: 'msg_welcome',
       role: 'assistant',
-      text: 'Xin chào! Tôi là Trợ lý AI Phân Tích Marketing & CRM (Powered by Google Gemini). Tôi đã đọc toàn bộ số liệu chiến dịch và phễu khách hàng của bạn. Bạn muốn tôi hỗ trợ tối ưu chiến lược, giảm chi phí CPL hay xử lý lời từ chối của khách hàng nào?'
+      text: 'Xin chào! Tôi là Trợ lý AI Phân Tích Marketing & CRM (Powered by Google Gemini 2.0). Tôi đã đọc toàn bộ số liệu chiến dịch và phễu khách hàng của bạn. Bạn muốn tôi hỗ trợ tối ưu chiến lược, giảm chi phí CPL hay xử lý lời từ chối của khách hàng nào?'
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
@@ -58,7 +70,7 @@ export default function GeminiAdvisorModal({
     setAuditError(null);
 
     try {
-      const result = await analyzeMarketingData(apiKey, marketingContext);
+      const result = await analyzeMarketingData(apiKey, marketingContext, selectedModel);
       setAuditResult(result);
     } catch (err) {
       setAuditError(err.message || 'Lỗi trong quá trình phân tích số liệu với Gemini.');
@@ -94,7 +106,8 @@ export default function GeminiAdvisorModal({
         apiKey,
         messages,
         userText,
-        marketingContext
+        marketingContext,
+        selectedModel
       );
 
       setMessages(prev => [
@@ -166,14 +179,14 @@ export default function GeminiAdvisorModal({
           </div>
         )}
 
-        {/* Tab Switcher */}
-        <div className="px-5 py-2.5 bg-black/30 border-b border-white/5 flex items-center justify-between gap-3 text-xs">
+        {/* Tab Switcher & Model Selector */}
+        <div className="px-5 py-2.5 bg-black/30 border-b border-white/5 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setActiveTab('audit')}
               className={`px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition-all ${
                 activeTab === 'audit'
-                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md'
+                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md'
                   : 'text-gray-400 hover:text-white hover:bg-white/5'
               }`}
             >
@@ -184,7 +197,7 @@ export default function GeminiAdvisorModal({
               onClick={() => setActiveTab('chat')}
               className={`px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition-all ${
                 activeTab === 'chat'
-                  ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md'
+                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md'
                   : 'text-gray-400 hover:text-white hover:bg-white/5'
               }`}
             >
@@ -193,29 +206,48 @@ export default function GeminiAdvisorModal({
             </button>
           </div>
 
-          {activeTab === 'audit' && (
-            <div className="flex items-center gap-2">
-              {auditResult && (
+          <div className="flex items-center gap-2">
+            {/* Gemini Model Selector */}
+            <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-xl px-2.5 py-1 text-[11px] hover:border-emerald-500/40 transition-colors">
+              <Bot className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+              <select
+                value={selectedModel}
+                onChange={(e) => handleModelChange(e.target.value)}
+                className="bg-transparent text-emerald-300 font-semibold focus:outline-none cursor-pointer pr-1 text-[11px]"
+                title="Chọn Model Gemini AI xử lý"
+              >
+                {AVAILABLE_GEMINI_MODELS.map(m => (
+                  <option key={m.id} value={m.id} className="bg-[#070d09] text-white">
+                    {m.name} ({m.badge})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {activeTab === 'audit' && (
+              <>
+                {auditResult && (
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(auditResult)}
+                    className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 flex items-center gap-1.5 transition-all text-[11px]"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    {copiedAudit ? 'Đã sao chép' : 'Sao chép'}
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => copyToClipboard(auditResult)}
-                  className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 flex items-center gap-1.5 transition-all text-[11px]"
+                  onClick={handleRunAudit}
+                  disabled={loadingAudit}
+                  className="px-3.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40 text-[11px] cursor-pointer font-levents uppercase"
                 >
-                  <Copy className="w-3.5 h-3.5" />
-                  {copiedAudit ? 'Đã sao chép' : 'Sao chép'}
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingAudit ? 'animate-spin' : ''}`} />
+                  {loadingAudit ? 'Đang phân tích...' : 'Phân Tích Lại'}
                 </button>
-              )}
-              <button
-                type="button"
-                onClick={handleRunAudit}
-                disabled={loadingAudit}
-                className="px-3.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40 text-[11px] cursor-pointer font-levents uppercase"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${loadingAudit ? 'animate-spin' : ''}`} />
-                {loadingAudit ? 'Đang phân tích...' : 'Phân Tích Lại'}
-              </button>
-            </div>
-          )}
+              </>
+            )}
+          </div>
         </div>
 
         {/* Tab Body */}

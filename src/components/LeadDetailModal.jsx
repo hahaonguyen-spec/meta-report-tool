@@ -137,6 +137,7 @@ export default function LeadDetailModal({
     setAiPitchError(null);
 
     try {
+      const savedModel = localStorage.getItem('gemini_selected_model') || 'gemini-2.0-flash';
       const pitchResult = await generateLeadPitch(geminiApiKey, {
         name,
         phone: canViewSensitive ? phone : maskPhoneNumber(phone),
@@ -150,7 +151,7 @@ export default function LeadDetailModal({
         priority,
         tags,
         notes
-      });
+      }, savedModel);
       setAiPitch(pitchResult);
     } catch (err) {
       setAiPitchError(err.message || 'Lỗi khi tạo kịch bản tư vấn.');

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
-import { TrendingUp, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Image as ImageIcon, ArrowRight, UsersRound, Save, Download, Upload, RotateCcw, CheckCircle2, Settings, BookOpen, UserPlus, ShieldAlert, Key, Copy, Trash2, Edit3, UserCheck, Shield, Plus, Phone, Mail, MessageSquare, Filter, Kanban, ListFilter, ArrowUpDown, PlusCircle, CheckSquare, Award, Search, PhoneCall, Building2, Play, Pause, Zap, Power, ExternalLink, ShieldCheck, HelpCircle, Sparkles, Bot, LogOut, Flame, Clock, Tag, Layers, Lock, Menu, X, MoreHorizontal } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Image as ImageIcon, ArrowRight, UsersRound, Save, Download, Upload, RotateCcw, CheckCircle2, Settings, BookOpen, UserPlus, ShieldAlert, Key, Copy, Trash2, Edit3, UserCheck, Shield, Plus, Phone, Mail, MessageSquare, Filter, Kanban, ListFilter, ArrowUpDown, PlusCircle, CheckSquare, Award, Search, PhoneCall, Building2, Play, Pause, Zap, Power, ExternalLink, ShieldCheck, HelpCircle, Sparkles, Bot, LogOut, Flame, Clock, Tag, Layers, Lock, Menu, X, MoreHorizontal, SlidersHorizontal, Columns, Eye, EyeOff } from 'lucide-react';
 import AuthLogin from './components/AuthLogin';
 import LeadDetailModal from './components/LeadDetailModal';
 import LeadImportModal from './components/LeadImportModal';
@@ -10,7 +10,7 @@ import MarketingAnalyticsView from './components/MarketingAnalyticsView';
 import GeminiAdvisorModal from './components/GeminiAdvisorModal';
 import RolePermissionModal from './components/RolePermissionModal';
 import AdPostDetailModal from './components/AdPostDetailModal';
-import { testGeminiConnection } from './services/geminiService';
+import { testGeminiConnection, AVAILABLE_GEMINI_MODELS, DEFAULT_GEMINI_MODEL } from './services/geminiService';
 import { hasPermission, maskPhoneNumber, maskEmail, getUserAllowedLeads, ROLE_PERMISSIONS_PRESET } from './constants/permissions';
 import { getAllAdPosts, getAdPostForLead } from './services/adPostService';
 
@@ -386,43 +386,173 @@ const getDefaultBudget = (campaignName, apiBudget, budgetType = 'daily') => {
   return 15;
 };
 
-const getCampaignBudgetInfo = (item, manualData) => {
+// --- Dashboard Column Customization Config ---
+const DASHBOARD_COLUMNS = [
+  { id: 'status', label: 'Trạng Thái', category: 'Cơ bản', default: true },
+  { id: 'campaign_name', label: 'Tên Chiến Dịch', category: 'Cơ bản', default: true },
+  { id: 'budget', label: 'Ngân Sách (Budget)', category: 'Ngân Sách', default: true },
+  { id: 'pacing', label: 'Tiến Độ (Pacing)', category: 'Ngân Sách', default: true },
+  { id: 'spend', label: 'Chi Tiêu (Spend)', category: 'Meta Ads', default: true },
+  { id: 'impressions', label: 'Lượt Hiển Thị (Impr)', category: 'Meta Ads', default: false },
+  { id: 'clicks', label: 'Lượt Click', category: 'Meta Ads', default: true },
+  { id: 'ctr_cpc', label: 'CTR / CPC', category: 'Meta Ads', default: true },
+  { id: 'cpm', label: 'CPM', category: 'Meta Ads', default: false },
+  { id: 'leads', label: 'Leads & CVR', category: 'Meta Ads', default: true },
+  { id: 'cpl', label: 'Giá mỗi Lead (CPL)', category: 'Meta Ads', default: true },
+  { id: 'account_open', label: 'Mở Tài Khoản (Acct Open)', category: 'Phễu CRM', default: false },
+  { id: 'cpa', label: 'CPA (Giá/TK Mở)', category: 'Phễu CRM', default: false },
+  { id: 'funded', label: 'Đã Nạp Tiền (Funded)', category: 'Phễu CRM', default: false },
+  { id: 'cpfa', label: 'CPFA (Giá/TK Nạp)', category: 'Phễu CRM', default: false },
+  { id: 'deposit', label: 'Tiền Nạp (Deposit)', category: 'Phễu CRM', default: false },
+  { id: 'roi', label: 'Tỷ Suất ROI (%)', category: 'Phễu CRM', default: false },
+];
+
+const COLUMN_PRESETS = {
+  compact: {
+    id: 'compact',
+    label: 'Gọn gàng',
+    badge: '6 cột',
+    desc: 'Tối ưu không gian, chỉ hiển thị số liệu cốt lõi',
+    columns: ['status', 'campaign_name', 'budget', 'spend', 'leads', 'cpl']
+  },
+  standard: {
+    id: 'standard',
+    label: 'Tiêu chuẩn',
+    badge: '9 cột',
+    desc: 'Cân bằng giữa Ads Insights & Ngân sách',
+    columns: ['status', 'campaign_name', 'budget', 'pacing', 'spend', 'clicks', 'ctr_cpc', 'leads', 'cpl']
+  },
+  conversion: {
+    id: 'conversion',
+    label: 'Phễu CRM',
+    badge: '10 cột',
+    desc: 'Trọng tâm đo lường tài khoản mở, nạp tiền và ROI',
+    columns: ['status', 'campaign_name', 'spend', 'leads', 'cpl', 'account_open', 'cpa', 'funded', 'deposit', 'roi']
+  },
+  all: {
+    id: 'all',
+    label: 'Đầy đủ',
+    badge: '17 cột',
+    desc: 'Hiển thị tất cả 17 cột số liệu và ô nhập thủ công',
+    columns: ['status', 'campaign_name', 'budget', 'pacing', 'spend', 'impressions', 'clicks', 'ctr_cpc', 'cpm', 'leads', 'cpl', 'account_open', 'cpa', 'funded', 'cpfa', 'deposit', 'roi']
+  }
+};
+
+const formatDashboardMoney = (amount, currency = 'USD', mode = 'ads', customRates = {}, exchangeRates = null) => {
+  const num = parseFloat(amount) || 0;
+  const usdToVndRate = customRates['VND'] || (exchangeRates && exchangeRates['VND']) || 25400;
+
+  if (mode === 'vnd') {
+    if (currency === 'VND') {
+      return `${Math.round(num).toLocaleString('vi-VN')} ₫`;
+    }
+    if (currency === 'USD') {
+      return `${Math.round(num * usdToVndRate).toLocaleString('vi-VN')} ₫`;
+    }
+    const rateToUsd = customRates[currency] || (exchangeRates && exchangeRates[currency]) || 1;
+    const inVnd = (num / rateToUsd) * usdToVndRate;
+    return `${Math.round(inVnd).toLocaleString('vi-VN')} ₫`;
+  }
+
+  if (mode === 'usd') {
+    if (!currency || currency === 'USD') {
+      return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    const rate = customRates[currency] || (exchangeRates && exchangeRates[currency]) || (currency === 'VND' ? usdToVndRate : 1);
+    const inUsd = num / rate;
+    return `$${inUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+
+  // mode === 'ads'
+  if (currency === 'VND') {
+    return `${Math.round(num).toLocaleString('vi-VN')} ₫`;
+  }
+  if (currency === 'USD') {
+    return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  return `${num.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${currency}`;
+};
+
+const getCampaignBudgetInfo = (item, manualData, mode = 'ads', customRates = {}, exchangeRates = null) => {
   const m = manualData[item.campaign_id] || {};
   
   const budgetType = m.budgetType !== undefined && m.budgetType !== '' 
     ? m.budgetType 
     : (item.api_budget_type || (item.api_lifetime_budget ? 'lifetime' : 'daily'));
 
+  const currency = item.original_currency || 'USD';
+  const usdToVndRate = customRates['VND'] || (exchangeRates && exchangeRates['VND']) || 25400;
+  const rateToUsd = item.rate_to_usd || (currency !== 'USD' ? (1 / (customRates[currency] || (exchangeRates && exchangeRates[currency]) || (currency === 'VND' ? usdToVndRate : 1))) : 1);
+
   let budgetAmount = null;
   if (m.budget !== undefined && m.budget !== '') {
-    budgetAmount = parseFloat(m.budget);
+    const val = parseFloat(m.budget);
+    if (mode === 'vnd') {
+      budgetAmount = currency === 'VND' ? val : (currency === 'USD' ? val * usdToVndRate : (val * rateToUsd) * usdToVndRate);
+    } else if (mode === 'usd') {
+      budgetAmount = currency !== 'USD' ? (val * rateToUsd) : val;
+    } else {
+      budgetAmount = val;
+    }
   } else if (m.dailyBudget !== undefined && m.dailyBudget !== '') {
-    budgetAmount = parseFloat(m.dailyBudget);
-  } else if (budgetType === 'lifetime' && item.api_lifetime_budget) {
-    budgetAmount = item.api_lifetime_budget;
-  } else if (budgetType === 'daily' && item.api_daily_budget) {
-    budgetAmount = item.api_daily_budget;
-  } else if (item.api_budget) {
-    budgetAmount = item.api_budget;
+    const val = parseFloat(m.dailyBudget);
+    if (mode === 'vnd') {
+      budgetAmount = currency === 'VND' ? val : (currency === 'USD' ? val * usdToVndRate : (val * rateToUsd) * usdToVndRate);
+    } else if (mode === 'usd') {
+      budgetAmount = currency !== 'USD' ? (val * rateToUsd) : val;
+    } else {
+      budgetAmount = val;
+    }
+  } else if (mode === 'vnd') {
+    let rawBudget = null;
+    if (budgetType === 'lifetime' && item.original_lifetime_budget) rawBudget = item.original_lifetime_budget;
+    else if (budgetType === 'daily' && item.original_daily_budget) rawBudget = item.original_daily_budget;
+    else if (item.original_api_budget) rawBudget = item.original_api_budget;
+    else if (budgetType === 'lifetime' && item.api_lifetime_budget) rawBudget = item.api_lifetime_budget;
+    else if (budgetType === 'daily' && item.api_daily_budget) rawBudget = item.api_daily_budget;
+    else if (item.api_budget) rawBudget = item.api_budget;
+    else rawBudget = currency === 'VND' ? 500000 : 20;
+
+    if (currency === 'VND') budgetAmount = rawBudget;
+    else if (currency === 'USD') budgetAmount = rawBudget * usdToVndRate;
+    else budgetAmount = (rawBudget * rateToUsd) * usdToVndRate;
+  } else if (mode === 'usd') {
+    if (budgetType === 'lifetime' && item.api_lifetime_budget) {
+      budgetAmount = item.api_lifetime_budget;
+    } else if (budgetType === 'daily' && item.api_daily_budget) {
+      budgetAmount = item.api_daily_budget;
+    } else if (item.api_budget) {
+      budgetAmount = item.api_budget;
+    } else {
+      budgetAmount = getDefaultBudget(item.campaign_name, null, budgetType);
+    }
   } else {
-    budgetAmount = getDefaultBudget(item.campaign_name, null, budgetType);
+    // Mode is Ads
+    if (budgetType === 'lifetime' && item.original_lifetime_budget) {
+      budgetAmount = item.original_lifetime_budget;
+    } else if (budgetType === 'daily' && item.original_daily_budget) {
+      budgetAmount = item.original_daily_budget;
+    } else if (item.original_api_budget) {
+      budgetAmount = item.original_api_budget;
+    } else if (budgetType === 'lifetime' && item.api_lifetime_budget) {
+      budgetAmount = currency === 'VND' && rateToUsd > 0 ? (item.api_lifetime_budget / rateToUsd) : item.api_lifetime_budget;
+    } else if (budgetType === 'daily' && item.api_daily_budget) {
+      budgetAmount = currency === 'VND' && rateToUsd > 0 ? (item.api_daily_budget / rateToUsd) : item.api_daily_budget;
+    } else if (item.api_budget) {
+      budgetAmount = currency === 'VND' && rateToUsd > 0 ? (item.api_budget / rateToUsd) : item.api_budget;
+    } else {
+      budgetAmount = currency === 'VND' ? 500000 : 20;
+    }
   }
 
-  if (isNaN(budgetAmount)) budgetAmount = 0;
+  if (isNaN(budgetAmount) || budgetAmount === null) budgetAmount = 0;
 
-  return { budgetAmount, budgetType };
+  return { budgetAmount, budgetType, currency };
 };
 
 export default function App() {
   const [data, setData] = useState(() => {
-    try {
-      const saved = localStorage.getItem('meta_report_settings');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.metaToken && parsed.metaToken.trim() !== '') return [];
-      }
-    } catch (e) {}
-    return MOCK_DATA;
+    return [];
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -433,10 +563,9 @@ export default function App() {
         const parsed = JSON.parse(saved);
         if (parsed && Object.keys(parsed).length > 0) return parsed;
       }
-      return DEFAULT_DEMO_MANUAL_DATA;
+      return {};
     } catch (e) {
-      console.error("Error reading manualData from localStorage:", e);
-      return DEFAULT_DEMO_MANUAL_DATA;
+      return {};
     }
   });
   
@@ -459,7 +588,7 @@ export default function App() {
           metaToken: parsed.metaToken || '',
           sheetWebhook: parsed.sheetWebhook || '',
           geminiApiKey: parsed.geminiApiKey || fallbackGeminiKey,
-          savedAccounts: parsed.savedAccounts || []
+          savedAccounts: (parsed.savedAccounts || []).filter(a => !a.account_id.startsWith('mock_'))
         };
       }
       return { metaToken: '', sheetWebhook: '', geminiApiKey: fallbackGeminiKey, savedAccounts: [] };
@@ -474,6 +603,17 @@ export default function App() {
     } catch (e) {}
   }, [settings]);
 
+  const [selectedGeminiModel, setSelectedGeminiModel] = useState(() => {
+    return localStorage.getItem('gemini_selected_model') || DEFAULT_GEMINI_MODEL;
+  });
+
+  const handleGeminiModelChange = (modelId) => {
+    setSelectedGeminiModel(modelId);
+    try {
+      localStorage.setItem('gemini_selected_model', modelId);
+    } catch (e) {}
+  };
+
   const [testingGemini, setTestingGemini] = useState(false);
   const [geminiTestResult, setGeminiTestResult] = useState(null);
 
@@ -485,7 +625,7 @@ export default function App() {
     setTestingGemini(true);
     setGeminiTestResult(null);
     try {
-      const res = await testGeminiConnection(key);
+      const res = await testGeminiConnection(key, selectedGeminiModel);
       setGeminiTestResult(res);
     } catch (err) {
       setGeminiTestResult({ success: false, message: err.message });
@@ -494,21 +634,18 @@ export default function App() {
     }
   };
 
-  // Accounts state initialized with saved accounts if present, else demo mock accounts
+  // Accounts state initialized with real saved accounts
   const [adAccounts, setAdAccounts] = useState(() => {
     try {
       const saved = localStorage.getItem('meta_report_settings');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.metaToken && parsed.metaToken.trim() !== '') {
-          if (parsed.savedAccounts && Array.isArray(parsed.savedAccounts) && parsed.savedAccounts.length > 0) {
-            return parsed.savedAccounts;
-          }
-          return [];
+        if (parsed.savedAccounts && Array.isArray(parsed.savedAccounts) && parsed.savedAccounts.length > 0) {
+          return parsed.savedAccounts.filter(a => !a.account_id.startsWith('mock_'));
         }
       }
     } catch (e) {}
-    return MOCK_ACCOUNTS;
+    return [];
   });
 
   const [selectedAccountIds, setSelectedAccountIds] = useState(() => {
@@ -516,27 +653,15 @@ export default function App() {
       const saved = localStorage.getItem('meta_report_settings');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.metaToken && parsed.metaToken.trim() !== '') {
-          if (parsed.savedAccounts && Array.isArray(parsed.savedAccounts) && parsed.savedAccounts.length > 0) {
-            return parsed.savedAccounts.map(a => a.account_id);
-          }
-          return [];
+        if (parsed.savedAccounts && Array.isArray(parsed.savedAccounts) && parsed.savedAccounts.length > 0) {
+          return parsed.savedAccounts.filter(a => !a.account_id.startsWith('mock_')).map(a => a.account_id);
         }
       }
     } catch (e) {}
-    return MOCK_ACCOUNTS.map(a => a.account_id);
+    return [];
   });
 
-  const [isUsingMock, setIsUsingMock] = useState(() => {
-    try {
-      const saved = localStorage.getItem('meta_report_settings');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return !parsed.metaToken || parsed.metaToken.trim() === '';
-      }
-    } catch (e) {}
-    return true;
-  });
+  const [isUsingMock, setIsUsingMock] = useState(false);
   const [exchangeRates, setExchangeRates] = useState(null);
   
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -581,14 +706,83 @@ export default function App() {
       const saved = localStorage.getItem('meta_report_businesses');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.filter(b => !b.id.startsWith('bm_mock_') && b.id !== 'bm_1001');
+        }
       }
     } catch (e) {}
-    return MOCK_BUSINESSES;
+    return [];
   });
 
   const [loadingBusinesses, setLoadingBusinesses] = useState(false);
   const [isCreateCampaignOpen, setIsCreateCampaignOpen] = useState(false);
+
+  // --- Dashboard Customization: Column Visibility, Table Density & Currency Mode ---
+  const [visibleColumns, setVisibleColumns] = useState(() => {
+    try {
+      const saved = localStorage.getItem('dashboard_visible_columns');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return COLUMN_PRESETS.standard.columns;
+  });
+
+  const [tableDensity, setTableDensity] = useState(() => {
+    return localStorage.getItem('dashboard_table_density') || 'compact';
+  });
+
+  // Currency Mode: 'ads' (Mặc định theo Ads) | 'usd' (Tùy chọn quy đổi sang USD)
+  const [dashboardCurrencyMode, setDashboardCurrencyMode] = useState(() => {
+    return localStorage.getItem('dashboard_currency_mode') || 'ads';
+  });
+
+  const [isColumnDropdownOpen, setIsColumnDropdownOpen] = useState(false);
+  const columnDropdownRef = useRef(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('dashboard_visible_columns', JSON.stringify(visibleColumns));
+    } catch (e) {}
+  }, [visibleColumns]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('dashboard_table_density', tableDensity);
+    } catch (e) {}
+  }, [tableDensity]);
+
+  const handleDashboardCurrencyModeChange = (mode) => {
+    setDashboardCurrencyMode(mode);
+    try {
+      localStorage.setItem('dashboard_currency_mode', mode);
+    } catch (e) {}
+  };
+
+  const toggleColumnVisibility = (colId) => {
+    if (colId === 'campaign_name') return; // Cột Tên chiến dịch luôn hiển thị
+    setVisibleColumns(prev => 
+      prev.includes(colId) ? prev.filter(id => id !== colId) : [...prev, colId]
+    );
+  };
+
+  const applyColumnPreset = (presetKey) => {
+    if (COLUMN_PRESETS[presetKey]) {
+      setVisibleColumns(COLUMN_PRESETS[presetKey].columns);
+    }
+  };
+
+  // Close column dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (columnDropdownRef.current && !columnDropdownRef.current.contains(e.target)) {
+        setIsColumnDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // --- CRM Currency & Custom Exchange Rates ---
   const [crmCurrency, setCrmCurrency] = useState(() => {
@@ -642,14 +836,7 @@ export default function App() {
 
   // Organic Pages State
   const [pagesData, setPagesData] = useState(() => {
-    try {
-      const saved = localStorage.getItem('meta_report_settings');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.metaToken && parsed.metaToken.trim() !== '') return [];
-      }
-    } catch (e) {}
-    return MOCK_PAGES_DATA;
+    return [];
   });
   const [loadingPages, setLoadingPages] = useState(false);
   const [pagesError, setPagesError] = useState(null);
@@ -1128,13 +1315,17 @@ export default function App() {
     if (settings.metaToken && settings.metaToken.trim() !== '') {
       fetchAdAccounts();
     } else {
-      setIsUsingMock(true);
+      setIsUsingMock(false);
       setError(null);
-      setAdAccounts(MOCK_ACCOUNTS);
-      setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
-      setData(MOCK_DATA);
-      setBusinessesData(MOCK_BUSINESSES);
-      setPagesData(MOCK_PAGES_DATA);
+      if (settings.savedAccounts && settings.savedAccounts.length > 0) {
+        const realSaved = settings.savedAccounts.filter(a => !a.account_id.startsWith('mock_'));
+        setAdAccounts(realSaved);
+        setSelectedAccountIds(realSaved.map(a => a.account_id));
+      } else {
+        setAdAccounts([]);
+        setSelectedAccountIds([]);
+      }
+      setData([]);
       setLoadingAccounts(false);
     }
 
@@ -1150,15 +1341,7 @@ export default function App() {
   }, [settings.metaToken]);
 
   useEffect(() => {
-    if (selectedAccountIds.length > 0) {
-      if (isUsingMock || !settings.metaToken || settings.metaToken.trim() === '') {
-        const filtered = MOCK_DATA.filter(c => {
-          const acc = MOCK_ACCOUNTS.find(a => a.name === c.account_name);
-          return acc ? selectedAccountIds.includes(acc.account_id) : true;
-        });
-        setData(filtered.length > 0 ? filtered : MOCK_DATA);
-        return;
-      }
+    if (selectedAccountIds.length > 0 && settings.metaToken && settings.metaToken.trim() !== '') {
       if (datePreset === 'custom' && (!customStartDate || !customEndDate)) {
         return; // Wait for valid custom date
       }
@@ -1166,7 +1349,7 @@ export default function App() {
     } else {
       setData([]);
     }
-  }, [selectedAccountIds, datePreset, customStartDate, customEndDate, isUsingMock, settings.metaToken]);
+  }, [selectedAccountIds, datePreset, customStartDate, customEndDate, settings.metaToken]);
 
   useEffect(() => {
     if (activeTab === 'organic' && pagesData.length === 0) {
@@ -1363,6 +1546,115 @@ export default function App() {
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const handleCopyDashboardReport = () => {
+    if (!displayedCampaigns || displayedCampaigns.length === 0) {
+      showToast("Không có dữ liệu chiến dịch để tạo báo cáo!", "error");
+      return;
+    }
+
+    const cur = dashboardCurrencyMode === 'vnd' ? 'VND' : (dashboardCurrencyMode === 'usd' ? 'USD' : primaryAdsCurrency);
+    const dateLabel = datePreset === 'today' ? 'Hôm nay' 
+      : datePreset === 'yesterday' ? 'Hôm qua'
+      : datePreset === 'last_7d' ? '7 ngày qua'
+      : datePreset === 'last_30d' ? '30 ngày qua'
+      : datePreset === 'this_month' ? 'Tháng này'
+      : `${customStartDate} đến ${customEndDate}`;
+
+    let report = `📊 BÁO CÁO HIỆU SUẤT META ADS\n`;
+    report += `📅 Khoảng thời gian: ${dateLabel}\n`;
+    report += `💼 Số chiến dịch: ${displayedCampaigns.length}\n`;
+    report += `💰 Tổng chi tiêu: ${formatDashboardMoney(displayedSpend, cur, dashboardCurrencyMode, customRates, exchangeRates)}\n`;
+    report += `👥 Tổng Leads: ${displayedLeads.toLocaleString()}\n`;
+    report += `🎯 Giá mỗi Lead (CPL): ${formatDashboardMoney(displayedCpl, cur, dashboardCurrencyMode, customRates, exchangeRates)}\n`;
+    report += `👆 Lượt nhấp (Clicks): ${displayedClicks.toLocaleString()}\n\n`;
+
+    report += `🏆 TOP CHIẾN DỊCH:\n`;
+    displayedCampaigns.slice(0, 5).forEach((c, idx) => {
+      const cSpend = getCampaignSpendInMode(c, dashboardCurrencyMode);
+      const cCpl = c.leads > 0 ? cSpend / c.leads : 0;
+      report += `${idx + 1}. ${c.campaign_name}\n`;
+      report += `   • Chi tiêu: ${formatDashboardMoney(cSpend, cur, dashboardCurrencyMode, customRates, exchangeRates)} | Leads: ${c.leads} | CPL: ${formatDashboardMoney(cCpl, cur, dashboardCurrencyMode, customRates, exchangeRates)}\n`;
+    });
+
+    report += `\n⚡ Tạo tự động từ Meta Report & Personal CRM Tool`;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(report).then(() => {
+        showToast("Đã sao chép báo cáo vào clipboard để gửi Zalo / Telegram!");
+      }).catch(() => {
+        showToast("Không thể sao chép tự động!", "error");
+      });
+    } else {
+      showToast("Trình duyệt không hỗ trợ sao chép tự động!", "error");
+    }
+  };
+
+  const handleExportCampaignsCSV = () => {
+    if (!displayedCampaigns || displayedCampaigns.length === 0) {
+      showToast("Không có chiến dịch để xuất file!", "error");
+      return;
+    }
+
+    const headers = [
+      'Trạng thái',
+      'Tên chiến dịch',
+      'Tài khoản Ads',
+      'Ngân sách',
+      'Chi tiêu',
+      'Hiển thị (Impressions)',
+      'Lượt nhấp (Clicks)',
+      'CTR (%)',
+      'CPC',
+      'CPM',
+      'Leads',
+      'CPL',
+      'Mở tài khoản',
+      'Nạp tiền',
+      'Tiền nạp ($)',
+      'Đồng tiền gốc'
+    ];
+
+    const rows = displayedCampaigns.map(c => {
+      const m = manualData[c.campaign_id] || {};
+      const { budgetAmount, budgetType } = getCampaignBudgetInfo(c, manualData, dashboardCurrencyMode, customRates, exchangeRates);
+      const cSpend = getCampaignSpendInMode(c, dashboardCurrencyMode);
+      const ctr = c.impressions > 0 ? ((c.clicks / c.impressions) * 100).toFixed(2) : '0';
+      const cpc = c.clicks > 0 ? (cSpend / c.clicks).toFixed(2) : '0';
+      const cpm = c.impressions > 0 ? ((cSpend / c.impressions) * 1000).toFixed(2) : '0';
+      const cpl = c.leads > 0 ? (cSpend / c.leads).toFixed(2) : '0';
+
+      return [
+        c.status || 'ACTIVE',
+        `"${(c.campaign_name || '').replace(/"/g, '""')}"`,
+        `"${(c.account_name || c.account_id || '').replace(/"/g, '""')}"`,
+        `${Math.round(budgetAmount)} (${budgetType})`,
+        Math.round(cSpend),
+        c.impressions || 0,
+        c.clicks || 0,
+        `${ctr}%`,
+        cpc,
+        cpm,
+        c.leads || 0,
+        cpl,
+        m.accountOpen || 0,
+        m.fundedAccounts || 0,
+        m.deposit || 0,
+        c.original_currency || 'USD'
+      ];
+    });
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Meta_Ads_Campaigns_${datePreset}_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("Đã xuất danh sách chiến dịch ra file CSV!");
   };
 
 
@@ -1596,11 +1888,21 @@ export default function App() {
            campaignResult.data.forEach(c => {
              let apiBudget = null;
              let apiBudgetType = 'daily';
+             let originalApiBudget = null;
+             let originalDailyBudget = null;
+             let originalLifetimeBudget = null;
+
              if (c.daily_budget) {
-               apiBudget = (parseFloat(c.daily_budget) / 100) * rateToUsd;
+               const rawVal = parseFloat(c.daily_budget) / 100;
+               originalDailyBudget = rawVal;
+               originalApiBudget = rawVal;
+               apiBudget = rawVal * rateToUsd;
                apiBudgetType = 'daily';
              } else if (c.lifetime_budget) {
-               apiBudget = (parseFloat(c.lifetime_budget) / 100) * rateToUsd;
+               const rawVal = parseFloat(c.lifetime_budget) / 100;
+               originalLifetimeBudget = rawVal;
+               originalApiBudget = rawVal;
+               apiBudget = rawVal * rateToUsd;
                apiBudgetType = 'lifetime';
              }
 
@@ -1615,6 +1917,9 @@ export default function App() {
                api_budget_type: apiBudgetType,
                api_daily_budget: c.daily_budget ? ((parseFloat(c.daily_budget) / 100) * rateToUsd) : null,
                api_lifetime_budget: c.lifetime_budget ? ((parseFloat(c.lifetime_budget) / 100) * rateToUsd) : null,
+               original_api_budget: originalApiBudget,
+               original_daily_budget: originalDailyBudget,
+               original_lifetime_budget: originalLifetimeBudget,
              };
            });
         }
@@ -1653,9 +1958,13 @@ export default function App() {
             api_budget_type: info.api_budget_type || 'daily',
             api_daily_budget: info.api_daily_budget || null,
             api_lifetime_budget: info.api_lifetime_budget || null,
+            original_api_budget: info.original_api_budget || null,
+            original_daily_budget: info.original_daily_budget || null,
+            original_lifetime_budget: info.original_lifetime_budget || null,
             spend: originalSpend * rateToUsd, // Convert to USD
             original_currency: currency,
-            original_spend: originalSpend
+            original_spend: originalSpend,
+            rate_to_usd: rateToUsd
           };
         });
       });
@@ -1757,7 +2066,7 @@ export default function App() {
     if (isUsingMock || !settings.metaToken) {
       setTimeout(() => {
         setTogglingStatus(null);
-        showToast(`[Demo] Đã chuyển chiến dịch sang trạng thái ${newStatus}!`);
+        showToast(`Đã chuyển chiến dịch sang trạng thái ${newStatus}!`);
       }, 300);
       return;
     }
@@ -1791,28 +2100,28 @@ export default function App() {
   };
 
   // --- 2. ads_management: Đồng Bộ Ngân Sách Lên Meta Ads ---
-  const updateCampaignBudgetOnMeta = async (campaignId, budgetUsd, budgetType = 'daily', currency = 'USD') => {
+  const updateCampaignBudgetOnMeta = async (campaignId, budgetInput, budgetType = 'daily', currency = 'USD') => {
     if (!hasPermission(currentUser, 'ads:control')) {
       alert("Bạn không có quyền điều chỉnh ngân sách chiến dịch! Vui lòng liên hệ Admin để được cấp quyền ads:control.");
       return;
     }
-    const numBudget = parseFloat(budgetUsd);
+    const numBudget = parseFloat(budgetInput);
     if (isNaN(numBudget) || numBudget <= 0) {
       alert("Vui lòng nhập số tiền ngân sách hợp lệ!");
       return;
     }
 
     if (isUsingMock || !settings.metaToken) {
-      showToast(`[Demo] Đã lưu ngân sách $${numBudget} (${budgetType}) vào hệ thống!`);
+      showToast(`Đã lưu ngân sách ${formatDashboardMoney(numBudget, currency, dashboardCurrencyMode)} (${budgetType}) vào hệ thống!`);
       return;
     }
 
     try {
-      let rateToUsd = 1;
-      if (currency && currency !== 'USD' && exchangeRates && exchangeRates[currency]) {
-        rateToUsd = 1 / exchangeRates[currency];
+      let rawBudgetInCurrency = numBudget;
+      if (dashboardCurrencyMode === 'usd' && currency && currency !== 'USD') {
+        const rate = customRates[currency] || (exchangeRates && exchangeRates[currency]) || (currency === 'VND' ? 25400 : 1);
+        rawBudgetInCurrency = numBudget * rate;
       }
-      const rawBudgetInCurrency = numBudget / rateToUsd;
       const budgetInCents = Math.round(rawBudgetInCurrency * 100);
 
       const params = new URLSearchParams({
@@ -1877,7 +2186,7 @@ export default function App() {
         objective: objective
       };
       setData(prev => [newMock, ...prev]);
-      showToast(`[Demo] Đã tạo chiến dịch "${name}" thành công!`);
+      showToast(`Đã tạo chiến dịch "${name}" thành công!`);
       setIsCreateCampaignOpen(false);
       return;
     }
@@ -2001,12 +2310,60 @@ export default function App() {
     return matchSearch && matchStatus && matchObjective;
   });
 
-  const displayedSpend = displayedCampaigns.reduce((acc, curr) => acc + curr.spend, 0);
+  const getCampaignSpendInMode = (c, mode = dashboardCurrencyMode) => {
+    const rawSpend = c.original_spend !== undefined ? c.original_spend : c.spend;
+    const currency = c.original_currency || 'USD';
+    const usdToVndRate = customRates['VND'] || (exchangeRates && exchangeRates['VND']) || 25400;
+
+    if (mode === 'vnd') {
+      if (currency === 'VND') return rawSpend;
+      if (currency === 'USD') return rawSpend * usdToVndRate;
+      const rateToUsd = c.rate_to_usd || (1 / (customRates[currency] || (exchangeRates && exchangeRates[currency]) || 1));
+      return (rawSpend * rateToUsd) * usdToVndRate;
+    }
+
+    if (mode === 'usd') {
+      if (currency !== 'USD') {
+        const rateToUsd = c.rate_to_usd || (1 / (customRates[currency] || (exchangeRates && exchangeRates[currency]) || usdToVndRate));
+        return rawSpend * rateToUsd;
+      }
+      return rawSpend;
+    }
+
+    return rawSpend;
+  };
+
+  const displayedCurrencies = Array.from(new Set(displayedCampaigns.map(c => c.original_currency || 'USD')));
+  const primaryAdsCurrency = dashboardCurrencyMode === 'vnd'
+    ? 'VND'
+    : (dashboardCurrencyMode === 'usd'
+      ? 'USD'
+      : (displayedCurrencies.length === 1 ? displayedCurrencies[0] : (displayedCurrencies.length === 0 ? 'VND' : 'USD')));
+  const isMixedCurrenciesInAds = dashboardCurrencyMode === 'ads' && displayedCurrencies.length > 1;
+
+  const displayedSpend = displayedCampaigns.reduce((acc, curr) => {
+    if (dashboardCurrencyMode === 'vnd') {
+      return acc + getCampaignSpendInMode(curr, 'vnd');
+    }
+    if (dashboardCurrencyMode === 'usd' || isMixedCurrenciesInAds) {
+      return acc + getCampaignSpendInMode(curr, 'usd');
+    }
+    return acc + getCampaignSpendInMode(curr, 'ads');
+  }, 0);
+
   const displayedClicks = displayedCampaigns.reduce((acc, curr) => acc + curr.clicks, 0);
   const displayedLeads = displayedCampaigns.reduce((acc, curr) => acc + curr.leads, 0);
   const displayedCpl = displayedLeads > 0 ? displayedSpend / displayedLeads : 0;
 
-  const totalSpend = data.reduce((acc, curr) => acc + curr.spend, 0);
+  const totalSpend = data.reduce((acc, curr) => {
+    if (dashboardCurrencyMode === 'vnd') {
+      return acc + getCampaignSpendInMode(curr, 'vnd');
+    }
+    if (dashboardCurrencyMode === 'usd' || isMixedCurrenciesInAds) {
+      return acc + getCampaignSpendInMode(curr, 'usd');
+    }
+    return acc + getCampaignSpendInMode(curr, 'ads');
+  }, 0);
   const totalClicks = data.reduce((acc, curr) => acc + curr.clicks, 0);
   const totalLeads = data.reduce((acc, curr) => acc + curr.leads, 0);
   const averageCpl = totalLeads > 0 ? totalSpend / totalLeads : 0;
@@ -2019,7 +2376,7 @@ export default function App() {
   let expectedTotalSpend = 0;
 
   data.forEach(curr => {
-    const { budgetAmount, budgetType } = getCampaignBudgetInfo(curr, manualData);
+    const { budgetAmount, budgetType } = getCampaignBudgetInfo(curr, manualData, dashboardCurrencyMode, customRates, exchangeRates);
     if (budgetType === 'lifetime') {
       totalLifetimeBudget += budgetAmount;
       expectedTotalSpend += budgetAmount;
@@ -2045,12 +2402,19 @@ export default function App() {
   const overallLeadToFundCvr = totalLeads > 0 ? (totalFunded / totalLeads) * 100 : 0;
 
   // Compute Chart Data (Spend vs CPL)
-  const chartData = data.map(item => {
-    const cpl = item.leads > 0 ? (item.spend / item.leads) : 0;
+  const chartData = displayedCampaigns.map(item => {
+    const rawSpend = dashboardCurrencyMode === 'vnd'
+      ? getCampaignSpendInMode(item, 'vnd')
+      : ((dashboardCurrencyMode === 'ads' && !isMixedCurrenciesInAds)
+        ? getCampaignSpendInMode(item, 'ads')
+        : getCampaignSpendInMode(item, 'usd'));
+    const cpl = item.leads > 0 ? (rawSpend / item.leads) : 0;
+    const isVnd = (dashboardCurrencyMode === 'vnd') || (dashboardCurrencyMode === 'ads' && primaryAdsCurrency === 'VND' && !isMixedCurrenciesInAds);
     return {
-      name: item.campaign_name.substring(0, 15) + '...',
-      Spend: Number(item.spend.toFixed(2)),
-      CPL: Number(cpl.toFixed(2)),
+      name: item.campaign_name.length > 15 ? item.campaign_name.substring(0, 15) + '...' : item.campaign_name,
+      fullName: item.campaign_name,
+      Spend: Number(rawSpend.toFixed(isVnd ? 0 : 2)),
+      CPL: Number(cpl.toFixed(isVnd ? 0 : 2)),
     };
   });
 
@@ -2092,11 +2456,11 @@ export default function App() {
                 ) : (
                   <button 
                     onClick={() => setIsSettingsOpen(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 transition-all cursor-pointer shadow-[0_0_12px_rgba(16,185,129,0.15)]"
-                    title="Đang ở chế độ Demo mô phỏng. Nhấp để kết nối Meta Access Token thực tế."
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition-all cursor-pointer shadow-[0_0_12px_rgba(245,158,11,0.15)]"
+                    title="Chưa kết nối Token Meta Ads. Nhấp để kết nối."
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                    Chế độ Demo (Mô phỏng)
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                    Chưa kết nối Meta Ads
                   </button>
                 )}
               </div>
@@ -2669,6 +3033,49 @@ export default function App() {
                 </div>
               )}
             </div>
+
+            {/* Currency Mode Selector: Theo Ads vs Quy đổi VND vs Quy đổi USD */}
+            <div className="flex items-center bg-white/[0.04] border border-white/10 p-0.5 rounded-xl h-[38px] shadow-sm">
+              <button
+                type="button"
+                onClick={() => handleDashboardCurrencyModeChange('ads')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer ${
+                  dashboardCurrencyMode === 'ads'
+                    ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+                title="Mặc định: Hiển thị theo đồng tiền gốc của từng tài khoản Ads"
+              >
+                <Globe className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Theo Ads</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDashboardCurrencyModeChange('vnd')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer ${
+                  dashboardCurrencyMode === 'vnd'
+                    ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+                title="Quy đổi tất cả chi tiêu, ngân sách, CPL sang Việt Nam Đồng (₫)"
+              >
+                <span className="font-bold text-xs text-emerald-400">₫</span>
+                <span>VND</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDashboardCurrencyModeChange('usd')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer ${
+                  dashboardCurrencyMode === 'usd'
+                    ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+                title="Quy đổi tất cả chi tiêu, ngân sách, CPL sang Đô la Mỹ ($)"
+              >
+                <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+                <span>USD</span>
+              </button>
+            </div>
           </div>
 
           {/* Right: Action Buttons (Adaptive 2x2 grid on mobile) */}
@@ -2755,23 +3162,6 @@ export default function App() {
           </div>
         )}
 
-        {isUsingMock && !error && (
-          <div className="mb-6 insure-glass border border-emerald-500/30 text-emerald-200 px-4 py-3.5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs backdrop-blur-xl shadow-[0_0_20px_rgba(16,185,129,0.1)]">
-            <div className="flex items-center gap-2.5">
-              <span className="p-1.5 rounded-xl bg-emerald-500/20 text-emerald-300">💡</span>
-              <div>
-                <strong className="text-white">Chế độ Demo (Dữ liệu mẫu Insight):</strong> Đang hiển thị số liệu mô phỏng để xem trước giao diện. Nhập Token cá nhân để đồng bộ trực tiếp với Meta Ads.
-              </div>
-            </div>
-            <button 
-              onClick={() => setIsSettingsOpen(true)}
-              className="px-3.5 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 rounded-xl font-semibold text-xs transition-all flex-shrink-0 self-end sm:self-auto cursor-pointer"
-            >
-              Kết nối Meta Token
-            </button>
-          </div>
-        )}
-
         {/* Main Content Router */}
         {activeTab === 'dashboard' ? (
           <>
@@ -2805,10 +3195,20 @@ export default function App() {
 
             {/* Top Stats Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
-              <StatCard title="Total Spend" value={`$${displayedSpend.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`} icon={DollarSign} color="#10B981" />
+              <StatCard 
+                title={`Total Spend ${dashboardCurrencyMode === 'ads' ? `(${primaryAdsCurrency})` : '(USD)'}`} 
+                value={formatDashboardMoney(displayedSpend, primaryAdsCurrency, dashboardCurrencyMode, customRates, exchangeRates)} 
+                icon={DollarSign} 
+                color="#10B981" 
+              />
               <StatCard title="Total Clicks" value={displayedClicks.toLocaleString()} icon={MousePointerClick} color="#34D399" />
               <StatCard title="Total Leads" value={displayedLeads.toLocaleString()} icon={Users} color="#059669" />
-              <StatCard title="Avg. CPL" value={`$${displayedCpl.toFixed(2)}`} icon={TrendingUp} color="#10B981" />
+              <StatCard 
+                title={`Avg. CPL ${dashboardCurrencyMode === 'ads' ? `(${primaryAdsCurrency})` : '(USD)'}`} 
+                value={formatDashboardMoney(displayedCpl, primaryAdsCurrency, dashboardCurrencyMode, customRates, exchangeRates)} 
+                icon={TrendingUp} 
+                color="#10B981" 
+              />
             </div>
 
             {/* Budget & Conversion Health Cards */}
@@ -2817,10 +3217,10 @@ export default function App() {
                 title="Budget Limit" 
                 value={
                   totalDailyBudget > 0 && totalLifetimeBudget > 0
-                    ? `$${totalDailyBudget.toFixed(0)}/d + $${totalLifetimeBudget.toFixed(0)} LT`
+                    ? `${formatDashboardMoney(totalDailyBudget, primaryAdsCurrency, dashboardCurrencyMode, customRates, exchangeRates)}/d + ${formatDashboardMoney(totalLifetimeBudget, primaryAdsCurrency, dashboardCurrencyMode, customRates, exchangeRates)} LT`
                     : totalLifetimeBudget > 0
-                      ? `$${totalLifetimeBudget.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} Lifetime`
-                      : `$${totalDailyBudget.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}/day`
+                      ? `${formatDashboardMoney(totalLifetimeBudget, primaryAdsCurrency, dashboardCurrencyMode, customRates, exchangeRates)} Lifetime`
+                      : `${formatDashboardMoney(totalDailyBudget, primaryAdsCurrency, dashboardCurrencyMode, customRates, exchangeRates)}/day`
                 } 
                 icon={Briefcase} 
                 color="#10B981" 
@@ -2844,7 +3244,7 @@ export default function App() {
             <div className="flex items-center justify-between mb-4 sm:mb-6">
               <h2 className="text-base sm:text-lg font-bold flex items-center gap-2 text-white uppercase font-levents">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                Spend vs Cost Per Lead Analysis
+                Spend vs Cost Per Lead Analysis ({dashboardCurrencyMode === 'ads' ? primaryAdsCurrency : 'USD'})
               </h2>
               <span className="text-[11px] font-mono uppercase px-2.5 py-1 rounded-full bg-white/5 border border-emerald-500/20 text-emerald-400">
                 Live Trend
@@ -2865,8 +3265,38 @@ export default function App() {
                   <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
                     <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-                    <YAxis yAxisId="left" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
-                    <YAxis yAxisId="right" orientation="right" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
+                    <YAxis 
+                      yAxisId="left" 
+                      stroke="#94a3b8" 
+                      fontSize={11} 
+                      tickLine={false} 
+                      axisLine={false} 
+                      tickFormatter={(value) => {
+                        const isVndDisplay = (dashboardCurrencyMode === 'vnd') || (dashboardCurrencyMode === 'ads' && primaryAdsCurrency === 'VND' && !isMixedCurrenciesInAds);
+                        if (isVndDisplay) {
+                          if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M ₫`;
+                          if (value >= 1000) return `${(value / 1000).toFixed(0)}k ₫`;
+                          return `${value} ₫`;
+                        }
+                        return `$${value}`;
+                      }} 
+                    />
+                    <YAxis 
+                      yAxisId="right" 
+                      orientation="right" 
+                      stroke="#94a3b8" 
+                      fontSize={11} 
+                      tickLine={false} 
+                      axisLine={false} 
+                      tickFormatter={(value) => {
+                        const isVndDisplay = (dashboardCurrencyMode === 'vnd') || (dashboardCurrencyMode === 'ads' && primaryAdsCurrency === 'VND' && !isMixedCurrenciesInAds);
+                        if (isVndDisplay) {
+                          if (value >= 1000) return `${(value / 1000).toFixed(0)}k ₫`;
+                          return `${value} ₫`;
+                        }
+                        return `$${value}`;
+                      }} 
+                    />
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: 'rgba(7, 13, 9, 0.95)', 
@@ -2875,6 +3305,10 @@ export default function App() {
                         boxShadow: '0 20px 40px rgba(0, 0, 0, 0.8), 0 0 15px rgba(16, 185, 129, 0.15)',
                         backdropFilter: 'blur(16px)'
                       }}
+                      formatter={(val, name) => [
+                        formatDashboardMoney(val, primaryAdsCurrency, dashboardCurrencyMode, customRates, exchangeRates),
+                        name
+                      ]}
                       itemStyle={{ fontWeight: 600, fontSize: '12px' }}
                     />
                     <Legend wrapperStyle={{ paddingTop: '16px', fontSize: '12px' }} />
@@ -2887,332 +3321,736 @@ export default function App() {
           </div>
 
           {/* Data Table */}
-          <div className="xl:col-span-3 insure-glass rounded-2xl sm:rounded-3xl overflow-hidden mt-6 border border-emerald-500/20">
-            <div className="p-4 sm:p-6 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="xl:col-span-3 insure-glass rounded-2xl sm:rounded-3xl overflow-hidden mt-6 border border-emerald-500/20 shadow-2xl">
+            <div className="p-4 sm:p-5 border-b border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h2 className="text-base sm:text-lg font-bold flex items-center gap-2 mb-1 flex-wrap text-white uppercase font-levents">
                   <Briefcase className="w-5 h-5 text-emerald-400" />
-                  Advanced Marketing Analysis
-                  <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full" title="All manual inputs (Account Open, Funded Accounts, Deposit, Daily Budget) are automatically saved to LocalStorage for future reports">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Auto Saved
+                  Bảng Quản Trị & Hiệu Suất Chiến Dịch
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> {dashboardCurrencyMode === 'ads' ? `Tiền tệ: Theo Ads (${primaryAdsCurrency})` : (dashboardCurrencyMode === 'vnd' ? 'Tiền tệ: Quy đổi VND (₫)' : 'Tiền tệ: Quy đổi USD ($)')}
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-white/5 text-gray-300 border border-white/10 px-2.5 py-0.5 rounded-full">
+                    {visibleColumns.length}/{DASHBOARD_COLUMNS.length} cột hiển thị
                   </span>
                 </h2>
-                <p className="text-xs text-gray-400">Manual inputs (Account Open, Deposit, Funded Accounts & Budget) are automatically saved in local storage for future updates and reports.</p>
+                <p className="text-xs text-gray-400">
+                  Dữ liệu trực tiếp từ Meta Ads API. Bạn có thể tùy chỉnh cột hiển thị, chuyển đổi đơn vị tiền tệ hoặc chọn chế độ xem gọn gàng theo nhu cầu.
+                </p>
               </div>
 
               <div className="flex items-center gap-2 pdf-hide print:hidden flex-wrap">
+                {/* Column Visibility Dropdown */}
+                <div className="relative" ref={columnDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setIsColumnDropdownOpen(!isColumnDropdownOpen)}
+                    className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 rounded-xl text-xs flex items-center gap-1.5 transition-all border border-emerald-500/30 cursor-pointer"
+                    title="Tùy chỉnh bật/tắt các cột hiển thị trên bảng"
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Tùy chọn cột ({visibleColumns.length})</span>
+                    <ChevronDown className={`w-3 h-3 text-emerald-400 transition-transform ${isColumnDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {isColumnDropdownOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 insure-glass border border-emerald-500/30 rounded-2xl shadow-2xl z-50 p-3.5 text-xs">
+                      <div className="flex items-center justify-between pb-2 border-b border-white/10 mb-3">
+                        <div className="flex items-center gap-1.5">
+                          <Columns className="w-4 h-4 text-emerald-400" />
+                          <span className="font-bold text-white uppercase text-[11px] font-levents">Tùy chọn hiển thị cột</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button 
+                            type="button"
+                            onClick={() => setVisibleColumns(DASHBOARD_COLUMNS.map(c => c.id))}
+                            className="text-[11px] text-emerald-400 hover:text-emerald-300 font-semibold transition-colors cursor-pointer"
+                          >
+                            Chọn tất cả
+                          </button>
+                          <span className="text-gray-600">•</span>
+                          <button 
+                            type="button"
+                            onClick={() => setVisibleColumns(COLUMN_PRESETS.standard.columns)}
+                            className="text-[11px] text-gray-400 hover:text-emerald-400 transition-colors cursor-pointer"
+                          >
+                            Mặc định
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Quick Presets */}
+                      <div className="mb-3">
+                        <p className="text-[10px] uppercase font-semibold text-gray-400 mb-1.5 tracking-wider">Chế độ xem nhanh</p>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {Object.values(COLUMN_PRESETS).map(preset => {
+                            const isActive = preset.columns.length === visibleColumns.length && preset.columns.every(col => visibleColumns.includes(col));
+                            return (
+                              <button
+                                key={preset.id}
+                                type="button"
+                                onClick={() => applyColumnPreset(preset.id)}
+                                className={`px-2.5 py-1.5 rounded-xl text-left border transition-all cursor-pointer ${
+                                  isActive
+                                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-sm'
+                                    : 'bg-white/[0.03] border-white/10 hover:border-white/20 text-gray-300'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="font-bold text-xs">{preset.label}</span>
+                                  <span className="text-[10px] text-gray-400">{preset.badge}</span>
+                                </div>
+                                <p className="text-[10px] text-gray-400 truncate mt-0.5">{preset.desc}</p>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Individual Column Checkboxes grouped by Category */}
+                      <div className="max-h-60 overflow-y-auto pr-1 space-y-3">
+                        {['Cơ bản', 'Ngân Sách', 'Meta Ads', 'Phễu CRM'].map(category => {
+                          const catCols = DASHBOARD_COLUMNS.filter(c => c.category === category);
+                          return (
+                            <div key={category} className="space-y-1">
+                              <span className="text-[10px] uppercase font-bold text-emerald-400/80 tracking-wider block px-1">{category}</span>
+                              <div className="grid grid-cols-2 gap-1">
+                                {catCols.map(col => {
+                                  const isChecked = visibleColumns.includes(col.id);
+                                  const isLocked = col.id === 'campaign_name';
+                                  return (
+                                    <label
+                                      key={col.id}
+                                      onClick={(e) => {
+                                        if (isLocked) {
+                                          e.preventDefault();
+                                          return;
+                                        }
+                                      }}
+                                      className={`flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors ${
+                                        isChecked ? 'bg-emerald-500/10 text-white' : 'hover:bg-white/5 text-gray-400'
+                                      } ${isLocked ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={isChecked}
+                                        disabled={isLocked}
+                                        onChange={() => toggleColumnVisibility(col.id)}
+                                        className="rounded border-gray-600 text-emerald-500 focus:ring-emerald-400 focus:ring-offset-0 bg-black/40"
+                                      />
+                                      <span className="text-xs truncate">{col.label}</span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Table Density Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setTableDensity(tableDensity === 'compact' ? 'comfortable' : 'compact')}
+                  className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl text-xs flex items-center gap-1.5 transition-all border border-white/10 cursor-pointer"
+                  title={`Độ co giãn bảng: ${tableDensity === 'compact' ? 'Gọn gàng (Thu nhỏ)' : 'Thoải mái'}. Bấm để đổi.`}
+                >
+                  <Layers className="w-3.5 h-3.5 text-teal-400" />
+                  <span>{tableDensity === 'compact' ? 'Gọn gàng' : 'Thoải mái'}</span>
+                </button>
+
+                {/* Quick Copy Report for Zalo/Telegram */}
+                <button
+                  type="button"
+                  onClick={handleCopyDashboardReport}
+                  className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 rounded-xl text-xs flex items-center gap-1.5 transition-all border border-emerald-500/30 cursor-pointer"
+                  title="Sao chép bản tóm tắt chiến dịch để gửi Zalo / Telegram / Slack"
+                >
+                  <Copy className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Copy Báo Cáo</span>
+                </button>
+
+                {/* Export Table to CSV */}
+                <button
+                  type="button"
+                  onClick={handleExportCampaignsCSV}
+                  className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl text-xs flex items-center gap-1.5 transition-all border border-white/10 cursor-pointer"
+                  title="Xuất danh sách chiến dịch đang hiển thị ra file Excel CSV"
+                >
+                  <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Xuất CSV</span>
+                </button>
+
                 <button
                   onClick={handleExportManualData}
                   className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl text-xs flex items-center gap-1.5 transition-all border border-white/10 cursor-pointer"
-                  title="Export saved manual inputs (Account Open, Deposit, Budget) to JSON file"
+                  title="Xuất dữ liệu ô nhập phễu & ngân sách ra file JSON"
                 >
-                  <Download className="w-3.5 h-3.5 text-[#00F2FE]" /> Export
+                  <Download className="w-3.5 h-3.5 text-[#00F2FE]" /> Xuất
                 </button>
                 <label 
                   className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl text-xs flex items-center gap-1.5 transition-all border border-white/10 cursor-pointer"
-                  title="Import previously saved manual inputs from JSON file"
+                  title="Nhập dữ liệu ô nhập phễu từ file JSON"
                 >
-                  <Upload className="w-3.5 h-3.5 text-[#8B5CF6]" /> Import
+                  <Upload className="w-3.5 h-3.5 text-[#8B5CF6]" /> Nhập
                   <input type="file" accept=".json" onChange={handleImportManualData} className="hidden" />
                 </label>
                 {Object.keys(manualData).length > 0 && (
                   <button
                     onClick={handleClearManualData}
                     className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl text-xs flex items-center gap-1.5 transition-all border border-red-500/20 cursor-pointer"
-                    title="Clear all saved manual inputs"
+                    title="Xóa dữ liệu ô nhập thủ công"
                   >
-                    <RotateCcw className="w-3.5 h-3.5" /> Clear
+                    <RotateCcw className="w-3.5 h-3.5" /> Xóa ô nhập
                   </button>
                 )}
               </div>
             </div>
             
-            <div className="overflow-x-auto touch-scroll-x">
-              <table className="w-full text-sm text-left whitespace-nowrap">
-                <thead className="text-[10px] uppercase bg-black/40 text-gray-400 border-b border-white/10 border-t border-white/5">
-                  <tr>
-                    <th className="px-3 py-3 font-medium tracking-wider text-center align-bottom border-r border-white/10" rowSpan={2}>Trạng Thái</th>
-                    <th className="px-4 py-3 font-medium tracking-wider align-bottom" rowSpan={2}>Campaign Name</th>
-                    <th className="px-4 py-2 font-medium tracking-wider text-center bg-indigo-500/10 border-l border-b border-white/5 text-indigo-300" colSpan={2}>Budget Control</th>
-                    <th className="px-4 py-2 font-medium tracking-wider text-center border-b border-white/5" colSpan={7}>Meta Insights (Auto)</th>
-                    <th className="px-4 py-2 font-medium tracking-wider text-center bg-blue-500/5 border-l border-b border-white/5 text-blue-300" colSpan={6}>Business Conversion (Manual Input limits)</th>
-                  </tr>
-                  <tr>
-                    <th className="px-4 py-2 font-medium tracking-wider bg-indigo-500/20 text-indigo-300 border-l border-white/5">Budget Limit</th>
-                    <th className="px-4 py-2 font-medium tracking-wider bg-indigo-500/10 text-indigo-300">Pacing</th>
-                    <th className="px-4 py-2 font-medium tracking-wider bg-black/20">Spend</th>
-                    <th className="px-4 py-2 font-medium tracking-wider bg-black/20">Impr</th>
-                    <th className="px-4 py-2 font-medium tracking-wider bg-black/20">Clicks</th>
-                    <th className="px-4 py-2 font-medium tracking-wider bg-black/20 text-emerald-400">CTR / CPC</th>
-                    <th className="px-4 py-2 font-medium tracking-wider bg-black/20 text-emerald-400">CPM</th>
-                    <th className="px-4 py-2 font-medium tracking-wider bg-black/20">Leads</th>
-                    <th className="px-4 py-2 font-medium tracking-wider bg-black/20">CPL</th>
-                    <th className="px-4 py-2 font-medium tracking-wider bg-emerald-500/10 border-l border-white/5 text-emerald-300">Acct Open</th>
-                    <th className="px-4 py-2 font-medium tracking-wider bg-emerald-500/5 text-emerald-300">CPA</th>
-                    <th className="px-4 py-2 font-medium tracking-wider bg-teal-500/10 text-teal-300">Funded</th>
-                    <th className="px-4 py-2 font-medium tracking-wider bg-teal-500/5 text-teal-300">CPFA</th>
-                    <th className="px-4 py-2 font-medium tracking-wider bg-emerald-950/20 text-emerald-300">Deposit</th>
-                    <th className="px-4 py-2 font-medium tracking-wider bg-emerald-950/10 text-emerald-300">ROI</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5 text-xs">
-                  {loading ? (
-                    <tr>
-                      <td colSpan={17} className="px-6 py-8 text-center text-gray-500">
-                        Loading campaign data...
-                      </td>
-                    </tr>
-                  ) : displayedCampaigns.length === 0 ? (
-                    <tr>
-                      <td colSpan={17} className="px-6 py-16 text-center text-gray-400">
-                        <div className="flex flex-col items-center justify-center max-w-md mx-auto">
-                          <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3 text-gray-500">
-                            <Activity className="w-6 h-6 text-gray-400" />
-                          </div>
-                          <p className="text-base font-semibold text-white mb-1">Chưa Có Dữ Liệu Chiến Dịch</p>
-                          <p className="text-xs text-gray-400 mb-5 text-center leading-relaxed">
-                            {settings.metaToken 
-                              ? "Không tìm thấy chiến dịch nào từ tài khoản đã chọn hoặc trong khoảng thời gian này."
-                              : "Hệ thống chưa kết nối tài khoản quảng cáo. Vui lòng mở Cài đặt và nhập Meta Access Token để bắt đầu xem báo cáo."}
-                          </p>
-                          <button
-                            type="button"
-                            onClick={() => setIsSettingsOpen(true)}
-                            className="px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:opacity-95 transition-all shadow-lg shadow-emerald-950/40 cursor-pointer flex items-center gap-2 uppercase font-levents"
-                          >
-                            <Settings className="w-4 h-4" /> Mở Cài Đặt Kết Nối Meta Ads
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : displayedCampaigns.map((item) => {
-                    const mData = manualData[item.campaign_id] || {};
-                    const manualAccountOpen = parseFloat(mData.accountOpen) || 0;
-                    const manualFundedAccounts = parseFloat(mData.fundedAccounts) || 0;
-                    const manualDeposit = parseFloat(mData.deposit) || 0;
+            {/* Table wrapper */}
+            {(() => {
+              const cellPadding = tableDensity === 'compact' ? 'px-3 py-2 text-xs' : 'px-4 py-3 text-xs sm:text-sm';
+              const inputPadding = tableDensity === 'compact' ? 'py-1 px-1.5 text-xs' : 'py-1.5 px-2 text-xs';
 
-                    // Calc Budget & Pacing
-                    const { budgetAmount, budgetType } = getCampaignBudgetInfo(item, manualData);
-                    const expectedSpend = budgetType === 'lifetime' ? budgetAmount : budgetAmount * daysCount;
-                    const pacing = expectedSpend > 0 ? (item.spend / expectedSpend) * 100 : 0;
+              const summarySpendMode = dashboardCurrencyMode === 'vnd'
+                ? 'vnd'
+                : ((dashboardCurrencyMode === 'usd' || isMixedCurrenciesInAds) ? 'usd' : 'ads');
+              const summaryCurrency = dashboardCurrencyMode === 'vnd'
+                ? 'VND'
+                : ((dashboardCurrencyMode === 'usd' || isMixedCurrenciesInAds) ? 'USD' : primaryAdsCurrency);
 
-                    // Calc Meta
-                    const ctr = item.impressions > 0 ? (item.clicks / item.impressions) * 100 : 0;
-                    const cpc = item.clicks > 0 ? item.spend / item.clicks : 0;
-                    const cpm = item.impressions > 0 ? (item.spend / item.impressions) * 1000 : 0;
-                    const cpl = item.leads > 0 ? item.spend / item.leads : 0;
-                    const leadCvr = item.clicks > 0 ? (item.leads / item.clicks) * 100 : 0;
-                    
-                    // Calc Business
-                    const cpa = manualAccountOpen > 0 ? item.spend / manualAccountOpen : 0;
-                    const cpfa = manualFundedAccounts > 0 ? item.spend / manualFundedAccounts : 0;
-                    const roi = item.spend > 0 ? ((manualDeposit - item.spend) / item.spend) * 100 : 0;
+              // Summary Calculations for Footer
+              const totalSummary = displayedCampaigns.reduce((acc, c) => {
+                const m = manualData[c.campaign_id] || {};
+                const { budgetAmount } = getCampaignBudgetInfo(c, manualData, summarySpendMode, customRates, exchangeRates);
+                const cSpend = getCampaignSpendInMode(c, summarySpendMode);
+                const mAcct = parseFloat(m.accountOpen) || 0;
+                const mFund = parseFloat(m.fundedAccounts) || 0;
+                const mDep = parseFloat(m.deposit) || 0;
+                
+                acc.budget += budgetAmount;
+                acc.spend += cSpend;
+                acc.impressions += (c.impressions || 0);
+                acc.clicks += (c.clicks || 0);
+                acc.leads += (c.leads || 0);
+                acc.accountOpen += mAcct;
+                acc.fundedAccounts += mFund;
+                acc.deposit += mDep;
+                return acc;
+              }, {
+                budget: 0,
+                spend: 0,
+                impressions: 0,
+                clicks: 0,
+                leads: 0,
+                accountOpen: 0,
+                fundedAccounts: 0,
+                deposit: 0
+              });
 
-                    const leadToAcct = item.leads > 0 ? (manualAccountOpen / item.leads) * 100 : 0;
-                    const leadToFund = item.leads > 0 ? (manualFundedAccounts / item.leads) * 100 : 0;
-                    const acctToFund = manualAccountOpen > 0 ? (manualFundedAccounts / manualAccountOpen) * 100 : 0;
+              const totalSummaryCtr = totalSummary.impressions > 0 ? (totalSummary.clicks / totalSummary.impressions) * 100 : 0;
+              const totalSummaryCpc = totalSummary.clicks > 0 ? totalSummary.spend / totalSummary.clicks : 0;
+              const totalSummaryCpm = totalSummary.impressions > 0 ? (totalSummary.spend / totalSummary.impressions) * 1000 : 0;
+              const totalSummaryCpl = totalSummary.leads > 0 ? totalSummary.spend / totalSummary.leads : 0;
+              const totalSummaryCpa = totalSummary.accountOpen > 0 ? totalSummary.spend / totalSummary.accountOpen : 0;
+              const totalSummaryCpfa = totalSummary.fundedAccounts > 0 ? totalSummary.spend / totalSummary.fundedAccounts : 0;
+              const totalSummaryRoi = totalSummary.spend > 0 ? ((totalSummary.deposit - totalSummary.spend) / totalSummary.spend) * 100 : 0;
 
-                    return (
-                      <tr key={item.campaign_id} className="hover:bg-white/[0.04] transition-colors print:border-b print:border-gray-200">
-                        {/* Status Toggle Switch (ads_management) */}
-                        <td className="px-3 py-3 text-center border-r border-white/5">
-                          <div className="flex flex-col items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => toggleCampaignStatus(item.campaign_id, item.status || 'ACTIVE')}
-                              disabled={togglingStatus === item.campaign_id}
-                              className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                                (item.status || 'ACTIVE') === 'ACTIVE' ? 'bg-emerald-500' : 'bg-gray-700'
-                              } ${togglingStatus === item.campaign_id ? 'opacity-50 cursor-wait' : ''}`}
-                              title={`Bấm để ${(item.status || 'ACTIVE') === 'ACTIVE' ? 'TẮT (Pause)' : 'BẬT (Active)'} chiến dịch trên Meta Ads`}
-                            >
-                              <span
-                                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                  (item.status || 'ACTIVE') === 'ACTIVE' ? 'translate-x-4' : 'translate-x-0'
-                                }`}
-                              />
-                            </button>
-                            <span className={`text-[9px] font-semibold uppercase px-1.5 py-0.2 rounded ${
-                              (item.status || 'ACTIVE') === 'ACTIVE' 
-                                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' 
-                                : 'bg-gray-500/15 text-gray-400 border border-gray-500/30'
-                            }`}>
-                              {(item.status || 'ACTIVE') === 'ACTIVE' ? 'ACTIVE' : 'PAUSED'}
-                            </span>
-                          </div>
-                        </td>
-
-                        <td className="px-4 py-3 font-medium text-gray-200 print:text-[#070b14]" title={item.campaign_name}>
-                          <div className="font-semibold text-white break-words min-w-[240px] max-w-[480px] whitespace-normal leading-snug">{item.campaign_name}</div>
-                          <div className="mt-1 flex items-center gap-1.5 flex-wrap">
-                            {item.account_name && (
-                              <span className="text-[9px] bg-white/10 text-gray-400 px-1.5 py-0.5 rounded uppercase tracking-wider print:text-gray-600 print:bg-gray-100">
-                                {item.account_name}
-                              </span>
-                            )}
-                            {item.original_currency && item.original_currency !== 'USD' && (
-                              <span className="text-[9px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded uppercase tracking-wider print:text-teal-600 print:bg-teal-50" title={`Original Spend: ${item.original_spend?.toFixed(2)} ${item.original_currency}`}>
-                                {item.original_currency} → USD
-                              </span>
-                            )}
-                            {item.start_time && (
-                              <span className="text-[9px] bg-emerald-500/10 text-emerald-300 px-1.5 py-0.5 rounded uppercase tracking-wider print:text-blue-600 print:bg-blue-50">
-                                🚀 {new Date(item.start_time).toLocaleDateString('vi-VN')}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Budget Control */}
-                        <td className="px-4 py-2 border-l border-white/5 bg-emerald-950/[0.1] print:bg-transparent">
-                          <div className="flex items-center gap-1.5 pdf-hide print:hidden">
-                            <div className="relative flex-1">
-                              <span className="absolute left-2 top-1.5 text-gray-500">$</span>
-                              <input 
-                                type="number" 
-                                className="w-20 bg-black/40 border border-white/10 rounded pl-5 pr-2 py-1.5 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 text-white text-xs transition-all"
-                                placeholder={budgetAmount.toString()}
-                                value={mData.budget !== undefined ? mData.budget : (mData.dailyBudget !== undefined ? mData.dailyBudget : '')}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  handleManualChange(item.campaign_id, 'budget', val);
-                                  handleManualChange(item.campaign_id, 'dailyBudget', val);
-                                }}
-                              />
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newType = budgetType === 'daily' ? 'lifetime' : 'daily';
-                                handleManualChange(item.campaign_id, 'budgetType', newType);
-                              }}
-                              className={`px-1.5 py-1 rounded text-[10px] font-bold uppercase transition-all border ${
-                                budgetType === 'lifetime' 
-                                  ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 hover:bg-purple-500/30' 
-                                  : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
-                              }`}
-                              title={`Current: ${budgetType === 'lifetime' ? 'Lifetime Budget' : 'Daily Budget'}. Click to toggle.`}
-                            >
-                              {budgetType === 'lifetime' ? 'LT' : 'Daily'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const curVal = mData.budget !== undefined ? mData.budget : (mData.dailyBudget !== undefined ? mData.dailyBudget : budgetAmount);
-                                updateCampaignBudgetOnMeta(item.campaign_id, curVal, budgetType, item.original_currency);
-                              }}
-                              className="p-1 rounded bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition-all cursor-pointer flex items-center justify-center"
-                              title="Đồng bộ ngân sách này lên Meta Ads trực tiếp (ads_management)"
-                            >
-                              <Zap className="w-3 h-3" />
-                            </button>
-                          </div>
-                          <span className="hidden print:inline-block font-medium text-[#070b14]">
-                            ${budgetAmount.toFixed(2)} {budgetType === 'lifetime' ? '(Lifetime)' : '/day'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 bg-emerald-950/[0.04]">
-                          <div className="flex flex-col items-start gap-0.5">
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase ${
-                              pacing > 110 
-                                ? "bg-red-500/10 text-red-400 border border-red-500/20" 
-                                : pacing < 80 
-                                  ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20" 
-                                  : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                            }`} title={`Spend: $${item.spend.toFixed(2)} / Target: $${expectedSpend.toFixed(2)} (${budgetType === 'lifetime' ? 'Lifetime Budget' : `${daysCount} days @ $${budgetAmount}/day`})`}>
-                              {pacing.toFixed(0)}%
-                            </span>
-                            <span className="text-[9px] text-gray-500 uppercase tracking-tight">
-                              {budgetType === 'lifetime' ? 'Lifetime' : `${daysCount}d Daily`}
-                            </span>
-                          </div>
-                        </td>
-
-                        <td className="px-4 py-3 text-gray-300 font-medium">
-                          ${item.spend.toFixed(2)}
-                        </td>
-                        <td className="px-4 py-3 text-gray-400">
-                          {item.impressions.toLocaleString()}
-                        </td>
-                        <td className="px-4 py-3 text-gray-400">
-                          {item.clicks.toLocaleString()}
-                        </td>
-                        <td className="px-4 py-3 text-emerald-400">
-                          {ctr.toFixed(2)}% / ${cpc.toFixed(2)}
-                        </td>
-                        <td className="px-4 py-3 text-emerald-400">
-                          ${cpm.toFixed(2)}
-                        </td>
-                        <td className="px-4 py-3 text-white font-medium">
-                          <div>{item.leads}</div>
-                          {leadCvr > 0 && <div className="text-[10px] text-gray-400 font-normal">CVR: {leadCvr.toFixed(1)}%</div>}
-                        </td>
-                        <td className="px-4 py-3 text-gray-300">
-                          ${cpl.toFixed(2)}
-                        </td>
-                        
-                        {/* Manual inputs & Calc */}
-                        <td className="px-4 py-2 border-l border-white/5 bg-emerald-500/[0.05] print:bg-transparent print:border-none">
-                          <input 
-                            type="number" 
-                            className="w-16 bg-black/40 border border-white/10 rounded px-2 py-1.5 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 text-white text-xs transition-all pdf-hide print:hidden"
-                            placeholder="0"
-                            value={mData.accountOpen || ''}
-                            onChange={(e) => handleManualChange(item.campaign_id, 'accountOpen', e.target.value)}
-                          />
-                          <span className="hidden print:inline-block font-medium text-[#070b14]">{mData.accountOpen || '0'}</span>
-                          {item.leads > 0 && manualAccountOpen > 0 && (
-                            <div className="text-[10px] text-emerald-400/80 mt-0.5" title="Lead to Account Open CVR">
-                              L→A: {leadToAcct.toFixed(1)}%
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 font-medium text-emerald-300 bg-emerald-500/[0.02] print:text-blue-600 print:bg-transparent">
-                          ${cpa.toFixed(2)}
-                        </td>
-                        
-                        <td className="px-4 py-2 bg-teal-500/[0.05] print:bg-transparent">
-                          <input 
-                            type="number" 
-                            className="w-16 bg-black/40 border border-white/10 rounded px-2 py-1.5 focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 text-white text-xs transition-all pdf-hide print:hidden"
-                            placeholder="0"
-                            value={mData.fundedAccounts || ''}
-                            onChange={(e) => handleManualChange(item.campaign_id, 'fundedAccounts', e.target.value)}
-                          />
-                          <span className="hidden print:inline-block font-medium text-[#070b14]">{mData.fundedAccounts || '0'}</span>
-                          {item.leads > 0 && manualFundedAccounts > 0 && (
-                            <div className="text-[10px] text-teal-300/80 mt-0.5 space-y-0.5" title="Conversion Funnel Rates">
-                              <div>L→F: {leadToFund.toFixed(1)}%</div>
-                              {manualAccountOpen > 0 && <div>A→F: {acctToFund.toFixed(1)}%</div>}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 font-medium text-teal-300 bg-teal-500/[0.02] print:text-teal-600 print:bg-transparent">
-                          ${cpfa.toFixed(2)}
-                        </td>
-
-                        <td className="px-4 py-2 bg-indigo-500/[0.05] print:bg-transparent">
-                          <div className="relative">
-                            <span className="absolute left-2 top-1.5 text-gray-500 pdf-hide print:hidden">$</span>
-                            <input 
-                              type="number" 
-                              className="w-20 bg-black/40 border border-white/10 rounded pl-5 pr-2 py-1.5 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 text-white text-xs transition-all pdf-hide print:hidden"
-                              placeholder="0.00"
-                              value={mData.deposit || ''}
-                              onChange={(e) => handleManualChange(item.campaign_id, 'deposit', e.target.value)}
-                            />
-                            <span className="hidden print:inline-block font-medium text-[#070b14]">${mData.deposit || '0.00'}</span>
-                          </div>
-                        </td>
-                        <td className={`px-4 py-3 font-bold bg-indigo-500/[0.02] ${roi > 0 ? "text-green-400" : roi < 0 ? "text-red-400" : "text-gray-400"}`}>
-                          {roi > 0 ? '+' : ''}{roi.toFixed(1)}%
-                        </td>
+              return (
+                <div className="overflow-x-auto touch-scroll-x relative">
+                  <table className="w-full text-left whitespace-nowrap">
+                    <thead className="text-[10px] uppercase bg-black/50 text-gray-400 border-b border-white/10 sticky top-0 z-30 backdrop-blur-md">
+                      <tr>
+                        {visibleColumns.includes('status') && (
+                          <th className="px-3 py-3 font-semibold text-center border-r border-white/10 w-16">Trạng Thái</th>
+                        )}
+                        {visibleColumns.includes('campaign_name') && (
+                          <th className="px-4 py-3 font-semibold sticky left-0 z-20 bg-[#08100b] border-r border-white/10 shadow-[3px_0_8px_rgba(0,0,0,0.6)] min-w-[220px]">
+                            Chiến Dịch
+                          </th>
+                        )}
+                        {visibleColumns.includes('budget') && (
+                          <th className="px-4 py-3 font-semibold bg-indigo-500/10 text-indigo-300 border-l border-white/5">
+                            Ngân Sách ({dashboardCurrencyMode === 'ads' ? primaryAdsCurrency : 'USD'})
+                          </th>
+                        )}
+                        {visibleColumns.includes('pacing') && (
+                          <th className="px-4 py-3 font-semibold bg-indigo-500/10 text-indigo-300">Tiến Độ</th>
+                        )}
+                        {visibleColumns.includes('spend') && (
+                          <th className="px-4 py-3 font-semibold bg-black/20 text-white">
+                            Chi Tiêu ({dashboardCurrencyMode === 'ads' ? primaryAdsCurrency : 'USD'})
+                          </th>
+                        )}
+                        {visibleColumns.includes('impressions') && (
+                          <th className="px-4 py-3 font-semibold bg-black/20">Hiển Thị</th>
+                        )}
+                        {visibleColumns.includes('clicks') && (
+                          <th className="px-4 py-3 font-semibold bg-black/20">Clicks</th>
+                        )}
+                        {visibleColumns.includes('ctr_cpc') && (
+                          <th className="px-4 py-3 font-semibold bg-black/20 text-emerald-400">CTR / CPC</th>
+                        )}
+                        {visibleColumns.includes('cpm') && (
+                          <th className="px-4 py-3 font-semibold bg-black/20 text-emerald-400">CPM</th>
+                        )}
+                        {visibleColumns.includes('leads') && (
+                          <th className="px-4 py-3 font-semibold bg-black/20 text-white">Leads</th>
+                        )}
+                        {visibleColumns.includes('cpl') && (
+                          <th className="px-4 py-3 font-semibold bg-black/20 text-emerald-300">Giá Lead (CPL)</th>
+                        )}
+                        {visibleColumns.includes('account_open') && (
+                          <th className="px-4 py-3 font-semibold bg-emerald-500/10 text-emerald-300 border-l border-white/5">Mở TK</th>
+                        )}
+                        {visibleColumns.includes('cpa') && (
+                          <th className="px-4 py-3 font-semibold bg-emerald-500/5 text-emerald-300">CPA</th>
+                        )}
+                        {visibleColumns.includes('funded') && (
+                          <th className="px-4 py-3 font-semibold bg-teal-500/10 text-teal-300">Đã Nạp</th>
+                        )}
+                        {visibleColumns.includes('cpfa') && (
+                          <th className="px-4 py-3 font-semibold bg-teal-500/5 text-teal-300">CPFA</th>
+                        )}
+                        {visibleColumns.includes('deposit') && (
+                          <th className="px-4 py-3 font-semibold bg-indigo-950/20 text-indigo-300">
+                            Tiền Nạp ({dashboardCurrencyMode === 'ads' ? primaryAdsCurrency : 'USD'})
+                          </th>
+                        )}
+                        {visibleColumns.includes('roi') && (
+                          <th className="px-4 py-3 font-semibold bg-indigo-950/10 text-indigo-300">ROI (%)</th>
+                        )}
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {loading ? (
+                        <tr>
+                          <td colSpan={visibleColumns.length || 1} className="px-6 py-8 text-center text-gray-400">
+                            <div className="flex items-center justify-center gap-2">
+                              <RefreshCw className="w-4 h-4 animate-spin text-emerald-400" />
+                              <span>Đang tải dữ liệu chiến dịch Meta Ads...</span>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : displayedCampaigns.length === 0 ? (
+                        <tr>
+                          <td colSpan={visibleColumns.length || 1} className="px-6 py-16 text-center text-gray-400">
+                            <div className="flex flex-col items-center justify-center max-w-md mx-auto">
+                              <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3 text-gray-400">
+                                <Activity className="w-6 h-6 text-emerald-400" />
+                              </div>
+                              <p className="text-base font-semibold text-white mb-1">Chưa Có Dữ Liệu Chiến Dịch</p>
+                              <p className="text-xs text-gray-400 mb-5 text-center leading-relaxed">
+                                {settings.metaToken 
+                                  ? "Không tìm thấy chiến dịch nào từ tài khoản đã chọn hoặc trong khoảng thời gian này."
+                                  : "Hệ thống chưa kết nối tài khoản quảng cáo. Vui lòng mở Cài đặt và nhập Meta Access Token để bắt đầu xem báo cáo trực tiếp."}
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => setIsSettingsOpen(true)}
+                                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:opacity-95 transition-all shadow-lg shadow-emerald-950/40 cursor-pointer flex items-center gap-2 uppercase font-levents"
+                              >
+                                <Settings className="w-4 h-4" /> Mở Cài Đặt Kết Nối Meta Ads
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : displayedCampaigns.map((item) => {
+                        const mData = manualData[item.campaign_id] || {};
+                        const manualAccountOpen = parseFloat(mData.accountOpen) || 0;
+                        const manualFundedAccounts = parseFloat(mData.fundedAccounts) || 0;
+                        const manualDeposit = parseFloat(mData.deposit) || 0;
+                        const itemCurrency = item.original_currency || 'USD';
+
+                        // Budget & Pacing
+                        const { budgetAmount, budgetType } = getCampaignBudgetInfo(item, manualData, dashboardCurrencyMode, customRates, exchangeRates);
+                        const campaignSpend = getCampaignSpendInMode(item, dashboardCurrencyMode);
+                        const expectedSpend = budgetType === 'lifetime' ? budgetAmount : budgetAmount * daysCount;
+                        const pacing = expectedSpend > 0 ? (campaignSpend / expectedSpend) * 100 : 0;
+
+                        // Meta Metrics
+                        const ctr = item.impressions > 0 ? (item.clicks / item.impressions) * 100 : 0;
+                        const cpc = item.clicks > 0 ? campaignSpend / item.clicks : 0;
+                        const cpm = item.impressions > 0 ? (campaignSpend / item.impressions) * 1000 : 0;
+                        const cpl = item.leads > 0 ? campaignSpend / item.leads : 0;
+                        const leadCvr = item.clicks > 0 ? (item.leads / item.clicks) * 100 : 0;
+                        
+                        // CRM Conversions
+                        const cpa = manualAccountOpen > 0 ? campaignSpend / manualAccountOpen : 0;
+                        const cpfa = manualFundedAccounts > 0 ? campaignSpend / manualFundedAccounts : 0;
+                        const roi = campaignSpend > 0 ? ((manualDeposit - campaignSpend) / campaignSpend) * 100 : 0;
+
+                        const leadToAcct = item.leads > 0 ? (manualAccountOpen / item.leads) * 100 : 0;
+                        const leadToFund = item.leads > 0 ? (manualFundedAccounts / item.leads) * 100 : 0;
+                        const acctToFund = manualAccountOpen > 0 ? (manualFundedAccounts / manualAccountOpen) * 100 : 0;
+
+                        const currencySymbol = dashboardCurrencyMode === 'usd' ? '$' : (itemCurrency === 'VND' ? '₫' : '$');
+
+                        return (
+                          <tr key={item.campaign_id} className="hover:bg-white/[0.04] transition-colors print:border-b print:border-gray-200">
+                            {/* Status Toggle Switch */}
+                            {visibleColumns.includes('status') && (
+                              <td className={`${cellPadding} text-center border-r border-white/5`}>
+                                <div className="flex flex-col items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleCampaignStatus(item.campaign_id, item.status || 'ACTIVE')}
+                                    disabled={togglingStatus === item.campaign_id}
+                                    className={`relative inline-flex h-4 w-8 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                      (item.status || 'ACTIVE') === 'ACTIVE' ? 'bg-emerald-500' : 'bg-gray-700'
+                                    } ${togglingStatus === item.campaign_id ? 'opacity-50 cursor-wait' : ''}`}
+                                    title={`Bấm để ${(item.status || 'ACTIVE') === 'ACTIVE' ? 'TẮT (Pause)' : 'BẬT (Active)'} chiến dịch trên Meta Ads`}
+                                  >
+                                    <span
+                                      className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                        (item.status || 'ACTIVE') === 'ACTIVE' ? 'translate-x-4' : 'translate-x-0'
+                                      }`}
+                                    />
+                                  </button>
+                                  <span className={`text-[8px] font-semibold uppercase px-1 py-0.2 rounded ${
+                                    (item.status || 'ACTIVE') === 'ACTIVE' 
+                                      ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' 
+                                      : 'bg-gray-500/15 text-gray-400 border border-gray-500/30'
+                                  }`}>
+                                    {(item.status || 'ACTIVE') === 'ACTIVE' ? 'ACTIVE' : 'PAUSED'}
+                                  </span>
+                                </div>
+                              </td>
+                            )}
+
+                            {/* Campaign Name (Sticky Column) */}
+                            {visibleColumns.includes('campaign_name') && (
+                              <td className={`${cellPadding} sticky left-0 z-10 bg-[#08100b]/95 backdrop-blur-md border-r border-white/10 shadow-[3px_0_8px_rgba(0,0,0,0.6)] min-w-[220px] max-w-[380px]`}>
+                                <div className="font-semibold text-white break-words whitespace-normal leading-snug" title={item.campaign_name}>
+                                  {item.campaign_name}
+                                </div>
+                                <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                                  {item.account_name && (
+                                    <span className="text-[9px] bg-white/10 text-gray-300 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                      {item.account_name}
+                                    </span>
+                                  )}
+                                  <span className={`text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider font-semibold ${
+                                    itemCurrency === 'VND' 
+                                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                                      : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                                  }`} title={`Tiền tệ tài khoản: ${itemCurrency}`}>
+                                    {dashboardCurrencyMode === 'usd' && itemCurrency !== 'USD' ? `${itemCurrency} → USD` : itemCurrency}
+                                  </span>
+                                  {item.start_time && (
+                                    <span className="text-[9px] bg-white/5 text-gray-400 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                      {new Date(item.start_time).toLocaleDateString('vi-VN')}
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                            )}
+
+                            {/* Budget Control */}
+                            {visibleColumns.includes('budget') && (
+                              <td className={`${cellPadding} border-l border-white/5 bg-indigo-950/[0.08]`}>
+                                <div className="flex items-center gap-1.5 pdf-hide print:hidden">
+                                  <div className="relative flex-1">
+                                    <span className="absolute left-2 top-1 text-gray-400 text-xs">
+                                      {currencySymbol}
+                                    </span>
+                                    <input 
+                                      type="number" 
+                                      className={`w-24 bg-black/40 border border-white/10 rounded pl-6 pr-2 ${inputPadding} focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 text-white transition-all`}
+                                      placeholder={Math.round(budgetAmount).toString()}
+                                      value={mData.budget !== undefined ? mData.budget : (mData.dailyBudget !== undefined ? mData.dailyBudget : '')}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        handleManualChange(item.campaign_id, 'budget', val);
+                                        handleManualChange(item.campaign_id, 'dailyBudget', val);
+                                      }}
+                                    />
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newType = budgetType === 'daily' ? 'lifetime' : 'daily';
+                                      handleManualChange(item.campaign_id, 'budgetType', newType);
+                                    }}
+                                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase transition-all border cursor-pointer ${
+                                      budgetType === 'lifetime' 
+                                        ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 hover:bg-purple-500/30' 
+                                        : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+                                    }`}
+                                    title={`Current: ${budgetType === 'lifetime' ? 'Lifetime Budget' : 'Daily Budget'}. Click to toggle.`}
+                                  >
+                                    {budgetType === 'lifetime' ? 'LT' : 'Daily'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const curVal = mData.budget !== undefined ? mData.budget : (mData.dailyBudget !== undefined ? mData.dailyBudget : budgetAmount);
+                                      updateCampaignBudgetOnMeta(item.campaign_id, curVal, budgetType, item.original_currency);
+                                    }}
+                                    className="p-1 rounded bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 transition-all cursor-pointer flex items-center justify-center"
+                                    title="Đồng bộ ngân sách này lên Meta Ads trực tiếp (ads_management)"
+                                  >
+                                    <Zap className="w-3 h-3" />
+                                  </button>
+                                </div>
+                                <span className="hidden print:inline-block font-medium text-[#070b14]">
+                                  {formatDashboardMoney(budgetAmount, itemCurrency, dashboardCurrencyMode, customRates, exchangeRates)} {budgetType === 'lifetime' ? '(LT)' : '/d'}
+                                </span>
+                              </td>
+                            )}
+
+                            {/* Pacing */}
+                            {visibleColumns.includes('pacing') && (
+                              <td className={`${cellPadding} bg-indigo-950/[0.04]`}>
+                                <div className="flex flex-col items-start gap-0.5">
+                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase ${
+                                    pacing > 110 
+                                      ? "bg-red-500/10 text-red-400 border border-red-500/20" 
+                                      : pacing < 80 
+                                        ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20" 
+                                        : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                                  }`} title={`Spend: ${formatDashboardMoney(campaignSpend, itemCurrency, dashboardCurrencyMode, customRates, exchangeRates)} / Target: ${formatDashboardMoney(expectedSpend, itemCurrency, dashboardCurrencyMode, customRates, exchangeRates)}`}>
+                                    {pacing.toFixed(0)}%
+                                  </span>
+                                  <span className="text-[8px] text-gray-400 uppercase tracking-tight">
+                                    {budgetType === 'lifetime' ? 'Lifetime' : `${daysCount}d Daily`}
+                                  </span>
+                                </div>
+                              </td>
+                            )}
+
+                            {/* Spend */}
+                            {visibleColumns.includes('spend') && (
+                              <td className={`${cellPadding} text-white font-semibold`}>
+                                {formatDashboardMoney(campaignSpend, itemCurrency, dashboardCurrencyMode, customRates, exchangeRates)}
+                              </td>
+                            )}
+
+                            {/* Impressions */}
+                            {visibleColumns.includes('impressions') && (
+                              <td className={`${cellPadding} text-gray-300`}>
+                                {item.impressions.toLocaleString()}
+                              </td>
+                            )}
+
+                            {/* Clicks */}
+                            {visibleColumns.includes('clicks') && (
+                              <td className={`${cellPadding} text-gray-300`}>
+                                {item.clicks.toLocaleString()}
+                              </td>
+                            )}
+
+                            {/* CTR / CPC */}
+                            {visibleColumns.includes('ctr_cpc') && (
+                              <td className={`${cellPadding} text-emerald-400`}>
+                                {ctr.toFixed(2)}% / {formatDashboardMoney(cpc, itemCurrency, dashboardCurrencyMode, customRates, exchangeRates)}
+                              </td>
+                            )}
+
+                            {/* CPM */}
+                            {visibleColumns.includes('cpm') && (
+                              <td className={`${cellPadding} text-emerald-400`}>
+                                {formatDashboardMoney(cpm, itemCurrency, dashboardCurrencyMode, customRates, exchangeRates)}
+                              </td>
+                            )}
+
+                            {/* Leads & CVR */}
+                            {visibleColumns.includes('leads') && (
+                              <td className={`${cellPadding} text-white font-medium`}>
+                                <div className="font-bold">{item.leads.toLocaleString()}</div>
+                                {leadCvr > 0 && <div className="text-[10px] text-gray-400 font-normal">CVR: {leadCvr.toFixed(1)}%</div>}
+                              </td>
+                            )}
+
+                            {/* CPL */}
+                            {visibleColumns.includes('cpl') && (
+                              <td className={`${cellPadding} text-emerald-300 font-medium`}>
+                                {formatDashboardMoney(cpl, itemCurrency, dashboardCurrencyMode, customRates, exchangeRates)}
+                              </td>
+                            )}
+                            
+                            {/* Manual Acct Open & CVR */}
+                            {visibleColumns.includes('account_open') && (
+                              <td className={`${cellPadding} border-l border-white/5 bg-emerald-500/[0.05] print:bg-transparent`}>
+                                <input 
+                                  type="number" 
+                                  className={`w-16 bg-black/40 border border-white/10 rounded px-2 ${inputPadding} focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 text-white transition-all pdf-hide print:hidden`}
+                                  placeholder="0"
+                                  value={mData.accountOpen || ''}
+                                  onChange={(e) => handleManualChange(item.campaign_id, 'accountOpen', e.target.value)}
+                                />
+                                <span className="hidden print:inline-block font-medium text-[#070b14]">{mData.accountOpen || '0'}</span>
+                                {item.leads > 0 && manualAccountOpen > 0 && (
+                                  <div className="text-[9px] text-emerald-400/80 mt-0.5" title="Lead to Account Open CVR">
+                                    L→A: {leadToAcct.toFixed(1)}%
+                                  </div>
+                                )}
+                              </td>
+                            )}
+
+                            {/* CPA */}
+                            {visibleColumns.includes('cpa') && (
+                              <td className={`${cellPadding} font-medium text-emerald-300 bg-emerald-500/[0.02]`}>
+                                {manualAccountOpen > 0 ? formatDashboardMoney(cpa, itemCurrency, dashboardCurrencyMode, customRates, exchangeRates) : '-'}
+                              </td>
+                            )}
+                            
+                            {/* Manual Funded */}
+                            {visibleColumns.includes('funded') && (
+                              <td className={`${cellPadding} bg-teal-500/[0.05] print:bg-transparent`}>
+                                <input 
+                                  type="number" 
+                                  className={`w-16 bg-black/40 border border-white/10 rounded px-2 ${inputPadding} focus:outline-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400 text-white transition-all pdf-hide print:hidden`}
+                                  placeholder="0"
+                                  value={mData.fundedAccounts || ''}
+                                  onChange={(e) => handleManualChange(item.campaign_id, 'fundedAccounts', e.target.value)}
+                                />
+                                <span className="hidden print:inline-block font-medium text-[#070b14]">{mData.fundedAccounts || '0'}</span>
+                                {item.leads > 0 && manualFundedAccounts > 0 && (
+                                  <div className="text-[9px] text-teal-300/80 mt-0.5 space-y-0.5" title="Conversion Funnel Rates">
+                                    <div>L→F: {leadToFund.toFixed(1)}%</div>
+                                    {manualAccountOpen > 0 && <div>A→F: {acctToFund.toFixed(1)}%</div>}
+                                  </div>
+                                )}
+                              </td>
+                            )}
+
+                            {/* CPFA */}
+                            {visibleColumns.includes('cpfa') && (
+                              <td className={`${cellPadding} font-medium text-teal-300 bg-teal-500/[0.02]`}>
+                                {manualFundedAccounts > 0 ? formatDashboardMoney(cpfa, itemCurrency, dashboardCurrencyMode, customRates, exchangeRates) : '-'}
+                              </td>
+                            )}
+
+                            {/* Manual Deposit */}
+                            {visibleColumns.includes('deposit') && (
+                              <td className={`${cellPadding} bg-indigo-500/[0.05] print:bg-transparent`}>
+                                <div className="relative">
+                                  <span className="absolute left-2 top-1 text-gray-500 text-xs pdf-hide print:hidden">
+                                    {currencySymbol}
+                                  </span>
+                                  <input 
+                                    type="number" 
+                                    className={`w-24 bg-black/40 border border-white/10 rounded pl-6 pr-2 ${inputPadding} focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 text-white transition-all pdf-hide print:hidden`}
+                                    placeholder="0"
+                                    value={mData.deposit || ''}
+                                    onChange={(e) => handleManualChange(item.campaign_id, 'deposit', e.target.value)}
+                                  />
+                                  <span className="hidden print:inline-block font-medium text-[#070b14]">
+                                    {formatDashboardMoney(manualDeposit, itemCurrency, dashboardCurrencyMode, customRates, exchangeRates)}
+                                  </span>
+                                </div>
+                              </td>
+                            )}
+
+                            {/* ROI */}
+                            {visibleColumns.includes('roi') && (
+                              <td className={`${cellPadding} font-bold bg-indigo-500/[0.02] ${roi > 0 ? "text-green-400" : roi < 0 ? "text-red-400" : "text-gray-400"}`}>
+                                {roi > 0 ? '+' : ''}{roi.toFixed(1)}%
+                              </td>
+                            )}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+
+                    {/* Summary Footer Row */}
+                    {displayedCampaigns.length > 0 && (
+                      <tfoot className="text-xs uppercase bg-emerald-950/40 text-emerald-300 font-bold border-t-2 border-emerald-500/40">
+                        <tr>
+                          {visibleColumns.includes('status') && (
+                            <td className={`${cellPadding} text-center text-emerald-400`}>Tổng</td>
+                          )}
+                          {visibleColumns.includes('campaign_name') && (
+                            <td className={`sticky left-0 z-10 bg-[#08100b] border-r border-white/10 shadow-[3px_0_8px_rgba(0,0,0,0.6)] ${cellPadding} text-white`}>
+                              {displayedCampaigns.length} Chiến dịch
+                            </td>
+                          )}
+                          {visibleColumns.includes('budget') && (
+                            <td className={`${cellPadding} border-l border-white/5`}>
+                              {formatDashboardMoney(totalSummary.budget, summaryCurrency, summarySpendMode, customRates, exchangeRates)}
+                            </td>
+                          )}
+                          {visibleColumns.includes('pacing') && (
+                            <td className={`${cellPadding}`}>
+                              {overallPacing.toFixed(0)}%
+                            </td>
+                          )}
+                          {visibleColumns.includes('spend') && (
+                            <td className={`${cellPadding} text-white`}>
+                              {formatDashboardMoney(totalSummary.spend, summaryCurrency, summarySpendMode, customRates, exchangeRates)}
+                            </td>
+                          )}
+                          {visibleColumns.includes('impressions') && (
+                            <td className={`${cellPadding}`}>
+                              {totalSummary.impressions.toLocaleString()}
+                            </td>
+                          )}
+                          {visibleColumns.includes('clicks') && (
+                            <td className={`${cellPadding}`}>
+                              {totalSummary.clicks.toLocaleString()}
+                            </td>
+                          )}
+                          {visibleColumns.includes('ctr_cpc') && (
+                            <td className={`${cellPadding} text-emerald-400`}>
+                              {totalSummaryCtr.toFixed(2)}% / {formatDashboardMoney(totalSummaryCpc, summaryCurrency, summarySpendMode, customRates, exchangeRates)}
+                            </td>
+                          )}
+                          {visibleColumns.includes('cpm') && (
+                            <td className={`${cellPadding} text-emerald-400`}>
+                              {formatDashboardMoney(totalSummaryCpm, summaryCurrency, summarySpendMode, customRates, exchangeRates)}
+                            </td>
+                          )}
+                          {visibleColumns.includes('leads') && (
+                            <td className={`${cellPadding} text-white`}>
+                              {totalSummary.leads.toLocaleString()}
+                            </td>
+                          )}
+                          {visibleColumns.includes('cpl') && (
+                            <td className={`${cellPadding} text-emerald-300`}>
+                              {formatDashboardMoney(totalSummaryCpl, summaryCurrency, summarySpendMode, customRates, exchangeRates)}
+                            </td>
+                          )}
+                          {visibleColumns.includes('account_open') && (
+                            <td className={`${cellPadding} border-l border-white/5`}>
+                              {totalSummary.accountOpen}
+                            </td>
+                          )}
+                          {visibleColumns.includes('cpa') && (
+                            <td className={`${cellPadding}`}>
+                              {totalSummary.accountOpen > 0 ? formatDashboardMoney(totalSummaryCpa, summaryCurrency, summarySpendMode, customRates, exchangeRates) : '-'}
+                            </td>
+                          )}
+                          {visibleColumns.includes('funded') && (
+                            <td className={`${cellPadding}`}>
+                              {totalSummary.fundedAccounts}
+                            </td>
+                          )}
+                          {visibleColumns.includes('cpfa') && (
+                            <td className={`${cellPadding}`}>
+                              {totalSummary.fundedAccounts > 0 ? formatDashboardMoney(totalSummaryCpfa, summaryCurrency, summarySpendMode, customRates, exchangeRates) : '-'}
+                            </td>
+                          )}
+                          {visibleColumns.includes('deposit') && (
+                            <td className={`${cellPadding}`}>
+                              {formatDashboardMoney(totalSummary.deposit, summaryCurrency, summarySpendMode, customRates, exchangeRates)}
+                            </td>
+                          )}
+                          {visibleColumns.includes('roi') && (
+                            <td className={`${cellPadding} ${totalSummaryRoi > 0 ? "text-green-400" : totalSummaryRoi < 0 ? "text-red-400" : "text-gray-400"}`}>
+                              {totalSummaryRoi > 0 ? '+' : ''}{totalSummaryRoi.toFixed(1)}%
+                            </td>
+                          )}
+                        </tr>
+                      </tfoot>
+                    )}
+                  </table>
+                </div>
+              );
+            })()}
           </div>
 
         </div>
@@ -3735,6 +4573,24 @@ export default function App() {
                   </button>
                 </div>
 
+                <div className="pt-2 border-t border-white/5">
+                  <label className="block text-[11px] text-gray-300 font-semibold mb-1.5 flex items-center gap-1.5">
+                    <Bot className="w-3.5 h-3.5 text-pink-400" />
+                    Lựa chọn Model Gemini AI mặc định:
+                  </label>
+                  <select
+                    value={selectedGeminiModel}
+                    onChange={(e) => handleGeminiModelChange(e.target.value)}
+                    className="w-full bg-[#070b14] border border-white/15 rounded-lg px-3 py-2 text-xs text-emerald-300 focus:outline-none focus:border-pink-400 font-medium cursor-pointer"
+                  >
+                    {AVAILABLE_GEMINI_MODELS.map(m => (
+                      <option key={m.id} value={m.id} className="bg-[#070d09] text-white">
+                        {m.name} — {m.badge} ({m.desc})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 {geminiTestResult && (
                   <div className={`p-2.5 rounded-lg text-xs border ${
                     geminiTestResult.success 
@@ -3745,6 +4601,55 @@ export default function App() {
                     {geminiTestResult.message}
                   </div>
                 )}
+              </div>
+
+              {/* Currency & Exchange Rate Configuration */}
+              <div className="p-4 bg-white/5 border border-white/10 rounded-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-emerald-300 uppercase tracking-wider font-levents flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-emerald-400" />
+                    Cấu Hình Tiền Tệ & Tỷ Giá Quy Đổi
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => handleRateChange('VND', 25400)}
+                    className="text-[11px] text-gray-400 hover:text-emerald-400 transition-colors cursor-pointer"
+                  >
+                    Đặt lại (25,400)
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <label className="text-[11px] text-gray-400 block mb-1">Chế độ hiển thị tiền tệ:</label>
+                    <select
+                      value={dashboardCurrencyMode}
+                      onChange={(e) => handleDashboardCurrencyModeChange(e.target.value)}
+                      className="w-full bg-[#070b14] border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-400 font-medium cursor-pointer"
+                    >
+                      <option value="ads" className="bg-[#070d09]">🌐 Theo Ads (Đồng tiền gốc của từng tài khoản)</option>
+                      <option value="vnd" className="bg-[#070d09]">₫ Quy đổi tất cả về VND (Việt Nam Đồng)</option>
+                      <option value="usd" className="bg-[#070d09]">$ Quy đổi tất cả về USD (Đô la Mỹ)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] text-gray-400 block mb-1">Tỷ giá 1 USD = ? VND:</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={customRates['VND'] || 25400}
+                        onChange={(e) => handleRateChange('VND', e.target.value)}
+                        className="w-full bg-[#070b14] border border-white/15 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-400 font-mono"
+                        placeholder="25400"
+                      />
+                      <span className="absolute right-3 top-2 text-xs text-gray-400 font-semibold">₫</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-[11px] text-gray-500">
+                  Tỷ giá này được áp dụng tự động để quy đổi chi tiêu, ngân sách và giá CPL giữa USD và VND trên toàn bộ hệ thống.
+                </p>
               </div>
 
               {/* Danger Zone / Reset */}

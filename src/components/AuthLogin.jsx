@@ -16,8 +16,8 @@ export default function AuthLogin({ profiles, onLogin }) {
   const [regRole, setRegRole] = useState('Media Buyer');
   const [regNotes, setRegNotes] = useState('');
 
-  // 1-Click Demo Logins
-  const demoAccounts = [
+  // 1-Click Quick Accounts
+  const quickAccounts = [
     {
       id: 'prof_admin',
       name: 'Nguyễn Hạo Hà',
@@ -68,9 +68,9 @@ export default function AuthLogin({ profiles, onLogin }) {
     );
 
     if (foundProfile) {
-      // Check password if configured, or accept demo password
+      // Check password if configured, or accept default password
       if (foundProfile.password && password && foundProfile.password !== password) {
-        setError('Mật khẩu không chính xác. Hãy thử mật khẩu demo: 123456 hoặc click Đăng nhập nhanh.');
+        setError('Mật khẩu không chính xác. Mật khẩu mặc định: 123456 hoặc click Đăng nhập nhanh.');
         return;
       }
       onLogin(foundProfile, rememberMe);
@@ -90,20 +90,20 @@ export default function AuthLogin({ profiles, onLogin }) {
     }
   };
 
-  const handleQuickLogin = (demo) => {
-    const existing = profiles.find(p => p.id === demo.id || p.email === demo.email);
+  const handleQuickLogin = (acc) => {
+    const existing = profiles.find(p => p.id === acc.id || p.email === acc.email);
     if (existing) {
       onLogin(existing, true);
     } else {
       onLogin({
-        id: demo.id,
-        name: demo.name,
-        email: demo.email,
-        role: demo.role,
+        id: acc.id,
+        name: acc.name,
+        email: acc.email,
+        role: acc.role,
         status: 'Active',
         assignedAccounts: ['mock_1', 'mock_2', 'mock_3'],
-        notes: demo.badge,
-        avatarBg: `bg-gradient-to-r ${demo.color}`
+        notes: acc.badge,
+        avatarBg: `bg-gradient-to-r ${acc.color}`
       }, true);
     }
   };
@@ -217,7 +217,7 @@ export default function AuthLogin({ profiles, onLogin }) {
                     Mật khẩu
                   </label>
                   <span className="text-[10px] text-gray-500">
-                    (Mặc định demo: 123456)
+                    (Mặc định: 123456)
                   </span>
                 </div>
                 <div className="relative">
@@ -350,28 +350,28 @@ export default function AuthLogin({ profiles, onLogin }) {
             </form>
           )}
 
-          {/* Quick Demo Login Section */}
+          {/* Quick Login Section */}
           <div className="mt-6 pt-5 border-t border-white/10">
             <p className="text-[11px] uppercase tracking-wider text-gray-400 font-semibold text-center mb-3 flex items-center justify-center gap-1.5">
-              <Key className="w-3.5 h-3.5 text-amber-400" /> Đăng nhập nhanh 1-Click (Demo)
+              <Key className="w-3.5 h-3.5 text-emerald-400" /> Chọn tài khoản đăng nhập nhanh
             </p>
 
             <div className="grid grid-cols-2 gap-2">
-              {demoAccounts.map(demo => (
+              {quickAccounts.map(acc => (
                 <button
-                  key={demo.id}
+                  key={acc.id}
                   type="button"
-                  onClick={() => handleQuickLogin(demo)}
+                  onClick={() => handleQuickLogin(acc)}
                   className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-emerald-500/30 transition-all text-left flex items-center gap-2 cursor-pointer group"
                 >
-                  <span className={`w-7 h-7 rounded-lg bg-gradient-to-r ${demo.color} flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 shadow-sm`}>
-                    {demo.name.charAt(0)}
+                  <span className={`w-7 h-7 rounded-lg bg-gradient-to-r ${acc.color} flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 shadow-sm`}>
+                    {acc.name.charAt(0)}
                   </span>
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-white truncate group-hover:text-emerald-400 transition-colors">
-                      {demo.name}
+                      {acc.name}
                     </p>
-                    <p className="text-[10px] text-gray-400 truncate">{demo.role}</p>
+                    <p className="text-[10px] text-gray-400 truncate">{acc.role}</p>
                   </div>
                 </button>
               ))}
