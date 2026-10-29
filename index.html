@@ -10,8 +10,23 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Meta Analytics" />
     <title>Meta Ads Analytics & CRM Dashboard</title>
+    <script>
+      (function() {
+        try {
+          var savedTheme = localStorage.getItem('meta_report_theme');
+          var isDark = savedTheme === 'dark';
+          if (isDark) {
+            document.documentElement.classList.add('dark');
+            document.documentElement.classList.remove('light');
+          } else {
+            document.documentElement.classList.add('light');
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
-  <body class="bg-[#060907] text-gray-100 antialiased selection:bg-[#CCFF00]/30 selection:text-white">
+  <body class="bg-slate-50 dark:bg-[#070d09] text-slate-800 dark:text-gray-100 antialiased selection:bg-emerald-500/25 selection:text-emerald-900 dark:selection:text-white transition-colors duration-200">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

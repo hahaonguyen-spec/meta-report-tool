@@ -19,7 +19,8 @@ export default function LeadDetailModal({
   crmCurrency = 'VND',
   customRates = {},
   currentUser,
-  onOpenAdPost
+  onOpenAdPost,
+  enableCrmMembers = false
 }) {
   const [currentTab, setCurrentTab] = useState('details'); // 'details' | 'timeline' | 'ai_pitch'
   
@@ -394,19 +395,21 @@ export default function LeadDetailModal({
                     className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-emerald-400 disabled:opacity-60"
                   />
                 </div>
-                <div>
-                  <label className="block text-gray-400 font-semibold mb-1">Nhân sự phụ trách</label>
-                  <select
-                    value={assignedTo}
-                    disabled={!canAssign}
-                    onChange={(e) => setAssignedTo(e.target.value)}
-                    className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-emerald-400 cursor-pointer disabled:opacity-60"
-                  >
-                    {profiles.map(p => (
-                      <option key={p.id} value={p.id} className="bg-[#070d09]">{p.name} ({p.role})</option>
-                    ))}
-                  </select>
-                </div>
+                {enableCrmMembers && (
+                  <div>
+                    <label className="block text-gray-400 font-semibold mb-1">Nhân sự phụ trách</label>
+                    <select
+                      value={assignedTo}
+                      disabled={!canAssign}
+                      onChange={(e) => setAssignedTo(e.target.value)}
+                      className="w-full bg-[#070b14] border border-white/15 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-emerald-400 cursor-pointer disabled:opacity-60"
+                    >
+                      {profiles.map(p => (
+                        <option key={p.id} value={p.id} className="bg-[#070d09]">{p.name} ({p.role})</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">

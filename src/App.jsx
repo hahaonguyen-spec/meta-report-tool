@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
-import { TrendingUp, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Image as ImageIcon, ArrowRight, UsersRound, Save, Download, Upload, RotateCcw, CheckCircle2, Settings, BookOpen, UserPlus, ShieldAlert, Key, Copy, Trash2, Edit3, UserCheck, Shield, Plus, Phone, Mail, MessageSquare, Filter, Kanban, ListFilter, ArrowUpDown, PlusCircle, CheckSquare, Award, Search, PhoneCall, Building2, Play, Pause, Zap, Power, ExternalLink, ShieldCheck, HelpCircle, Sparkles, Bot, LogOut, Flame, Clock, Tag, Layers, Lock, Menu, X, MoreHorizontal, SlidersHorizontal, Columns, Eye, EyeOff } from 'lucide-react';
+import { TrendingUp, Users, DollarSign, MousePointerClick, RefreshCw, Activity, AlertCircle, Briefcase, ChevronRight, ChevronDown, Check, Calendar, Printer, FileText, LayoutDashboard, Target, Globe, Image as ImageIcon, ArrowRight, UsersRound, Save, Download, Upload, RotateCcw, CheckCircle2, Settings, BookOpen, UserPlus, ShieldAlert, Key, Copy, Trash2, Edit3, UserCheck, Shield, Plus, Phone, Mail, MessageSquare, Filter, Kanban, ListFilter, ArrowUpDown, PlusCircle, CheckSquare, Award, Search, PhoneCall, Building2, Play, Pause, Zap, Power, ExternalLink, ShieldCheck, HelpCircle, Sparkles, Bot, LogOut, Flame, Clock, Tag, Layers, Lock, Menu, X, MoreHorizontal, SlidersHorizontal, Columns, Eye, EyeOff, Sun, Moon, Wrench } from 'lucide-react';
 import AuthLogin from './components/AuthLogin';
 import LeadDetailModal from './components/LeadDetailModal';
 import LeadImportModal from './components/LeadImportModal';
@@ -550,7 +550,54 @@ const getCampaignBudgetInfo = (item, manualData, mode = 'ads', customRates = {},
   return { budgetAmount, budgetType, currency };
 };
 
+// CỜ CẤU HÌNH HỆ THỐNG:
+// Đang tắt tính năng quản lý nhiều thành viên CRM (theo yêu cầu người dùng cá nhân).
+// Khi cần bật lại môi trường đội ngũ/nhiều nhân sự, chỉ cần chuyển thành: true.
+export const ENABLE_CRM_MEMBERS = false;
+
 export default function App() {
+  // Theme Day-Night Mode (Nền Sáng - Nền Tối)
+  const [theme, setTheme] = useState(() => {
+    try {
+      const savedTheme = localStorage.getItem('meta_report_theme');
+      if (savedTheme) return savedTheme;
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    } catch (e) {
+      return 'light';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('meta_report_theme', theme);
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+        document.documentElement.classList.remove('light');
+      } else {
+        document.documentElement.classList.add('light');
+        document.documentElement.classList.remove('dark');
+      }
+    } catch (e) {}
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
+  // Header Tools Dropdown state
+  const [isToolsDropdownOpen, setIsToolsDropdownOpen] = useState(false);
+  const toolsDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (toolsDropdownRef.current && !toolsDropdownRef.current.contains(e.target)) {
+        setIsToolsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const [data, setData] = useState(() => {
     return [];
   });
@@ -927,6 +974,11 @@ export default function App() {
   }, [leads]);
 
   const [crmSubTab, setCrmSubTab] = useState('pipeline'); // 'pipeline', 'analytics', 'profiles'
+  useEffect(() => {
+    if (!ENABLE_CRM_MEMBERS && crmSubTab === 'profiles') {
+      setCrmSubTab('pipeline');
+    }
+  }, [crmSubTab]);
   const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
   const [editingLead, setEditingLead] = useState(null);
 
@@ -2429,18 +2481,18 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#070d09] text-gray-100 p-3 sm:p-5 md:p-6 font-sans print:bg-white print:text-[#070d09] print:m-0 print:p-0 safe-top safe-bottom relative selection:bg-emerald-500/25 selection:text-white">
-      {/* Subtle, elegant Forest & Emerald Green ambient glow orbs */}
-      <div className="fixed top-[-15%] left-[-10%] w-[55%] h-[55%] rounded-full bg-gradient-to-br from-emerald-600/10 to-teal-800/5 blur-[150px] pointer-events-none print:hidden"></div>
-      <div className="fixed top-[20%] right-[-12%] w-[48%] h-[48%] rounded-full bg-gradient-to-bl from-emerald-500/10 to-transparent blur-[150px] pointer-events-none print:hidden"></div>
-      <div className="fixed bottom-[-15%] left-[25%] w-[45%] h-[45%] rounded-full bg-gradient-to-tr from-teal-600/8 to-transparent blur-[150px] pointer-events-none print:hidden"></div>
+    <div className="min-h-screen bg-slate-50 dark:bg-[#070d09] text-slate-800 dark:text-gray-100 p-3 sm:p-5 md:p-6 font-sans print:bg-white print:text-slate-900 print:m-0 print:p-0 safe-top safe-bottom relative selection:bg-emerald-500/25 selection:text-emerald-900 dark:selection:text-white transition-colors duration-200">
+      {/* Subtle, elegant ambient glow orbs */}
+      <div className="fixed top-[-15%] left-[-10%] w-[55%] h-[55%] rounded-full bg-gradient-to-br from-emerald-500/5 to-teal-500/5 dark:from-emerald-600/10 dark:to-teal-800/5 blur-[150px] pointer-events-none print:hidden"></div>
+      <div className="fixed top-[20%] right-[-12%] w-[48%] h-[48%] rounded-full bg-gradient-to-bl from-emerald-500/5 to-transparent dark:from-emerald-500/10 dark:to-transparent blur-[150px] pointer-events-none print:hidden"></div>
+      <div className="fixed bottom-[-15%] left-[25%] w-[45%] h-[45%] rounded-full bg-gradient-to-tr from-teal-500/5 to-transparent dark:from-teal-600/8 dark:to-transparent blur-[150px] pointer-events-none print:hidden"></div>
 
       <div id="pdf-content" className="max-w-7xl mx-auto relative z-10 print:max-w-full px-0 sm:px-2">
         
-        {/* TOP BRAND & SYSTEM STATUS BAR (INSURE ART FLOATING NAVBAR) */}
-        <header className="insure-glass rounded-2xl sm:rounded-3xl p-3 sm:p-4 mb-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 print:border-none print:p-0 shadow-glow-card border border-emerald-500/20 relative z-40">
+        {/* TOP BRAND & SYSTEM STATUS BAR (CLEAN MINIMALIST NAVBAR) */}
+        <header className="insure-glass rounded-2xl sm:rounded-3xl p-3 sm:p-4 mb-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 print:border-none print:p-0 shadow-glow-card relative z-40 transition-colors">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 sm:p-3 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-600/20 border border-emerald-500/40 text-emerald-400 shadow-sm flex-shrink-0">
+            <div className="p-2.5 sm:p-3 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-600/20 border border-emerald-500/40 text-emerald-600 dark:text-emerald-400 shadow-sm flex-shrink-0">
               <Activity className="w-6 h-6 sm:w-7 sm:h-7" />
             </div>
             <div>
@@ -2449,112 +2501,128 @@ export default function App() {
                   Meta Ads Analytics
                 </h1>
                 {settings.metaToken ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                     Meta Live ({adAccounts.length} TK Ads)
                   </span>
                 ) : (
                   <button 
                     onClick={() => setIsSettingsOpen(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition-all cursor-pointer shadow-[0_0_12px_rgba(245,158,11,0.15)]"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30 transition-all cursor-pointer shadow-sm"
                     title="Chưa kết nối Token Meta Ads. Nhấp để kết nối."
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                     Chưa kết nối Meta Ads
                   </button>
                 )}
               </div>
-              <p className="text-gray-400 text-[11px] sm:text-xs mt-0.5 hidden xs:block">
-                Web3-Grade Analytics & CRM • Insights, Instant Forms & Google Sheets
+              <p className="text-slate-500 dark:text-gray-400 text-[11px] sm:text-xs mt-0.5 hidden xs:block">
+                Marketing Analytics & CRM Tối Giản • Insights, Phễu & Google Sheets
               </p>
             </div>
           </div>
 
           {/* Desktop Navigation Buttons (>= 1024px) */}
           <div className="hidden lg:flex flex-wrap items-center gap-2 print:hidden pdf-hide justify-end">
-            {/* Active Profile Switcher (CRM) */}
-            <div className="relative" ref={profileDropdownRef}>
+            
+            {/* Day - Night Mode Switcher (Sáng / Tối) */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.1] text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-white/10 transition-all cursor-pointer shadow-sm"
+              title={theme === 'dark' ? "Chuyển sang Chế độ Sáng (Day Mode)" : "Chuyển sang Chế độ Tối (Night Mode)"}
+            >
+              {theme === 'dark' ? (
+                <>
+                  <Sun className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Sáng</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>Tối</span>
+                </>
+              )}
+            </button>
+
+            {/* AI Advisor Trigger */}
+            <button
+              onClick={() => setIsGeminiAdvisorOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600/20 via-teal-500/20 to-emerald-500/20 hover:from-emerald-600/30 hover:to-emerald-500/30 text-emerald-700 dark:text-emerald-200 border border-emerald-500/40 shadow-sm transition-all cursor-pointer group"
+              title="Mở Trợ Lý AI Tiếp Thị & CRM (Gemini)"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-500 dark:text-emerald-300 group-hover:rotate-12 transition-transform" />
+              <span>AI Advisor</span>
+            </button>
+
+            {/* Settings Button */}
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-white/10 transition-all cursor-pointer"
+            >
+              <Settings className="w-3.5 h-3.5" />
+              <span>Cài đặt</span>
+            </button>
+
+            {/* Tools & Utilities Dropdown Menu */}
+            <div className="relative" ref={toolsDropdownRef}>
               <button
                 type="button"
-                onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/10 transition-all cursor-pointer hover:border-emerald-500/30"
-                title="Chuyển đổi hồ sơ người dùng (CRM)"
+                onClick={() => setIsToolsDropdownOpen(!isToolsDropdownOpen)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-white/10 transition-all cursor-pointer"
+                title="Công cụ hệ thống & sao lưu"
               >
-                <span className={`w-5 h-5 rounded-full ${activeProfile.avatarBg || 'bg-emerald-600'} flex items-center justify-center text-[10px] text-white font-bold flex-shrink-0 shadow-sm`}>
-                  {activeProfile.name ? activeProfile.name.charAt(0).toUpperCase() : 'U'}
-                </span>
-                <span className="max-w-[120px] truncate">{activeProfile.name}</span>
-                <span className="text-[10px] text-gray-400 bg-white/10 px-1.5 py-0.5 rounded-md font-normal">
-                  {activeProfile.role}
-                </span>
-                <ChevronDown className="w-3 h-3 text-gray-400" />
+                <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Công cụ</span>
+                <ChevronDown className="w-3 h-3 text-slate-400" />
               </button>
-
-              {isProfileDropdownOpen && (
-                <div className="absolute right-0 top-full mt-2 w-64 insure-glass border border-emerald-500/25 rounded-2xl shadow-2xl z-50 p-2.5 text-xs">
-                  <div className="px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-b border-white/10 mb-1 flex items-center justify-between">
-                    <span>Hồ sơ CRM</span>
-                    <button 
-                      onClick={() => { setActiveTab('crm'); setIsProfileDropdownOpen(false); }} 
-                      className="text-emerald-400 hover:underline cursor-pointer font-bold uppercase font-levents text-[10px]"
-                    >
-                      Quản lý
-                    </button>
+              
+              {isToolsDropdownOpen && (
+                <div className="absolute right-0 top-full mt-2 w-56 insure-glass border border-slate-200 dark:border-emerald-500/25 rounded-2xl shadow-xl z-50 p-2 text-xs space-y-1">
+                  <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-gray-400 border-b border-slate-200 dark:border-white/10 mb-1">
+                    Công cụ & Tiện ích
                   </div>
-                  {profiles.map(p => (
-                    <div
-                      key={p.id}
-                      onClick={() => {
-                        setActiveProfileId(p.id);
-                        setIsProfileDropdownOpen(false);
-                      }}
-                      className={`flex items-center justify-between p-2 rounded-xl cursor-pointer transition-colors ${p.id === activeProfileId ? 'bg-emerald-500/15 text-white border border-emerald-500/30' : 'hover:bg-white/5 text-gray-300'}`}
-                    >
-                      <div className="flex items-center gap-2 truncate">
-                        <span className={`w-6 h-6 rounded-full ${p.avatarBg || 'bg-emerald-600'} flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0`}>
-                          {p.name.charAt(0).toUpperCase()}
-                        </span>
-                        <div className="truncate">
-                          <p className="font-medium truncate">{p.name}</p>
-                          <p className="text-[10px] text-gray-400 truncate">{p.role}</p>
-                        </div>
-                      </div>
-                      {p.id === activeProfileId && <Check className="w-3.5 h-3.5 text-emerald-400" />}
-                    </div>
-                  ))}
-                  <div className="border-t border-white/10 mt-1 pt-1">
+                  <button
+                    onClick={() => { handleBackupData(); setIsToolsDropdownOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left hover:bg-slate-100 dark:hover:bg-white/5 text-slate-700 dark:text-gray-200 cursor-pointer transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Sao lưu JSON (Backup)</span>
+                  </button>
+                  <button
+                    onClick={() => { fileInputRef.current && fileInputRef.current.click(); setIsToolsDropdownOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left hover:bg-slate-100 dark:hover:bg-white/5 text-slate-700 dark:text-gray-200 cursor-pointer transition-colors"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-blue-500" />
+                    <span>Phục hồi JSON (Restore)</span>
+                  </button>
+                  <button
+                    onClick={() => { setIsGuideOpen(true); setIsToolsDropdownOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left hover:bg-slate-100 dark:hover:bg-white/5 text-slate-700 dark:text-gray-200 cursor-pointer transition-colors"
+                  >
+                    <BookOpen className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Hướng dẫn sử dụng</span>
+                  </button>
+                  <button
+                    onClick={() => { setIsSettingsOpen(true); setIsToolsDropdownOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left hover:bg-slate-100 dark:hover:bg-white/5 text-slate-700 dark:text-gray-200 cursor-pointer transition-colors"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Quyền Meta (5/5 Active)</span>
+                  </button>
+                  <div className="border-t border-slate-200 dark:border-white/10 my-1 pt-1">
                     <button
-                      onClick={() => {
-                        setEditingProfile(null);
-                        setIsProfileModalOpen(true);
-                        setIsProfileDropdownOpen(false);
-                      }}
-                      className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-emerald-400 hover:bg-emerald-500/10 font-bold uppercase font-levents text-xs transition-all cursor-pointer"
+                      onClick={() => { openResetModal(); setIsToolsDropdownOpen(false); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left hover:bg-red-50 dark:hover:bg-red-500/10 text-red-500 cursor-pointer font-medium transition-colors"
                     >
-                      <UserPlus className="w-3.5 h-3.5" /> Tạo Profile Mới
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Reset hệ thống</span>
                     </button>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Backup & Restore Data */}
-            <button
-              onClick={handleBackupData}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 transition-all cursor-pointer"
-              title="Tải xuống tệp sao lưu toàn bộ dữ liệu & Profiles (.json)"
-            >
-              <Download className="w-3.5 h-3.5" />
-              Backup
-            </button>
-            <button
-              onClick={() => fileInputRef.current && fileInputRef.current.click()}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/20 transition-all cursor-pointer"
-              title="Khôi phục dữ liệu từ tệp sao lưu (.json)"
-            >
-              <Upload className="w-3.5 h-3.5" />
-              Khôi phục
-            </button>
             <input 
               type="file" 
               ref={fileInputRef} 
@@ -2563,152 +2631,143 @@ export default function App() {
               className="hidden" 
             />
 
-            {/* Meta Permissions Indicator (5 Permissions) */}
-            <button
-              onClick={() => setIsSettingsOpen(true)}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/25 transition-all cursor-pointer"
-              title="5/5 Quyền Meta Graph API Đang Hoạt Động"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Quyền Meta: 5/5 Active</span>
-            </button>
+            {/* User Profile Info (Single User Clean Badge or Member Switcher) */}
+            {ENABLE_CRM_MEMBERS ? (
+              <div className="relative" ref={profileDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/10 transition-all cursor-pointer hover:border-emerald-500/30"
+                  title="Chuyển đổi hồ sơ người dùng (CRM)"
+                >
+                  <span className={`w-5 h-5 rounded-full ${activeProfile.avatarBg || 'bg-emerald-600'} flex items-center justify-center text-[10px] text-white font-bold flex-shrink-0 shadow-sm`}>
+                    {activeProfile.name ? activeProfile.name.charAt(0).toUpperCase() : 'U'}
+                  </span>
+                  <span className="max-w-[120px] truncate">{activeProfile.name}</span>
+                  <span className="text-[10px] text-gray-400 bg-white/10 px-1.5 py-0.5 rounded-md font-normal">
+                    {activeProfile.role}
+                  </span>
+                  <ChevronDown className="w-3 h-3 text-gray-400" />
+                </button>
 
-            <button
-              onClick={() => setIsGuideOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/25 transition-all cursor-pointer"
-            >
-              <BookOpen className="w-3.5 h-3.5" />
-              Hướng dẫn
-            </button>
-            <button
-              onClick={() => setIsSettingsOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-white/[0.04] hover:bg-white/[0.08] text-gray-200 border border-white/10 transition-all cursor-pointer hover:border-white/20"
-            >
-              <Settings className="w-3.5 h-3.5" />
-              Cài đặt
-            </button>
-
-            {/* Gemini AI Trigger */}
-            <button
-              onClick={() => setIsGeminiAdvisorOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600/30 via-teal-500/30 to-emerald-500/30 hover:from-emerald-600/40 hover:to-emerald-500/40 text-emerald-200 border border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all cursor-pointer group"
-              title="Mở Trợ Lý AI Tiếp Thị & CRM (Gemini)"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-emerald-300 group-hover:rotate-12 transition-transform" />
-              <span>AI Advisor</span>
-            </button>
-
-            <button
-              onClick={openResetModal}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all cursor-pointer"
-              title="Reset toàn bộ hệ thống (Có xác nhận Captcha)"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              Reset
-            </button>
+                {isProfileDropdownOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-64 insure-glass border border-emerald-500/25 rounded-2xl shadow-2xl z-50 p-2.5 text-xs">
+                    <div className="px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-b border-white/10 mb-1 flex items-center justify-between">
+                      <span>Hồ sơ CRM</span>
+                      <button 
+                        onClick={() => { setActiveTab('crm'); setIsProfileDropdownOpen(false); }} 
+                        className="text-emerald-400 hover:underline cursor-pointer font-bold uppercase font-levents text-[10px]"
+                      >
+                        Quản lý
+                      </button>
+                    </div>
+                    {profiles.map(p => (
+                      <div
+                        key={p.id}
+                        onClick={() => {
+                          setActiveProfileId(p.id);
+                          setIsProfileDropdownOpen(false);
+                        }}
+                        className={`flex items-center justify-between p-2 rounded-xl cursor-pointer transition-colors ${p.id === activeProfileId ? 'bg-emerald-500/15 text-white border border-emerald-500/30' : 'hover:bg-white/5 text-gray-300'}`}
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <span className={`w-6 h-6 rounded-full ${p.avatarBg || 'bg-emerald-600'} flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0`}>
+                            {p.name.charAt(0).toUpperCase()}
+                          </span>
+                          <div className="truncate">
+                            <p className="font-medium truncate">{p.name}</p>
+                            <p className="text-[10px] text-gray-400 truncate">{p.role}</p>
+                          </div>
+                        </div>
+                        {p.id === activeProfileId && <Check className="w-3.5 h-3.5 text-emerald-400" />}
+                      </div>
+                    ))}
+                    <div className="border-t border-white/10 mt-1 pt-1">
+                      <button
+                        onClick={() => {
+                          setEditingProfile(null);
+                          setIsProfileModalOpen(true);
+                          setIsProfileDropdownOpen(false);
+                        }}
+                        className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-emerald-400 hover:bg-emerald-500/10 font-bold uppercase font-levents text-xs transition-all cursor-pointer"
+                      >
+                        <UserPlus className="w-3.5 h-3.5" /> Tạo Profile Mới
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-100 dark:bg-white/[0.04] text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-white/10 shadow-sm" title="Người dùng hiện tại">
+                <span className={`w-5 h-5 rounded-full ${activeProfile.avatarBg || 'bg-emerald-600'} flex items-center justify-center text-[10px] text-white font-bold flex-shrink-0 shadow-sm`}>
+                  {activeProfile.name ? activeProfile.name.charAt(0).toUpperCase() : 'U'}
+                </span>
+                <span className="max-w-[120px] truncate font-semibold">{activeProfile.name}</span>
+                <span className="text-[10px] text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider">
+                  {activeProfile.role}
+                </span>
+              </div>
+            )}
 
             {/* Logout Button */}
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-red-500/15 hover:bg-red-500/25 text-red-300 border border-red-500/30 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-300 border border-red-500/20 transition-all cursor-pointer"
               title="Đăng xuất khỏi tài khoản"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Đăng xuất</span>
+              <span className="hidden xl:inline">Đăng xuất</span>
             </button>
           </div>
 
           {/* Mobile & Tablet Compact Bar (< 1024px) */}
           <div className="flex lg:hidden items-center justify-between w-full sm:w-auto gap-2 print:hidden pdf-hide">
-            {/* Profile Dropdown Trigger */}
-            <div className="relative" ref={mobileProfileDropdownRef}>
-              <button
-                type="button"
-                onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-white/[0.04] text-white border border-white/10"
-              >
-                <span className={`w-5 h-5 rounded-full ${activeProfile.avatarBg || 'bg-emerald-600'} flex items-center justify-center text-[10px] text-white font-bold flex-shrink-0`}>
-                  {activeProfile.name ? activeProfile.name.charAt(0).toUpperCase() : 'U'}
-                </span>
-                <span className="max-w-[80px] sm:max-w-[120px] truncate">{activeProfile.name}</span>
-                <ChevronDown className="w-3 h-3 text-gray-400" />
-              </button>
+            {/* Day - Night Mode Switcher (Mobile) */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.04] text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-white/10 shadow-sm"
+              title="Chuyển chế độ Day/Night"
+            >
+              {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-indigo-500" />}
+              <span className="text-[11px]">{theme === 'dark' ? 'Sáng' : 'Tối'}</span>
+            </button>
 
-              {isProfileDropdownOpen && (
-                <div className="absolute left-0 top-full mt-2 w-64 insure-glass border border-emerald-500/25 rounded-2xl shadow-2xl z-50 p-2.5 text-xs">
-                  <div className="px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-b border-white/10 mb-1 flex items-center justify-between">
-                    <span>Hồ sơ CRM</span>
-                    <button 
-                      onClick={() => { setActiveTab('crm'); setIsProfileDropdownOpen(false); }} 
-                      className="text-emerald-400 hover:underline cursor-pointer font-bold uppercase font-levents text-[10px]"
-                    >
-                      Quản lý
-                    </button>
-                  </div>
-                  {profiles.map(p => (
-                    <div
-                      key={p.id}
-                      onClick={() => {
-                        setActiveProfileId(p.id);
-                        setIsProfileDropdownOpen(false);
-                      }}
-                      className={`flex items-center justify-between p-2 rounded-xl cursor-pointer transition-colors ${p.id === activeProfileId ? 'bg-emerald-500/15 text-white border border-emerald-500/30' : 'hover:bg-white/5 text-gray-300'}`}
-                    >
-                      <div className="flex items-center gap-2 truncate">
-                        <span className={`w-6 h-6 rounded-full ${p.avatarBg || 'bg-emerald-600'} flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0`}>
-                          {p.name.charAt(0).toUpperCase()}
-                        </span>
-                        <div className="truncate">
-                          <p className="font-medium truncate">{p.name}</p>
-                          <p className="text-[10px] text-gray-400 truncate">{p.role}</p>
-                        </div>
-                      </div>
-                      {p.id === activeProfileId && <Check className="w-3.5 h-3.5 text-emerald-400" />}
-                    </div>
-                  ))}
-                  <div className="border-t border-white/10 mt-1 pt-1">
-                    <button
-                      onClick={() => {
-                        setEditingProfile(null);
-                        setIsProfileModalOpen(true);
-                        setIsProfileDropdownOpen(false);
-                      }}
-                      className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-emerald-400 hover:bg-emerald-500/10 font-bold uppercase font-levents text-xs transition-all cursor-pointer"
-                    >
-                      <UserPlus className="w-3.5 h-3.5" /> Tạo Profile Mới
-                    </button>
-                  </div>
-                </div>
-              )}
+            {/* User display */}
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.04] text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-white/10">
+              <span className={`w-5 h-5 rounded-full ${activeProfile.avatarBg || 'bg-emerald-600'} flex items-center justify-center text-[10px] text-white font-bold flex-shrink-0`}>
+                {activeProfile.name ? activeProfile.name.charAt(0).toUpperCase() : 'U'}
+              </span>
+              <span className="max-w-[80px] sm:max-w-[120px] truncate">{activeProfile.name}</span>
             </div>
 
             <div className="flex items-center gap-1.5">
               {/* Quick AI Advisor */}
               <button
                 onClick={() => setIsGeminiAdvisorOpen(true)}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600/30 to-teal-500/30 text-emerald-200 border border-emerald-500/40 shadow-[0_0_15px_rgba(16,185,129,0.2)] cursor-pointer"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-600/20 to-teal-500/20 text-emerald-700 dark:text-emerald-200 border border-emerald-500/40 shadow-sm cursor-pointer"
                 title="Mở Gemini AI Advisor"
               >
-                <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
-                <span className="hidden xs:inline">AI Advisor</span>
+                <Sparkles className="w-3.5 h-3.5 text-amber-500 dark:text-emerald-300" />
+                <span className="hidden xs:inline">AI</span>
               </button>
 
               {/* Quick Settings */}
               <button
                 onClick={() => setIsSettingsOpen(true)}
-                className="p-2 rounded-xl text-xs bg-white/[0.04] hover:bg-white/[0.08] text-gray-200 border border-white/10"
+                className="p-2 rounded-xl text-xs bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-white/10"
                 title="Cài đặt hệ thống"
               >
-                <Settings className="w-4 h-4 text-emerald-400" />
+                <Settings className="w-4 h-4 text-emerald-500" />
               </button>
 
               {/* More Actions Toggle */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="p-2 rounded-xl text-xs bg-white/[0.04] hover:bg-white/[0.08] text-gray-200 border border-white/10 cursor-pointer"
+                className="p-2 rounded-xl text-xs bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] text-slate-700 dark:text-gray-200 border border-slate-200 dark:border-white/10 cursor-pointer"
                 title="Thêm thao tác"
               >
-                {isMobileMenuOpen ? <X className="w-4 h-4 text-pink-400" /> : <MoreHorizontal className="w-4 h-4" />}
+                {isMobileMenuOpen ? <X className="w-4 h-4 text-pink-500" /> : <MoreHorizontal className="w-4 h-4" />}
               </button>
             </div>
           </div>
@@ -2716,10 +2775,10 @@ export default function App() {
 
         {/* Mobile Dropdown Menu Drawer (< 1024px) */}
         {isMobileMenuOpen && (
-          <div className="lg:hidden insure-glass border border-emerald-500/30 rounded-3xl p-4 mb-5 shadow-2xl space-y-3 animate-in fade-in slide-in-from-top-2 duration-200 print:hidden pdf-hide">
-            <div className="flex items-center justify-between pb-2 border-b border-white/10 text-xs">
-              <span className="font-bold text-gray-300 uppercase tracking-wider text-[10px]">Tiện ích & Thao tác nhanh</span>
-              <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-semibold">
+          <div className="lg:hidden insure-glass border border-slate-200 dark:border-emerald-500/30 rounded-3xl p-4 mb-5 shadow-2xl space-y-3 animate-in fade-in slide-in-from-top-2 duration-200 print:hidden pdf-hide">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-white/10 text-xs">
+              <span className="font-bold text-slate-500 dark:text-gray-300 uppercase tracking-wider text-[10px]">Tiện ích & Thao tác nhanh</span>
+              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-semibold">
                 <ShieldCheck className="w-3.5 h-3.5" /> 5/5 Quyền Meta Active
               </span>
             </div>
@@ -2727,42 +2786,42 @@ export default function App() {
             <div className="grid grid-cols-2 gap-2 text-xs">
               <button
                 onClick={() => { setIsGuideOpen(true); setIsMobileMenuOpen(false); }}
-                className="flex items-center gap-2 p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] text-emerald-300 border border-white/5"
+                className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-100 dark:bg-white/[0.03] hover:bg-slate-200 dark:hover:bg-white/[0.08] text-slate-700 dark:text-emerald-300 border border-slate-200 dark:border-white/5"
               >
-                <BookOpen className="w-4 h-4 text-emerald-400" />
+                <BookOpen className="w-4 h-4 text-emerald-500" />
                 <span>Hướng dẫn</span>
               </button>
 
               <button
                 onClick={() => { handleBackupData(); setIsMobileMenuOpen(false); }}
-                className="flex items-center gap-2 p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] text-emerald-300 border border-white/5"
+                className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-100 dark:bg-white/[0.03] hover:bg-slate-200 dark:hover:bg-white/[0.08] text-slate-700 dark:text-emerald-300 border border-slate-200 dark:border-white/5"
               >
-                <Download className="w-4 h-4 text-emerald-400" />
+                <Download className="w-4 h-4 text-emerald-500" />
                 <span>Sao lưu JSON</span>
               </button>
 
               <button
                 onClick={() => { if (fileInputRef.current) fileInputRef.current.click(); setIsMobileMenuOpen(false); }}
-                className="flex items-center gap-2 p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] text-blue-300 border border-white/5"
+                className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-100 dark:bg-white/[0.03] hover:bg-slate-200 dark:hover:bg-white/[0.08] text-slate-700 dark:text-blue-300 border border-slate-200 dark:border-white/5"
               >
-                <Upload className="w-4 h-4 text-blue-400" />
+                <Upload className="w-4 h-4 text-blue-500" />
                 <span>Phục hồi JSON</span>
               </button>
 
               <button
                 onClick={() => { openResetModal(); setIsMobileMenuOpen(false); }}
-                className="flex items-center gap-2 p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] text-red-400 border border-white/5"
+                className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-100 dark:bg-white/[0.03] hover:bg-slate-200 dark:hover:bg-white/[0.08] text-red-500 border border-slate-200 dark:border-white/5"
               >
-                <RotateCcw className="w-4 h-4 text-red-400" />
+                <RotateCcw className="w-4 h-4 text-red-500" />
                 <span>Reset hệ thống</span>
               </button>
             </div>
 
-            <div className="pt-2 border-t border-white/10 flex items-center justify-between">
-              <span className="text-[11px] text-gray-400">Hồ sơ: <strong className="text-white">{activeProfile.name}</strong></span>
+            <div className="pt-2 border-t border-slate-200 dark:border-white/10 flex items-center justify-between">
+              <span className="text-[11px] text-slate-500 dark:text-gray-400">Tài khoản: <strong className="text-slate-800 dark:text-white">{activeProfile.name}</strong></span>
               <button
                 onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-red-500/20 text-red-300 border border-red-500/30"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-300 border border-red-500/20"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>Đăng xuất</span>
@@ -2771,77 +2830,77 @@ export default function App() {
           </div>
         )}
 
-        {/* NAVIGATION TABS (COHESIVE GREEN GRADIENT CAPSULE) */}
-        <div className="p-1.5 bg-[#0a140d]/90 border border-emerald-500/20 rounded-2xl sm:rounded-3xl mb-6 backdrop-blur-2xl flex items-center gap-1.5 overflow-x-auto no-scrollbar touch-scroll-x flex-nowrap print:hidden pdf-hide shadow-xl">
+        {/* NAVIGATION TABS (CLEAN CAPSULE) */}
+        <div className="p-1.5 bg-slate-200/70 dark:bg-[#0a140d]/90 border border-slate-300/80 dark:border-emerald-500/20 rounded-2xl sm:rounded-3xl mb-6 backdrop-blur-2xl flex items-center gap-1.5 overflow-x-auto no-scrollbar touch-scroll-x flex-nowrap print:hidden pdf-hide shadow-sm dark:shadow-xl">
           <button 
             onClick={() => setActiveTab('dashboard')} 
             className={`flex items-center gap-2 px-4 py-2 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap flex-shrink-0 transition-all cursor-pointer ${
               activeTab === 'dashboard' 
                 ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md' 
-                : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+                : 'text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-white/5 border border-transparent'
             }`}
           >
-            <LayoutDashboard className="w-4 h-4 text-emerald-400"/> Live Dashboard
+            <LayoutDashboard className="w-4 h-4 text-emerald-500 dark:text-emerald-400"/> Live Dashboard
           </button>
           <button 
             onClick={() => setActiveTab('reports')} 
             className={`flex items-center gap-2 px-4 py-2 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap flex-shrink-0 transition-all cursor-pointer ${
               activeTab === 'reports' 
                 ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md' 
-                : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+                : 'text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-white/5 border border-transparent'
             }`}
           >
-            <FileText className="w-4 h-4 text-emerald-400"/> Báo Cáo & Funnel
+            <FileText className="w-4 h-4 text-emerald-500 dark:text-emerald-400"/> Báo Cáo & Funnel
           </button>
           <button 
             onClick={() => setActiveTab('analytics')} 
             className={`flex items-center gap-2 px-4 py-2 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap flex-shrink-0 transition-all cursor-pointer ${
               activeTab === 'analytics' 
                 ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md' 
-                : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+                : 'text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-white/5 border border-transparent'
             }`}
           >
-            <TrendingUp className="w-4 h-4 text-emerald-400"/> Phân Tích Marketing
+            <TrendingUp className="w-4 h-4 text-emerald-500 dark:text-emerald-400"/> Phân Tích Marketing
           </button>
           <button 
             onClick={() => setActiveTab('crm')} 
             className={`flex items-center gap-2 px-4 py-2 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap flex-shrink-0 transition-all cursor-pointer ${
               activeTab === 'crm' 
                 ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md' 
-                : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+                : 'text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-white/5 border border-transparent'
             }`}
           >
-            <Briefcase className="w-4 h-4 text-emerald-400"/> Hệ Thống CRM ({leads.length})
+            <Briefcase className="w-4 h-4 text-emerald-500 dark:text-emerald-400"/> Hệ Thống CRM ({leads.length})
           </button>
           <button 
             onClick={() => setActiveTab('bm')} 
             className={`flex items-center gap-2 px-4 py-2 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap flex-shrink-0 transition-all cursor-pointer ${
               activeTab === 'bm' 
                 ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md' 
-                : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+                : 'text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-white/5 border border-transparent'
             }`}
           >
-            <Building2 className="w-4 h-4 text-emerald-400"/> Doanh Nghiệp (BM)
+            <Building2 className="w-4 h-4 text-emerald-500 dark:text-emerald-400"/> Doanh Nghiệp (BM)
           </button>
           <button 
             onClick={() => setActiveTab('organic')} 
             className={`flex items-center gap-2 px-4 py-2 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap flex-shrink-0 transition-all cursor-pointer ${
               activeTab === 'organic' 
                 ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md' 
-                : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+                : 'text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-white/5 border border-transparent'
             }`}
           >
-            <UsersRound className="w-4 h-4 text-emerald-400"/> Organic Fanpages
+            <UsersRound className="w-4 h-4 text-emerald-500 dark:text-emerald-400"/> Organic Fanpages
           </button>
           <button 
             onClick={() => {
               setSelectedAdPost(getAllAdPosts()[0]);
               setIsAdPostModalOpen(true);
             }} 
-            className="flex items-center gap-2 px-4 py-2 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap flex-shrink-0 transition-all text-gray-400 hover:text-white hover:bg-white/5 border border-white/5 hover:border-emerald-500/30 cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-semibold whitespace-nowrap flex-shrink-0 transition-all text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-white/5 border border-transparent hover:border-emerald-500/30 cursor-pointer"
             title="Xem toàn bộ mẫu creatives và bài post chạy quảng cáo Meta"
           >
-            <Layers className="w-4 h-4 text-emerald-400"/> Bài Post Ads
+            <Layers className="w-4 h-4 text-emerald-500 dark:text-emerald-400"/> Bài Post Ads
           </button>
         </div>
 
@@ -4107,6 +4166,7 @@ export default function App() {
             onOpenImportModal={() => setIsLeadImportOpen(true)}
             onOpenGeminiAdvisor={() => setIsGeminiAdvisorOpen(true)}
             geminiApiKey={settings.geminiApiKey}
+            enableCrmMembers={ENABLE_CRM_MEMBERS}
           />
         ) : activeTab === 'bm' ? (
           <BusinessManagerHub 
@@ -4163,6 +4223,7 @@ export default function App() {
           customRates={customRates}
           geminiApiKey={settings.geminiApiKey}
           currentUser={currentUser}
+          enableCrmMembers={ENABLE_CRM_MEMBERS}
           onOpenAdPost={(post) => {
             setSelectedAdPost(post);
             setIsAdPostModalOpen(true);
@@ -5904,8 +5965,16 @@ function CRMModule({
   onOpenLeadDetail,
   onOpenImportModal,
   onOpenGeminiAdvisor,
-  geminiApiKey
+  geminiApiKey,
+  enableCrmMembers = false
 }) {
+  // Tự động chuyển tab nếu crmSubTab === 'profiles' và tính năng thành viên đang tắt
+  useEffect(() => {
+    if (!enableCrmMembers && crmSubTab === 'profiles') {
+      setCrmSubTab('pipeline');
+    }
+  }, [enableCrmMembers, crmSubTab]);
+
   const [viewMode, setViewMode] = useState('kanban'); // 'kanban' | 'table'
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStage, setFilterStage] = useState('all');
@@ -6247,17 +6316,19 @@ function CRMModule({
             <Activity className="w-4 h-4" />
             Phân Tích Phễu & ROI
           </button>
-          <button
-            onClick={() => setCrmSubTab('profiles')}
-            className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl sm:rounded-2xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap uppercase font-levents ${
-              crmSubTab === 'profiles'
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-950/40 font-bold'
-                : 'text-gray-400 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            Hồ Sơ ({profiles.length})
-          </button>
+          {enableCrmMembers && (
+            <button
+              onClick={() => setCrmSubTab('profiles')}
+              className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl sm:rounded-2xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap uppercase font-levents ${
+                crmSubTab === 'profiles'
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-950/40 font-bold'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              Hồ Sơ ({profiles.length})
+            </button>
+          )}
           <button
             onClick={() => setCrmSubTab('ad_posts')}
             className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl sm:rounded-2xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap uppercase font-levents ${
@@ -6430,17 +6501,19 @@ function CRMModule({
                 ))}
               </select>
 
-              {/* Filter Profile */}
-              <select
-                className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-400 h-[36px] cursor-pointer"
-                value={filterProfile}
-                onChange={(e) => setFilterProfile(e.target.value)}
-              >
-                <option value="all" className="bg-[#070d09]">Tất cả nhân sự</option>
-                {profiles.map(p => (
-                  <option key={p.id} value={p.id} className="bg-[#070d09]">{p.name} ({p.role})</option>
-                ))}
-              </select>
+              {/* Filter Profile (Chỉ hiển thị khi bật nhiều thành viên) */}
+              {enableCrmMembers && (
+                <select
+                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-400 h-[36px] cursor-pointer"
+                  value={filterProfile}
+                  onChange={(e) => setFilterProfile(e.target.value)}
+                >
+                  <option value="all" className="bg-[#070d09]">Tất cả nhân sự</option>
+                  {profiles.map(p => (
+                    <option key={p.id} value={p.id} className="bg-[#070d09]">{p.name} ({p.role})</option>
+                  ))}
+                </select>
+              )}
 
               {/* Filter Source */}
               <select
@@ -6636,19 +6709,21 @@ function CRMModule({
                   ))}
                 </select>
 
-                <select
-                  defaultValue=""
-                  onChange={(e) => {
-                    handleBulkAssign(e.target.value);
-                    e.target.value = "";
-                  }}
-                  className="bg-black/40 border border-white/20 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none cursor-pointer"
-                >
-                  <option value="" disabled>Gán nhân sự...</option>
-                  {profiles.map(p => (
-                    <option key={p.id} value={p.id} className="bg-[#070d09]">{p.name}</option>
-                  ))}
-                </select>
+                {enableCrmMembers && (
+                  <select
+                    defaultValue=""
+                    onChange={(e) => {
+                      handleBulkAssign(e.target.value);
+                      e.target.value = "";
+                    }}
+                    className="bg-black/40 border border-white/20 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none cursor-pointer"
+                  >
+                    <option value="" disabled>Gán nhân sự...</option>
+                    {profiles.map(p => (
+                      <option key={p.id} value={p.id} className="bg-[#070d09]">{p.name}</option>
+                    ))}
+                  </select>
+                )}
 
                 <button
                   type="button"
@@ -6846,12 +6921,18 @@ function CRMModule({
 
                               {/* Footer: Assigned & Stage Transition */}
                               <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-1 text-[10px]" onClick={(e) => e.stopPropagation()}>
-                                <div className="flex items-center gap-1 text-gray-400 truncate">
-                                  <span className={`w-4 h-4 rounded-full ${assignedProf ? assignedProf.avatarBg : 'bg-emerald-600'} flex items-center justify-center text-[8px] font-bold text-white flex-shrink-0`}>
-                                    {assignedProf ? assignedProf.name.charAt(0).toUpperCase() : 'U'}
-                                  </span>
-                                  <span className="truncate">{assignedProf ? assignedProf.name : 'Chưa gán'}</span>
-                                </div>
+                                {enableCrmMembers ? (
+                                  <div className="flex items-center gap-1 text-gray-400 truncate">
+                                    <span className={`w-4 h-4 rounded-full ${assignedProf ? assignedProf.avatarBg : 'bg-emerald-600'} flex items-center justify-center text-[8px] font-bold text-white flex-shrink-0`}>
+                                      {assignedProf ? assignedProf.name.charAt(0).toUpperCase() : 'U'}
+                                    </span>
+                                    <span className="truncate">{assignedProf ? assignedProf.name : 'Chưa gán'}</span>
+                                  </div>
+                                ) : (
+                                  <div className="text-[10px] text-slate-500 dark:text-gray-400 font-mono">
+                                    {lead.createdAt}
+                                  </div>
+                                )}
 
                                 {/* Quick Stage Selector */}
                                 <select
@@ -6895,7 +6976,7 @@ function CRMModule({
                       <th className="px-4 py-3">Nguồn & Chiến Dịch</th>
                       <th className="px-4 py-3">Giai Đoạn Phễu</th>
                       <th className="px-4 py-3 text-right">Tiền Nạp ($)</th>
-                      <th className="px-4 py-3">Phụ Trách</th>
+                      {enableCrmMembers && <th className="px-4 py-3">Phụ Trách</th>}
                       <th className="px-4 py-3">Ngày Tạo</th>
                       <th className="px-4 py-3 text-center">Thao Tác</th>
                     </tr>
@@ -6903,7 +6984,7 @@ function CRMModule({
                   <tbody className="divide-y divide-white/5">
                     {sortedLeads.length === 0 ? (
                       <tr>
-                        <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
+                        <td colSpan={enableCrmMembers ? 10 : 9} className="px-4 py-8 text-center text-gray-500">
                           Không tìm thấy khách hàng nào phù hợp với bộ lọc.
                         </td>
                       </tr>
@@ -7009,14 +7090,16 @@ function CRMModule({
                             <td className="px-4 py-3 text-right font-mono font-bold text-emerald-400">
                               ${(lead.deposit || 0).toLocaleString()}
                             </td>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-1.5">
-                                <span className={`w-5 h-5 rounded-full ${assignedProf ? assignedProf.avatarBg : 'bg-blue-500'} flex items-center justify-center text-[9px] font-bold text-white`}>
-                                  {assignedProf ? assignedProf.name.charAt(0).toUpperCase() : 'U'}
-                                </span>
-                                <span className="text-gray-300">{assignedProf ? assignedProf.name : 'Chưa gán'}</span>
-                              </div>
-                            </td>
+                            {enableCrmMembers && (
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-1.5">
+                                  <span className={`w-5 h-5 rounded-full ${assignedProf ? assignedProf.avatarBg : 'bg-blue-500'} flex items-center justify-center text-[9px] font-bold text-white`}>
+                                    {assignedProf ? assignedProf.name.charAt(0).toUpperCase() : 'U'}
+                                  </span>
+                                  <span className="text-gray-300">{assignedProf ? assignedProf.name : 'Chưa gán'}</span>
+                                </div>
+                              </td>
+                            )}
                             <td className="px-4 py-3 text-gray-500 font-mono text-[11px]">
                               {lead.createdAt}
                             </td>
@@ -7166,55 +7249,57 @@ function CRMModule({
             </div>
           </div>
 
-          {/* Profile Leaderboard Table */}
-          <div className="bg-[#070d09]/90 border border-emerald-500/20 rounded-2xl p-5 shadow-xl">
-            <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2 uppercase font-levents">
-              <Award className="w-4 h-4 text-amber-400" />
-              Hiệu Suất & Doanh Số Theo Nhân Sự (Profile Performance)
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs whitespace-nowrap">
-                <thead className="bg-black/40 text-gray-400 uppercase text-[10px] tracking-wider border-b border-white/10">
-                  <tr>
-                    <th className="px-4 py-3">Nhân Sự</th>
-                    <th className="px-4 py-3">Vai Trò</th>
-                    <th className="px-4 py-3 text-center">Số Lead Phụ Trách</th>
-                    <th className="px-4 py-3 text-center">Khách Nạp Tiền</th>
-                    <th className="px-4 py-3 text-right">Tổng Tiền Nạp</th>
-                    <th className="px-4 py-3 text-right">Tỷ Lệ Chốt</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {profiles.map(p => {
-                    const pLeads = leads.filter(l => l.assignedTo === p.id);
-                    const pFunded = pLeads.filter(l => l.status === 'funded' || l.status === 'won');
-                    const pDeposit = pLeads.reduce((sum, l) => sum + (parseFloat(l.deposit) || 0), 0);
-                    const pWinRate = pLeads.length > 0 ? Math.round((pFunded.length / pLeads.length) * 100) : 0;
-                    return (
-                      <tr key={p.id} className="hover:bg-white/[0.02]">
-                        <td className="px-4 py-3 font-semibold text-white flex items-center gap-2">
-                          <span className={`w-6 h-6 rounded-full ${p.avatarBg || 'bg-emerald-600'} flex items-center justify-center text-[10px] font-bold text-white`}>
-                            {p.name.charAt(0).toUpperCase()}
-                          </span>
-                          {p.name}
-                        </td>
-                        <td className="px-4 py-3 text-gray-400">{p.role}</td>
-                        <td className="px-4 py-3 text-center font-bold text-white">{pLeads.length}</td>
-                        <td className="px-4 py-3 text-center font-bold text-emerald-400">{pFunded.length}</td>
-                        <td className="px-4 py-3 text-right font-mono font-bold text-emerald-300">${pDeposit.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-right font-bold text-teal-400">{pWinRate}%</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+          {/* Profile Leaderboard Table (Chỉ hiển thị khi bật quản lý thành viên) */}
+          {enableCrmMembers && (
+            <div className="bg-[#070d09]/90 border border-emerald-500/20 rounded-2xl p-5 shadow-xl">
+              <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2 uppercase font-levents">
+                <Award className="w-4 h-4 text-amber-400" />
+                Hiệu Suất & Doanh Số Theo Nhân Sự (Profile Performance)
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs whitespace-nowrap">
+                  <thead className="bg-black/40 text-gray-400 uppercase text-[10px] tracking-wider border-b border-white/10">
+                    <tr>
+                      <th className="px-4 py-3">Nhân Sự</th>
+                      <th className="px-4 py-3">Vai Trò</th>
+                      <th className="px-4 py-3 text-center">Số Lead Phụ Trách</th>
+                      <th className="px-4 py-3 text-center">Khách Nạp Tiền</th>
+                      <th className="px-4 py-3 text-right">Tổng Tiền Nạp</th>
+                      <th className="px-4 py-3 text-right">Tỷ Lệ Chốt</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {profiles.map(p => {
+                      const pLeads = leads.filter(l => l.assignedTo === p.id);
+                      const pFunded = pLeads.filter(l => l.status === 'funded' || l.status === 'won');
+                      const pDeposit = pLeads.reduce((sum, l) => sum + (parseFloat(l.deposit) || 0), 0);
+                      const pWinRate = pLeads.length > 0 ? Math.round((pFunded.length / pLeads.length) * 100) : 0;
+                      return (
+                        <tr key={p.id} className="hover:bg-white/[0.02]">
+                          <td className="px-4 py-3 font-semibold text-white flex items-center gap-2">
+                            <span className={`w-6 h-6 rounded-full ${p.avatarBg || 'bg-emerald-600'} flex items-center justify-center text-[10px] font-bold text-white`}>
+                              {p.name.charAt(0).toUpperCase()}
+                            </span>
+                            {p.name}
+                          </td>
+                          <td className="px-4 py-3 text-gray-400">{p.role}</td>
+                          <td className="px-4 py-3 text-center font-bold text-white">{pLeads.length}</td>
+                          <td className="px-4 py-3 text-center font-bold text-emerald-400">{pFunded.length}</td>
+                          <td className="px-4 py-3 text-right font-mono font-bold text-emerald-300">${pDeposit.toLocaleString()}</td>
+                          <td className="px-4 py-3 text-right font-bold text-teal-400">{pWinRate}%</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
       {/* SUB-TAB 3: PROFILES MANAGER (RBAC) */}
-      {crmSubTab === 'profiles' && (
+      {enableCrmMembers && crmSubTab === 'profiles' && (
         !canManageUsers ? (
           <div className="bg-[#070d09]/90 border border-amber-500/30 rounded-2xl p-8 text-center space-y-3 max-w-lg mx-auto shadow-2xl my-8">
             <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto">
@@ -7469,18 +7554,20 @@ function LeadModal({ isOpen, editingLead, profiles, campaigns, crmCurrency = 'VN
                 />
               </div>
             </div>
-            <div>
-              <label className="block text-gray-300 font-semibold mb-1">Người Phụ Trách</label>
-              <select
-                value={assignedTo}
-                onChange={(e) => setAssignedTo(e.target.value)}
-                className="w-full bg-[#0b1610] border border-white/15 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-400 cursor-pointer"
-              >
-                {profiles.map(p => (
-                  <option key={p.id} value={p.id}>{p.name} ({p.role})</option>
-                ))}
-              </select>
-            </div>
+            {ENABLE_CRM_MEMBERS && (
+              <div>
+                <label className="block text-gray-300 font-semibold mb-1">Người Phụ Trách</label>
+                <select
+                  value={assignedTo}
+                  onChange={(e) => setAssignedTo(e.target.value)}
+                  className="w-full bg-[#0b1610] border border-white/15 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-400 cursor-pointer"
+                >
+                  {profiles.map(p => (
+                    <option key={p.id} value={p.id}>{p.name} ({p.role})</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           <div>

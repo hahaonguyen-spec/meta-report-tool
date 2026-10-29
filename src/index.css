@@ -9,10 +9,19 @@
     -webkit-text-size-adjust: 100%;
     touch-action: manipulation;
   }
+  
+  html.dark {
+    color-scheme: dark;
+  }
+
+  html:not(.dark) {
+    color-scheme: light;
+  }
+
   body {
-    @apply bg-[#070d09] text-gray-100;
     font-family: 'Jost', 'Plus Jakarta Sans', 'Futura', system-ui, -apple-system, sans-serif;
     overflow-x: hidden;
+    transition: background-color 0.25s ease, color 0.25s ease;
   }
   
   h1, h2, h3, .font-levents {
@@ -21,36 +30,163 @@
   }
 }
 
-/* Elegant Emerald / Forest Green Glassmorphism */
-.insure-glass {
-  background: linear-gradient(180deg, rgba(13, 24, 16, 0.75) 0%, rgba(6, 12, 8, 0.9) 100%);
-  border: 1px solid rgba(16, 185, 129, 0.15);
+/* ==========================================================================
+   GLASSMORPHISM & CARD SURFACES (ADAPTIVE DAY & NIGHT)
+   ========================================================================== */
+
+/* Dark Mode Glass */
+.dark .insure-glass {
+  background: linear-gradient(180deg, rgba(13, 24, 16, 0.85) 0%, rgba(6, 12, 8, 0.95) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.18);
+  box-shadow: 0 12px 36px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(16, 185, 129, 0.1);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
 
-.insure-glass-hover {
+.dark .insure-glass-hover {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.insure-glass-hover:hover {
+.dark .insure-glass-hover:hover {
   border-color: rgba(16, 185, 129, 0.35);
   box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.2), 0 10px 30px -10px rgba(0, 0, 0, 0.7);
   transform: translateY(-2px);
 }
 
-.cyber-pill {
+.dark .cyber-pill {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(16, 185, 129, 0.15);
   backdrop-filter: blur(12px);
 }
 
+/* Light Mode Glass & Surfaces */
+html:not(.dark) .insure-glass {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+html:not(.dark) .insure-glass-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+html:not(.dark) .insure-glass-hover:hover {
+  border-color: rgba(16, 185, 129, 0.45);
+  box-shadow: 0 12px 28px -6px rgba(16, 185, 129, 0.12), 0 4px 12px rgba(0, 0, 0, 0.04);
+  transform: translateY(-2px);
+}
+
+html:not(.dark) .cyber-pill {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  backdrop-filter: blur(12px);
+}
+
+/* ==========================================================================
+   LIGHT MODE ADAPTIVE UTILITIES FOR LEGACY HARDCODED STYLES
+   ========================================================================== */
+
+html:not(.dark) .bg-\[\#070d09\] {
+  background-color: #ffffff !important;
+}
+
+html:not(.dark) .bg-\[\#070d09\]\/80,
+html:not(.dark) .bg-\[\#070d09\]\/90 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+html:not(.dark) .bg-\[\#0a140d\],
+html:not(.dark) .bg-\[\#0a140d\]\/90,
+html:not(.dark) .bg-\[\#0d1810\],
+html:not(.dark) .bg-\[\#0b1610\],
+html:not(.dark) .bg-\[\#070b14\],
+html:not(.dark) .bg-\[\#122217\] {
+  background-color: #ffffff !important;
+}
+
+html:not(.dark) .bg-white\/5,
+html:not(.dark) .bg-white\/\[0\.03\],
+html:not(.dark) .bg-white\/\[0\.04\],
+html:not(.dark) .bg-white\/\[0\.08\],
+html:not(.dark) .bg-white\/10 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+html:not(.dark) .bg-black\/40,
+html:not(.dark) .bg-black\/30 {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+html:not(.dark) .border-white\/10,
+html:not(.dark) .border-white\/15,
+html:not(.dark) .border-white\/20,
+html:not(.dark) .border-white\/5 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Adaptive Text Colors for Light Mode */
+html:not(.dark) .text-white:not([class*="bg-emerald"]):not([class*="bg-gradient"]):not([class*="from-emerald"]):not([class*="from-red"]):not([class*="bg-red"]):not([class*="bg-blue"]):not([class*="from-blue"]):not([class*="btn-solid"]):not(.preserve-white) {
+  color: #0f172a !important;
+}
+
+html:not(.dark) .text-gray-100,
+html:not(.dark) .text-gray-200,
+html:not(.dark) .text-gray-300 {
+  color: #1e293b !important;
+}
+
+html:not(.dark) .text-gray-400 {
+  color: #64748b !important;
+}
+
+html:not(.dark) .text-gray-500 {
+  color: #94a3b8 !important;
+}
+
+/* Light mode form controls */
+html:not(.dark) select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+html:not(.dark) input,
+html:not(.dark) select,
+html:not(.dark) textarea {
+  color: #0f172a !important;
+}
+
+html:not(.dark) input::placeholder,
+html:not(.dark) textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Light mode shadows */
+html:not(.dark) .shadow-glow-card {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+}
+
+/* Gradients */
 .green-gradient-text {
+  background: linear-gradient(135deg, #059669 0%, #10B981 50%, #047857 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.dark .green-gradient-text {
   background: linear-gradient(135deg, #34D399 0%, #10B981 50%, #059669 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .cyber-gradient-text, .lime-gradient-text {
+  background: linear-gradient(135deg, #059669 0%, #10B981 60%, #047857 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.dark .cyber-gradient-text, .dark .lime-gradient-text {
   background: linear-gradient(135deg, #34D399 0%, #10B981 60%, #059669 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -80,18 +216,26 @@
   scroll-behavior: smooth;
 }
 
-/* Custom dark scrollbar for data tables */
+/* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(10, 15, 28, 0.6);
+  background: transparent;
 }
-::-webkit-scrollbar-thumb {
+.dark ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.15);
   border-radius: 9999px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(51, 204, 255, 0.4);
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.4);
+}
+
+html:not(.dark) ::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.18);
+  border-radius: 9999px;
+}
+html:not(.dark) ::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.6);
 }
