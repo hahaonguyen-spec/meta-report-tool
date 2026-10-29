@@ -1367,17 +1367,14 @@ export default function App() {
     if (settings.metaToken && settings.metaToken.trim() !== '') {
       fetchAdAccounts();
     } else {
-      setIsUsingMock(false);
+      // Khi chưa kết nối Token Meta: Bật chế độ Demo thông minh với MOCK_DATA
+      setIsUsingMock(true);
       setError(null);
-      if (settings.savedAccounts && settings.savedAccounts.length > 0) {
-        const realSaved = settings.savedAccounts.filter(a => !a.account_id.startsWith('mock_'));
-        setAdAccounts(realSaved);
-        setSelectedAccountIds(realSaved.map(a => a.account_id));
-      } else {
-        setAdAccounts([]);
-        setSelectedAccountIds([]);
-      }
-      setData([]);
+      setAdAccounts(MOCK_ACCOUNTS);
+      setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
+      setData(MOCK_DATA);
+      setBusinessesData(MOCK_BUSINESSES);
+      setPagesData(MOCK_PAGES_DATA);
       setLoadingAccounts(false);
     }
 
@@ -1398,6 +1395,17 @@ export default function App() {
         return; // Wait for valid custom date
       }
       fetchMetaAPI(selectedAccountIds, datePreset, customStartDate, customEndDate);
+    } else if (!settings.metaToken || settings.metaToken.trim() === '') {
+      // Chế độ Demo: Lọc theo tài khoản đã chọn
+      if (selectedAccountIds.length > 0) {
+        const filtered = MOCK_DATA.filter(c => {
+          const acc = MOCK_ACCOUNTS.find(a => a.name === c.account_name);
+          return acc ? selectedAccountIds.includes(acc.account_id) : true;
+        });
+        setData(filtered.length > 0 ? filtered : MOCK_DATA);
+      } else {
+        setData(MOCK_DATA);
+      }
     } else {
       setData([]);
     }
@@ -2506,14 +2514,20 @@ export default function App() {
                     Meta Live ({adAccounts.length} TK Ads)
                   </span>
                 ) : (
-                  <button 
-                    onClick={() => setIsSettingsOpen(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30 transition-all cursor-pointer shadow-sm"
-                    title="Chưa kết nối Token Meta Ads. Nhấp để kết nối."
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                    Chưa kết nối Meta Ads
-                  </button>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      Demo Mode ({adAccounts.length} TK Mẫu)
+                    </span>
+                    <button 
+                      onClick={() => setIsSettingsOpen(true)}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 transition-all cursor-pointer shadow-sm"
+                      title="Chưa kết nối Token Meta Ads thật. Nhấp để kết nối."
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                      Kết nối Token thật
+                    </button>
+                  </div>
                 )}
               </div>
               <p className="text-slate-500 dark:text-gray-400 text-[11px] sm:text-xs mt-0.5 hidden xs:block">
@@ -3404,12 +3418,12 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setIsColumnDropdownOpen(!isColumnDropdownOpen)}
-                    className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 rounded-xl text-xs flex items-center gap-1.5 transition-all border border-emerald-500/30 cursor-pointer"
+                    className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 rounded-xl text-xs flex items-center gap-1.5 transition-all border border-emerald-500/30 cursor-pointer font-medium"
                     title="Tùy chỉnh bật/tắt các cột hiển thị trên bảng"
                   >
-                    <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-400" />
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     <span>Tùy chọn cột ({visibleColumns.length})</span>
-                    <ChevronDown className={`w-3 h-3 text-emerald-400 transition-transform ${isColumnDropdownOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-3 h-3 text-emerald-600 dark:text-emerald-400 transition-transform ${isColumnDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
 
                   {isColumnDropdownOpen && (
@@ -3514,10 +3528,10 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => setTableDensity(tableDensity === 'compact' ? 'comfortable' : 'compact')}
-                  className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl text-xs flex items-center gap-1.5 transition-all border border-white/10 cursor-pointer"
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-gray-300 rounded-xl text-xs flex items-center gap-1.5 transition-all border border-slate-200 dark:border-white/10 cursor-pointer font-medium"
                   title={`Độ co giãn bảng: ${tableDensity === 'compact' ? 'Gọn gàng (Thu nhỏ)' : 'Thoải mái'}. Bấm để đổi.`}
                 >
-                  <Layers className="w-3.5 h-3.5 text-teal-400" />
+                  <Layers className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                   <span>{tableDensity === 'compact' ? 'Gọn gàng' : 'Thoải mái'}</span>
                 </button>
 
@@ -3525,10 +3539,10 @@ export default function App() {
                 <button
                   type="button"
                   onClick={handleCopyDashboardReport}
-                  className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 rounded-xl text-xs flex items-center gap-1.5 transition-all border border-emerald-500/30 cursor-pointer"
+                  className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 rounded-xl text-xs flex items-center gap-1.5 transition-all border border-emerald-500/30 cursor-pointer font-medium"
                   title="Sao chép bản tóm tắt chiến dịch để gửi Zalo / Telegram / Slack"
                 >
-                  <Copy className="w-3.5 h-3.5 text-emerald-400" />
+                  <Copy className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                   <span>Copy Báo Cáo</span>
                 </button>
 
@@ -3536,31 +3550,31 @@ export default function App() {
                 <button
                   type="button"
                   onClick={handleExportCampaignsCSV}
-                  className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl text-xs flex items-center gap-1.5 transition-all border border-white/10 cursor-pointer"
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-gray-300 rounded-xl text-xs flex items-center gap-1.5 transition-all border border-slate-200 dark:border-white/10 cursor-pointer font-medium"
                   title="Xuất danh sách chiến dịch đang hiển thị ra file Excel CSV"
                 >
-                  <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                  <FileText className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                   <span>Xuất CSV</span>
                 </button>
 
                 <button
                   onClick={handleExportManualData}
-                  className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl text-xs flex items-center gap-1.5 transition-all border border-white/10 cursor-pointer"
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-gray-300 rounded-xl text-xs flex items-center gap-1.5 transition-all border border-slate-200 dark:border-white/10 cursor-pointer font-medium"
                   title="Xuất dữ liệu ô nhập phễu & ngân sách ra file JSON"
                 >
-                  <Download className="w-3.5 h-3.5 text-[#00F2FE]" /> Xuất
+                  <Download className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00F2FE]" /> Xuất
                 </button>
                 <label 
-                  className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl text-xs flex items-center gap-1.5 transition-all border border-white/10 cursor-pointer"
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-gray-300 rounded-xl text-xs flex items-center gap-1.5 transition-all border border-slate-200 dark:border-white/10 cursor-pointer font-medium"
                   title="Nhập dữ liệu ô nhập phễu từ file JSON"
                 >
-                  <Upload className="w-3.5 h-3.5 text-[#8B5CF6]" /> Nhập
+                  <Upload className="w-3.5 h-3.5 text-purple-600 dark:text-[#8B5CF6]" /> Nhập
                   <input type="file" accept=".json" onChange={handleImportManualData} className="hidden" />
                 </label>
                 {Object.keys(manualData).length > 0 && (
                   <button
                     onClick={handleClearManualData}
-                    className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl text-xs flex items-center gap-1.5 transition-all border border-red-500/20 cursor-pointer"
+                    className="px-3 py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 rounded-xl text-xs flex items-center gap-1.5 transition-all border border-red-200 dark:border-red-500/20 cursor-pointer font-medium"
                     title="Xóa dữ liệu ô nhập thủ công"
                   >
                     <RotateCcw className="w-3.5 h-3.5" /> Xóa ô nhập
@@ -3621,66 +3635,66 @@ export default function App() {
               return (
                 <div className="overflow-x-auto touch-scroll-x relative">
                   <table className="w-full text-left whitespace-nowrap">
-                    <thead className="text-[10px] uppercase bg-black/50 text-gray-400 border-b border-white/10 sticky top-0 z-30 backdrop-blur-md">
+                    <thead className="text-[10px] uppercase bg-slate-100 dark:bg-black/50 text-slate-700 dark:text-gray-400 border-b border-slate-200 dark:border-white/10 sticky top-0 z-30 backdrop-blur-md">
                       <tr>
                         {visibleColumns.includes('status') && (
-                          <th className="px-3 py-3 font-semibold text-center border-r border-white/10 w-16">Trạng Thái</th>
+                          <th className="px-3 py-3 font-semibold text-center border-r border-slate-200 dark:border-white/10 w-16">Trạng Thái</th>
                         )}
                         {visibleColumns.includes('campaign_name') && (
-                          <th className="px-4 py-3 font-semibold sticky left-0 z-20 bg-[#08100b] border-r border-white/10 shadow-[3px_0_8px_rgba(0,0,0,0.6)] min-w-[220px]">
+                          <th className="px-4 py-3 font-semibold sticky left-0 z-20 bg-slate-100 dark:bg-[#08100b] text-slate-800 dark:text-white border-r border-slate-200 dark:border-white/10 shadow-[3px_0_8px_rgba(0,0,0,0.04)] dark:shadow-[3px_0_8px_rgba(0,0,0,0.6)] min-w-[220px]">
                             Chiến Dịch
                           </th>
                         )}
                         {visibleColumns.includes('budget') && (
-                          <th className="px-4 py-3 font-semibold bg-indigo-500/10 text-indigo-300 border-l border-white/5">
+                          <th className="px-4 py-3 font-semibold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-l border-slate-200 dark:border-white/5">
                             Ngân Sách ({dashboardCurrencyMode === 'ads' ? primaryAdsCurrency : 'USD'})
                           </th>
                         )}
                         {visibleColumns.includes('pacing') && (
-                          <th className="px-4 py-3 font-semibold bg-indigo-500/10 text-indigo-300">Tiến Độ</th>
+                          <th className="px-4 py-3 font-semibold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300">Tiến Độ</th>
                         )}
                         {visibleColumns.includes('spend') && (
-                          <th className="px-4 py-3 font-semibold bg-black/20 text-white">
+                          <th className="px-4 py-3 font-semibold bg-slate-200/50 dark:bg-black/20 text-slate-800 dark:text-white">
                             Chi Tiêu ({dashboardCurrencyMode === 'ads' ? primaryAdsCurrency : 'USD'})
                           </th>
                         )}
                         {visibleColumns.includes('impressions') && (
-                          <th className="px-4 py-3 font-semibold bg-black/20">Hiển Thị</th>
+                          <th className="px-4 py-3 font-semibold bg-slate-200/50 dark:bg-black/20 text-slate-700 dark:text-gray-400">Hiển Thị</th>
                         )}
                         {visibleColumns.includes('clicks') && (
-                          <th className="px-4 py-3 font-semibold bg-black/20">Clicks</th>
+                          <th className="px-4 py-3 font-semibold bg-slate-200/50 dark:bg-black/20 text-slate-700 dark:text-gray-400">Clicks</th>
                         )}
                         {visibleColumns.includes('ctr_cpc') && (
-                          <th className="px-4 py-3 font-semibold bg-black/20 text-emerald-400">CTR / CPC</th>
+                          <th className="px-4 py-3 font-semibold bg-slate-200/50 dark:bg-black/20 text-emerald-700 dark:text-emerald-400">CTR / CPC</th>
                         )}
                         {visibleColumns.includes('cpm') && (
-                          <th className="px-4 py-3 font-semibold bg-black/20 text-emerald-400">CPM</th>
+                          <th className="px-4 py-3 font-semibold bg-slate-200/50 dark:bg-black/20 text-emerald-700 dark:text-emerald-400">CPM</th>
                         )}
                         {visibleColumns.includes('leads') && (
-                          <th className="px-4 py-3 font-semibold bg-black/20 text-white">Leads</th>
+                          <th className="px-4 py-3 font-semibold bg-slate-200/50 dark:bg-black/20 text-slate-800 dark:text-white">Leads</th>
                         )}
                         {visibleColumns.includes('cpl') && (
-                          <th className="px-4 py-3 font-semibold bg-black/20 text-emerald-300">Giá Lead (CPL)</th>
+                          <th className="px-4 py-3 font-semibold bg-slate-200/50 dark:bg-black/20 text-emerald-700 dark:text-emerald-300">Giá Lead (CPL)</th>
                         )}
                         {visibleColumns.includes('account_open') && (
-                          <th className="px-4 py-3 font-semibold bg-emerald-500/10 text-emerald-300 border-l border-white/5">Mở TK</th>
+                          <th className="px-4 py-3 font-semibold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-l border-slate-200 dark:border-white/5">Mở TK</th>
                         )}
                         {visibleColumns.includes('cpa') && (
-                          <th className="px-4 py-3 font-semibold bg-emerald-500/5 text-emerald-300">CPA</th>
+                          <th className="px-4 py-3 font-semibold bg-emerald-50 dark:bg-emerald-500/5 text-emerald-700 dark:text-emerald-300">CPA</th>
                         )}
                         {visibleColumns.includes('funded') && (
-                          <th className="px-4 py-3 font-semibold bg-teal-500/10 text-teal-300">Đã Nạp</th>
+                          <th className="px-4 py-3 font-semibold bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-300">Đã Nạp</th>
                         )}
                         {visibleColumns.includes('cpfa') && (
-                          <th className="px-4 py-3 font-semibold bg-teal-500/5 text-teal-300">CPFA</th>
+                          <th className="px-4 py-3 font-semibold bg-teal-50 dark:bg-teal-500/5 text-teal-700 dark:text-teal-300">CPFA</th>
                         )}
                         {visibleColumns.includes('deposit') && (
-                          <th className="px-4 py-3 font-semibold bg-indigo-950/20 text-indigo-300">
+                          <th className="px-4 py-3 font-semibold bg-indigo-50 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300">
                             Tiền Nạp ({dashboardCurrencyMode === 'ads' ? primaryAdsCurrency : 'USD'})
                           </th>
                         )}
                         {visibleColumns.includes('roi') && (
-                          <th className="px-4 py-3 font-semibold bg-indigo-950/10 text-indigo-300">ROI (%)</th>
+                          <th className="px-4 py-3 font-semibold bg-indigo-50 dark:bg-indigo-950/10 text-indigo-700 dark:text-indigo-300">ROI (%)</th>
                         )}
                       </tr>
                     </thead>
@@ -3782,8 +3796,8 @@ export default function App() {
 
                             {/* Campaign Name (Sticky Column) */}
                             {visibleColumns.includes('campaign_name') && (
-                              <td className={`${cellPadding} sticky left-0 z-10 bg-[#08100b]/95 backdrop-blur-md border-r border-white/10 shadow-[3px_0_8px_rgba(0,0,0,0.6)] min-w-[220px] max-w-[380px]`}>
-                                <div className="font-semibold text-white break-words whitespace-normal leading-snug" title={item.campaign_name}>
+                              <td className={`${cellPadding} sticky left-0 z-10 bg-white/95 dark:bg-[#08100b]/95 backdrop-blur-md border-r border-slate-200 dark:border-white/10 shadow-[3px_0_8px_rgba(0,0,0,0.04)] dark:shadow-[3px_0_8px_rgba(0,0,0,0.6)] min-w-[220px] max-w-[380px]`}>
+                                <div className="font-semibold text-slate-800 dark:text-white break-words whitespace-normal leading-snug" title={item.campaign_name}>
                                   {item.campaign_name}
                                 </div>
                                 <div className="mt-1 flex items-center gap-1.5 flex-wrap">
@@ -4018,13 +4032,13 @@ export default function App() {
 
                     {/* Summary Footer Row */}
                     {displayedCampaigns.length > 0 && (
-                      <tfoot className="text-xs uppercase bg-emerald-950/40 text-emerald-300 font-bold border-t-2 border-emerald-500/40">
+                      <tfoot className="text-xs uppercase bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 font-bold border-t-2 border-emerald-500/40">
                         <tr>
                           {visibleColumns.includes('status') && (
-                            <td className={`${cellPadding} text-center text-emerald-400`}>Tổng</td>
+                            <td className={`${cellPadding} text-center text-emerald-700 dark:text-emerald-400`}>Tổng</td>
                           )}
                           {visibleColumns.includes('campaign_name') && (
-                            <td className={`sticky left-0 z-10 bg-[#08100b] border-r border-white/10 shadow-[3px_0_8px_rgba(0,0,0,0.6)] ${cellPadding} text-white`}>
+                            <td className={`sticky left-0 z-10 bg-emerald-50 dark:bg-[#08100b] border-r border-slate-200 dark:border-white/10 shadow-[3px_0_8px_rgba(0,0,0,0.04)] dark:shadow-[3px_0_8px_rgba(0,0,0,0.6)] ${cellPadding} text-slate-900 dark:text-white`}>
                               {displayedCampaigns.length} Chiến dịch
                             </td>
                           )}

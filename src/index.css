@@ -60,9 +60,9 @@
 
 /* Light Mode Glass & Surfaces */
 html:not(.dark) .insure-glass {
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02) !important;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
@@ -71,14 +71,14 @@ html:not(.dark) .insure-glass-hover {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 html:not(.dark) .insure-glass-hover:hover {
-  border-color: rgba(16, 185, 129, 0.45);
-  box-shadow: 0 12px 28px -6px rgba(16, 185, 129, 0.12), 0 4px 12px rgba(0, 0, 0, 0.04);
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  box-shadow: 0 12px 28px -6px rgba(16, 185, 129, 0.15), 0 4px 12px rgba(0, 0, 0, 0.04) !important;
   transform: translateY(-2px);
 }
 
 html:not(.dark) .cyber-pill {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
   backdrop-filter: blur(12px);
 }
 
@@ -86,55 +86,100 @@ html:not(.dark) .cyber-pill {
    LIGHT MODE ADAPTIVE UTILITIES FOR LEGACY HARDCODED STYLES
    ========================================================================== */
 
-html:not(.dark) .bg-\[\#070d09\] {
-  background-color: #ffffff !important;
-}
-
+/* Dark hardcoded backgrounds turned crisp white/slate in light mode */
+html:not(.dark) .bg-\[\#070d09\],
 html:not(.dark) .bg-\[\#070d09\]\/80,
-html:not(.dark) .bg-\[\#070d09\]\/90 {
-  background-color: rgba(255, 255, 255, 0.95) !important;
-}
-
+html:not(.dark) .bg-\[\#070d09\]\/90,
 html:not(.dark) .bg-\[\#0a140d\],
 html:not(.dark) .bg-\[\#0a140d\]\/90,
 html:not(.dark) .bg-\[\#0d1810\],
 html:not(.dark) .bg-\[\#0b1610\],
 html:not(.dark) .bg-\[\#070b14\],
+html:not(.dark) .bg-\[\#08100b\],
+html:not(.dark) .bg-\[\#102217\],
 html:not(.dark) .bg-\[\#122217\] {
   background-color: #ffffff !important;
 }
 
+/* Black overlays turned clean slate in light mode */
+html:not(.dark) .bg-black\/10,
+html:not(.dark) .bg-black\/20,
+html:not(.dark) .bg-black\/30,
+html:not(.dark) .bg-black\/40,
+html:not(.dark) .bg-black\/50,
+html:not(.dark) .bg-black\/60,
+html:not(.dark) .bg-black\/80,
+html:not(.dark) .bg-indigo-950\/10,
+html:not(.dark) .bg-indigo-950\/20,
+html:not(.dark) .bg-emerald-950\/40,
+html:not(.dark) .bg-teal-950\/40 {
+  background-color: #f1f5f9 !important;
+  color: #1e293b !important;
+}
+
+/* Table headers & sticky columns in light mode */
+html:not(.dark) thead {
+  background-color: #f8fafc !important;
+  color: #334155 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+html:not(.dark) thead th {
+  background-color: #f8fafc !important;
+  color: #475569 !important;
+  border-color: #e2e8f0 !important;
+}
+html:not(.dark) th.sticky,
+html:not(.dark) td.sticky {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 3px 0 10px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Transparent whites converted to clean light slate buttons */
 html:not(.dark) .bg-white\/5,
+html:not(.dark) .bg-white\/\[0\.02\],
 html:not(.dark) .bg-white\/\[0\.03\],
 html:not(.dark) .bg-white\/\[0\.04\],
+html:not(.dark) .bg-white\/\[0\.06\],
 html:not(.dark) .bg-white\/\[0\.08\],
 html:not(.dark) .bg-white\/10 {
   background-color: #f8fafc !important;
   border-color: #e2e8f0 !important;
+  color: #334155 !important;
 }
 
-html:not(.dark) .bg-black\/40,
-html:not(.dark) .bg-black\/30 {
+html:not(.dark) .bg-white\/5:hover,
+html:not(.dark) .bg-white\/\[0\.04\]:hover,
+html:not(.dark) .bg-white\/\[0\.08\]:hover {
   background-color: #f1f5f9 !important;
-  border-color: #cbd5e1 !important;
 }
 
+html:not(.dark) .border-white\/5,
 html:not(.dark) .border-white\/10,
 html:not(.dark) .border-white\/15,
 html:not(.dark) .border-white\/20,
-html:not(.dark) .border-white\/5 {
+html:not(.dark) .border-white\/30 {
   border-color: #e2e8f0 !important;
 }
 
-/* Adaptive Text Colors for Light Mode */
+html:not(.dark) .divide-white\/5,
+html:not(.dark) .divide-white\/10 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Light mode high-contrast text colors */
 html:not(.dark) .text-white:not([class*="bg-emerald"]):not([class*="bg-gradient"]):not([class*="from-emerald"]):not([class*="from-red"]):not([class*="bg-red"]):not([class*="bg-blue"]):not([class*="from-blue"]):not([class*="btn-solid"]):not(.preserve-white) {
   color: #0f172a !important;
 }
 
 html:not(.dark) .text-gray-100,
-html:not(.dark) .text-gray-200,
+html:not(.dark) .text-gray-200 {
+  color: #0f172a !important;
+}
+
 html:not(.dark) .text-gray-300 {
-  color: #1e293b !important;
+  color: #334155 !important;
 }
 
 html:not(.dark) .text-gray-400 {
@@ -142,7 +187,80 @@ html:not(.dark) .text-gray-400 {
 }
 
 html:not(.dark) .text-gray-500 {
-  color: #94a3b8 !important;
+  color: #64748b !important;
+}
+
+/* High contrast pastel colors in light mode */
+html:not(.dark) .text-emerald-300,
+html:not(.dark) .text-emerald-400 {
+  color: #047857 !important;
+}
+html:not(.dark) .text-teal-300,
+html:not(.dark) .text-teal-400 {
+  color: #0f766e !important;
+}
+html:not(.dark) .text-cyan-300,
+html:not(.dark) .text-cyan-400 {
+  color: #0e7490 !important;
+}
+html:not(.dark) .text-indigo-300,
+html:not(.dark) .text-indigo-400 {
+  color: #4338ca !important;
+}
+html:not(.dark) .text-blue-300,
+html:not(.dark) .text-blue-400 {
+  color: #1d4ed8 !important;
+}
+html:not(.dark) .text-amber-300,
+html:not(.dark) .text-amber-400 {
+  color: #b45309 !important;
+}
+html:not(.dark) .text-red-300,
+html:not(.dark) .text-red-400 {
+  color: #b91c1c !important;
+}
+html:not(.dark) .text-pink-300,
+html:not(.dark) .text-pink-400 {
+  color: #be185d !important;
+}
+html:not(.dark) .text-purple-300,
+html:not(.dark) .text-purple-400 {
+  color: #6d28d9 !important;
+}
+
+/* Light mode pills with solid border and soft tint */
+html:not(.dark) .bg-emerald-500\/10,
+html:not(.dark) .bg-emerald-500\/15,
+html:not(.dark) .bg-emerald-500\/20 {
+  background-color: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+  color: #047857 !important;
+}
+html:not(.dark) .bg-amber-500\/10,
+html:not(.dark) .bg-amber-500\/15,
+html:not(.dark) .bg-amber-500\/20 {
+  background-color: #fffbeb !important;
+  border-color: #fde68a !important;
+  color: #b45309 !important;
+}
+html:not(.dark) .bg-red-500\/10,
+html:not(.dark) .bg-red-500\/15,
+html:not(.dark) .bg-red-500\/20 {
+  background-color: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #b91c1c !important;
+}
+html:not(.dark) .bg-blue-500\/10,
+html:not(.dark) .bg-blue-500\/15,
+html:not(.dark) .bg-blue-500\/20 {
+  background-color: #eff6ff !important;
+  border-color: #bfdbfe !important;
+  color: #1d4ed8 !important;
+}
+html:not(.dark) .bg-indigo-500\/10 {
+  background-color: #eef2ff !important;
+  border-color: #c7d2fe !important;
+  color: #4338ca !important;
 }
 
 /* Light mode form controls */
@@ -155,6 +273,8 @@ html:not(.dark) input,
 html:not(.dark) select,
 html:not(.dark) textarea {
   color: #0f172a !important;
+  background-color: #ffffff;
+  border-color: #cbd5e1;
 }
 
 html:not(.dark) input::placeholder,
@@ -233,7 +353,7 @@ html:not(.dark) .shadow-glow-card {
 }
 
 html:not(.dark) ::-webkit-scrollbar-thumb {
-  background: rgba(15, 23, 42, 0.18);
+  background: rgba(15, 23, 42, 0.2);
   border-radius: 9999px;
 }
 html:not(.dark) ::-webkit-scrollbar-thumb:hover {
