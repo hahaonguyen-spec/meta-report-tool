@@ -8,8 +8,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Jost', 'Plus Jakarta Sans', 'Futura', 'Inter', 'system-ui', 'sans-serif'],
-        levents: ['Jost', 'Futura', 'Plus Jakarta Sans', 'sans-serif'],
+        sans: ['Montserrat', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        levents: ['Montserrat', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace']
       },
       colors: {
