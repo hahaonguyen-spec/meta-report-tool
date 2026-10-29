@@ -1504,10 +1504,11 @@ export default function App() {
         setError(`Lỗi cập nhật danh sách tài khoản: ${err.message}`);
       } else {
         setError(err.message);
-        setIsUsingMock(false);
-        setAdAccounts([]);
-        setSelectedAccountIds([]);
-        setData([]);
+        // Fallback về MOCK_ACCOUNTS & MOCK_DATA để người dùng không bị trắng màn hình
+        setIsUsingMock(true);
+        setAdAccounts(MOCK_ACCOUNTS);
+        setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
+        setData(MOCK_DATA);
       }
     } finally {
       setLoadingAccounts(false);
@@ -2092,8 +2093,13 @@ export default function App() {
     } catch (err) {
       console.error("Error fetching Meta API:", err);
       setError(err.message);
-      setIsUsingMock(false);
-      setData([]);
+      // Fallback về MOCK_DATA để bảng điều khiển vẫn có dữ liệu xem thử thay vì trống trơn
+      setIsUsingMock(true);
+      setData(MOCK_DATA);
+      if (adAccounts.length === 0) {
+        setAdAccounts(MOCK_ACCOUNTS);
+        setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
+      }
     } finally {
       setLoading(false);
     }
@@ -3217,19 +3223,57 @@ export default function App() {
           </div>
         )}
         {error && (
-          <div className="mb-6 bg-red-500/10 border border-red-500/25 text-red-300 px-4 py-3.5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs backdrop-blur-xl shadow-2xl">
+          <div className="mb-6 bg-red-500/10 border border-red-500/25 text-red-700 dark:text-red-300 px-4 py-3.5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs backdrop-blur-xl shadow-lg">
             <div className="flex items-center gap-2.5">
-              <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-400" />
+              <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-500 dark:text-red-400" />
               <div>
-                <span className="font-semibold text-red-400">Lỗi kết nối Meta Graph API:</span> {error}
+                <span className="font-semibold text-red-600 dark:text-red-400">Lỗi kết nối Meta Graph API:</span> {error}
               </div>
             </div>
-            <div className="flex items-center gap-2 self-end sm:self-auto flex-shrink-0">
+            <div className="flex items-center gap-2 self-end sm:self-auto flex-shrink-0 flex-wrap">
+              <button 
+                onClick={() => {
+                  setIsUsingMock(true);
+                  setData(MOCK_DATA);
+                  setAdAccounts(MOCK_ACCOUNTS);
+                  setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
+                  setError(null);
+                  showToast("Đã kích hoạt chế độ Demo thông minh!");
+                }}
+                className="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-xl text-xs text-emerald-700 dark:text-emerald-300 font-semibold transition-all cursor-pointer"
+                title="Bật dữ liệu mẫu để tiếp tục sử dụng ngay"
+              >
+                Dùng bản Demo
+              </button>
+              <button 
+                onClick={() => {
+                  const updatedSettings = { ...settings, metaToken: '' };
+                  setSettings(updatedSettings);
+                  localStorage.setItem('meta_report_settings', JSON.stringify(updatedSettings));
+                  setIsUsingMock(true);
+                  setData(MOCK_DATA);
+                  setAdAccounts(MOCK_ACCOUNTS);
+                  setSelectedAccountIds(MOCK_ACCOUNTS.map(a => a.account_id));
+                  setError(null);
+                  showToast("Đã xóa token hết hạn và chuyển sang chế độ Demo!");
+                }}
+                className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 dark:bg-white/10 dark:hover:bg-white/20 border border-slate-300 dark:border-white/15 rounded-xl text-xs text-slate-700 dark:text-gray-200 font-semibold transition-all cursor-pointer"
+                title="Xóa token cũ đã hết hạn khỏi bộ nhớ trình duyệt"
+              >
+                Xóa Token Cũ
+              </button>
               <button 
                 onClick={() => setIsSettingsOpen(true)}
-                className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-xl text-xs text-white font-semibold transition-all cursor-pointer"
+                className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-xl text-xs text-red-700 dark:text-white font-semibold transition-all cursor-pointer"
               >
                 Cập nhật Token
+              </button>
+              <button 
+                onClick={() => setError(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg cursor-pointer"
+                title="Đóng thông báo này"
+              >
+                ✕
               </button>
             </div>
           </div>
@@ -6357,36 +6401,36 @@ function CRMModule({
         </div>
 
         {/* Currency Switcher & Custom Rate Tool */}
-        <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs">
-          <DollarSign className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-          <span className="text-gray-400 text-[11px] font-medium hidden sm:inline">Tiền tệ:</span>
+        <div className="flex items-center gap-2 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-1.5 text-xs shadow-sm">
+          <DollarSign className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+          <span className="text-slate-500 dark:text-gray-400 text-[11px] font-medium hidden sm:inline">Tiền tệ:</span>
           <select
             value={crmCurrency}
             onChange={(e) => setCrmCurrency && setCrmCurrency(e.target.value)}
-            className="bg-transparent text-emerald-300 font-bold focus:outline-none cursor-pointer text-xs"
+            className="bg-transparent text-emerald-600 dark:text-emerald-300 font-bold focus:outline-none cursor-pointer text-xs"
           >
-            <option value="VND" className="bg-[#070d09]">VND (₫)</option>
-            <option value="USD" className="bg-[#070d09]">USD ($)</option>
-            <option value="THB" className="bg-[#070d09]">THB (฿)</option>
-            <option value="EUR" className="bg-[#070d09]">EUR (€)</option>
-            <option value="JPY" className="bg-[#070d09]">JPY (¥)</option>
-            <option value="IDR" className="bg-[#070d09]">IDR (Rp)</option>
-            <option value="PHP" className="bg-[#070d09]">PHP (₱)</option>
-            <option value="SGD" className="bg-[#070d09]">SGD (S$)</option>
-            <option value="MYR" className="bg-[#070d09]">MYR (RM)</option>
+            <option value="VND" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">VND (₫)</option>
+            <option value="USD" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">USD ($)</option>
+            <option value="THB" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">THB (฿)</option>
+            <option value="EUR" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">EUR (€)</option>
+            <option value="JPY" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">JPY (¥)</option>
+            <option value="IDR" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">IDR (Rp)</option>
+            <option value="PHP" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">PHP (₱)</option>
+            <option value="SGD" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">SGD (S$)</option>
+            <option value="MYR" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">MYR (RM)</option>
           </select>
 
           {crmCurrency !== 'USD' && (
-            <div className="flex items-center gap-1 pl-2 border-l border-white/10 text-[11px] text-gray-400">
+            <div className="flex items-center gap-1 pl-2 border-l border-slate-200 dark:border-white/10 text-[11px] text-slate-500 dark:text-gray-400">
               <span>1$ =</span>
               <input
                 type="number"
                 value={customRates[crmCurrency] || 1}
                 onChange={(e) => onRateChange && onRateChange(crmCurrency, e.target.value)}
-                className="w-20 bg-black/40 border border-white/15 rounded px-1.5 py-0.5 text-white font-mono text-xs focus:outline-none focus:border-emerald-400"
+                className="w-20 bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-white/15 rounded px-1.5 py-0.5 text-slate-800 dark:text-white font-mono text-xs focus:outline-none focus:border-emerald-500"
                 title="Tùy chỉnh tỷ giá quy đổi cho loại tiền tệ này"
               />
-              <span className="font-semibold text-emerald-300">{crmCurrency}</span>
+              <span className="font-semibold text-emerald-600 dark:text-emerald-300">{crmCurrency}</span>
             </div>
           )}
         </div>
@@ -6396,7 +6440,7 @@ function CRMModule({
             {canExportLeads && (
               <button
                 onClick={handleExportCSV}
-                className="px-3 py-1.5 bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-medium rounded-lg border border-white/10 flex items-center gap-1.5 transition-all cursor-pointer"
+                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-gray-300 text-xs font-medium rounded-lg border border-slate-200 dark:border-white/10 flex items-center gap-1.5 transition-all cursor-pointer"
                 title="Xuất file CSV"
               >
                 <Download className="w-3.5 h-3.5" /> Xuất CSV
@@ -6405,7 +6449,7 @@ function CRMModule({
             {canCreateLead && (
               <button
                 onClick={onOpenImportModal}
-                className="px-3 py-1.5 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 text-xs font-medium rounded-lg border border-emerald-500/30 flex items-center gap-1.5 transition-all cursor-pointer"
+                className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/15 dark:hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 text-xs font-medium rounded-lg border border-emerald-200 dark:border-emerald-500/30 flex items-center gap-1.5 transition-all cursor-pointer"
                 title="Tải lên danh sách Lead từ tệp CSV"
               >
                 <Upload className="w-3.5 h-3.5" /> Nhập CSV
@@ -6414,16 +6458,16 @@ function CRMModule({
             {canUseAiAdvisor && (
               <button
                 onClick={onOpenGeminiAdvisor}
-                className="px-3 py-1.5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-pink-300 text-xs font-bold rounded-lg border border-pink-500/30 flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-purple-500/10"
+                className="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 dark:bg-gradient-to-r dark:from-purple-500/20 dark:to-pink-500/20 text-purple-700 dark:text-pink-300 text-xs font-bold rounded-lg border border-purple-200 dark:border-pink-500/30 flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
                 title="Phân tích phễu và xin tư vấn chiến lược từ Gemini AI"
               >
-                <Sparkles className="w-3.5 h-3.5 text-amber-300" /> Trợ Lý Gemini AI
+                <Sparkles className="w-3.5 h-3.5 text-amber-500 dark:text-amber-300" /> Trợ Lý Gemini AI
               </button>
             )}
             {canCreateLead && (
               <button
                 onClick={handleSyncFromCampaigns}
-                className="px-3 py-1.5 bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 text-xs font-medium rounded-lg border border-indigo-500/30 flex items-center gap-1.5 transition-all cursor-pointer"
+                className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/15 dark:hover:bg-indigo-500/25 text-indigo-700 dark:text-indigo-300 text-xs font-medium rounded-lg border border-indigo-200 dark:border-indigo-500/30 flex items-center gap-1.5 transition-all cursor-pointer"
                 title="Đồng bộ Lead từ chiến dịch Meta Ads"
               >
                 <RefreshCw className="w-3.5 h-3.5" /> Đồng bộ từ Ads
@@ -6432,7 +6476,7 @@ function CRMModule({
             {canCreateLead && (
               <button
                 onClick={onOpenAddLeadModal}
-                className="px-3.5 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-xs font-bold rounded-lg shadow-lg shadow-emerald-950/40 hover:opacity-90 flex items-center gap-1.5 transition-all cursor-pointer uppercase font-levents"
+                className="px-3.5 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-xs font-bold rounded-lg shadow-md hover:opacity-90 flex items-center gap-1.5 transition-all cursor-pointer uppercase font-levents"
               >
                 <Plus className="w-3.5 h-3.5" /> Thêm Khách Hàng
               </button>
@@ -6446,43 +6490,43 @@ function CRMModule({
         <div className="space-y-5">
           {/* Quick CRM KPI Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 flex-shrink-0">
+            <div className="bg-white dark:bg-white/5 border border-slate-200/80 dark:border-white/10 rounded-2xl p-4 flex items-center gap-3 shadow-sm">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/20 dark:border-blue-500/30 flex items-center justify-center text-blue-600 dark:text-blue-400 flex-shrink-0">
                 <Users className="w-5 h-5" />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider">Tổng Khách Hàng</p>
-                <p className="text-xl font-black text-white">{totalLeads}</p>
+                <p className="text-[10px] uppercase font-semibold text-slate-500 dark:text-gray-400 tracking-wider">Tổng Khách Hàng</p>
+                <p className="text-xl font-black text-slate-900 dark:text-white">{totalLeads}</p>
               </div>
             </div>
 
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 flex-shrink-0">
+            <div className="bg-white dark:bg-white/5 border border-slate-200/80 dark:border-white/10 rounded-2xl p-4 flex items-center gap-3 shadow-sm">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 dark:border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 flex-shrink-0">
                 <MessageSquare className="w-5 h-5" />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider">Đang Chăm Sóc</p>
-                <p className="text-xl font-black text-amber-300">{newCount + contactingCount}</p>
+                <p className="text-[10px] uppercase font-semibold text-slate-500 dark:text-gray-400 tracking-wider">Đang Chăm Sóc</p>
+                <p className="text-xl font-black text-amber-600 dark:text-amber-300">{newCount + contactingCount}</p>
               </div>
             </div>
 
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 flex-shrink-0">
+            <div className="bg-white dark:bg-white/5 border border-slate-200/80 dark:border-white/10 rounded-2xl p-4 flex items-center gap-3 shadow-sm">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 dark:border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 flex-shrink-0">
                 <CheckSquare className="w-5 h-5" />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider">Khách Đã Nạp Tiền</p>
-                <p className="text-xl font-black text-emerald-300">{fundedLeads.length} <span className="text-xs font-normal text-gray-400">({fundedConversionRate}%)</span></p>
+                <p className="text-[10px] uppercase font-semibold text-slate-500 dark:text-gray-400 tracking-wider">Khách Đã Nạp Tiền</p>
+                <p className="text-xl font-black text-emerald-600 dark:text-emerald-300">{fundedLeads.length} <span className="text-xs font-normal text-slate-500 dark:text-gray-400">({fundedConversionRate}%)</span></p>
               </div>
             </div>
 
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 flex-shrink-0">
+            <div className="bg-white dark:bg-white/5 border border-slate-200/80 dark:border-white/10 rounded-2xl p-4 flex items-center gap-3 shadow-sm">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 dark:border-cyan-500/30 flex items-center justify-center text-cyan-600 dark:text-cyan-400 flex-shrink-0">
                 <DollarSign className="w-5 h-5" />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider">Tổng Tiền Nạp</p>
-                <p className="text-xl font-black text-cyan-300">{formatMoney(totalFundedDeposit)}</p>
+                <p className="text-[10px] uppercase font-semibold text-slate-500 dark:text-gray-400 tracking-wider">Tổng Tiền Nạp</p>
+                <p className="text-xl font-black text-cyan-600 dark:text-cyan-300">{formatMoney(totalFundedDeposit)}</p>
               </div>
             </div>
           </div>
@@ -6493,10 +6537,10 @@ function CRMModule({
             <div className="flex flex-wrap items-center gap-2.5 flex-1">
               {/* Search */}
               <div className="relative flex-1 min-w-[200px] max-w-sm">
-                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 text-slate-400 dark:text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-400 h-[36px]"
+                  className="w-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-gray-500 focus:outline-none focus:border-emerald-500 h-[36px]"
                   placeholder="Tìm theo tên, SĐT, email, ghi chú..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -6505,93 +6549,93 @@ function CRMModule({
 
               {/* Filter Stage */}
               <select
-                className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-400 h-[36px] cursor-pointer"
+                className="bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500 h-[36px] cursor-pointer"
                 value={filterStage}
                 onChange={(e) => setFilterStage(e.target.value)}
               >
-                <option value="all" className="bg-[#070d09]">Tất cả giai đoạn</option>
+                <option value="all" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">Tất cả giai đoạn</option>
                 {CRM_STAGES.map(st => (
-                  <option key={st.id} value={st.id} className="bg-[#070d09]">{st.label}</option>
+                  <option key={st.id} value={st.id} className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">{st.label}</option>
                 ))}
               </select>
 
               {/* Filter Profile (Chỉ hiển thị khi bật nhiều thành viên) */}
               {enableCrmMembers && (
                 <select
-                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-400 h-[36px] cursor-pointer"
+                  className="bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500 h-[36px] cursor-pointer"
                   value={filterProfile}
                   onChange={(e) => setFilterProfile(e.target.value)}
                 >
-                  <option value="all" className="bg-[#070d09]">Tất cả nhân sự</option>
+                  <option value="all" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">Tất cả nhân sự</option>
                   {profiles.map(p => (
-                    <option key={p.id} value={p.id} className="bg-[#070d09]">{p.name} ({p.role})</option>
+                    <option key={p.id} value={p.id} className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">{p.name} ({p.role})</option>
                   ))}
                 </select>
               )}
 
               {/* Filter Source */}
               <select
-                className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-400 h-[36px] cursor-pointer"
+                className="bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500 h-[36px] cursor-pointer"
                 value={filterSource}
                 onChange={(e) => setFilterSource(e.target.value)}
               >
-                <option value="all" className="bg-[#070d09]">Tất cả nguồn</option>
-                <option value="Facebook Ads / Form" className="bg-[#070d09]">Facebook Ads / Form</option>
-                <option value="Website / Funnel" className="bg-[#070d09]">Website / Funnel</option>
-                <option value="Zalo / Chat" className="bg-[#070d09]">Zalo / Chat</option>
-                <option value="Hotline" className="bg-[#070d09]">Hotline</option>
-                <option value="Giới thiệu / Referral" className="bg-[#070d09]">Giới thiệu / Referral</option>
-                <option value="Khác" className="bg-[#070d09]">Khác</option>
+                <option value="all" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">Tất cả nguồn</option>
+                <option value="Facebook Ads / Form" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">Facebook Ads / Form</option>
+                <option value="Website / Funnel" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">Website / Funnel</option>
+                <option value="Zalo / Chat" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">Zalo / Chat</option>
+                <option value="Hotline" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">Hotline</option>
+                <option value="Giới thiệu / Referral" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">Giới thiệu / Referral</option>
+                <option value="Khác" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">Khác</option>
               </select>
 
               {/* Filter Deposit Status */}
               <select
-                className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-400 h-[36px] cursor-pointer"
+                className="bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500 h-[36px] cursor-pointer"
                 value={filterDeposit}
                 onChange={(e) => setFilterDeposit(e.target.value)}
               >
-                <option value="all" className="bg-[#070d09]">Tất cả tiền nạp</option>
-                <option value="has_deposit" className="bg-[#070d09]">🟢 Đã nạp tiền (&gt; 0)</option>
-                <option value="no_deposit" className="bg-[#070d09]">⚪ Chưa nạp tiền (= 0)</option>
+                <option value="all" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">Tất cả tiền nạp</option>
+                <option value="has_deposit" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">🟢 Đã nạp tiền (&gt; 0)</option>
+                <option value="no_deposit" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">⚪ Chưa nạp tiền (= 0)</option>
               </select>
 
               {/* Filter Date Created */}
               <select
-                className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-400 h-[36px] cursor-pointer"
+                className="bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500 h-[36px] cursor-pointer"
                 value={filterTime}
                 onChange={(e) => setFilterTime(e.target.value)}
               >
-                <option value="all" className="bg-[#070d09]">Mọi thời gian</option>
-                <option value="today" className="bg-[#070d09]">Hôm nay</option>
-                <option value="7d" className="bg-[#070d09]">7 ngày qua</option>
-                <option value="30d" className="bg-[#070d09]">30 ngày qua</option>
-                <option value="this_month" className="bg-[#070d09]">Tháng này</option>
+                <option value="all" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">Mọi thời gian</option>
+                <option value="today" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">Hôm nay</option>
+                <option value="7d" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">7 ngày qua</option>
+                <option value="30d" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">30 ngày qua</option>
+                <option value="this_month" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">Tháng này</option>
               </select>
 
               {/* Filter Campaign */}
               {availableCampaigns.length > 0 && (
                 <select
-                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-400 h-[36px] cursor-pointer max-w-[180px] truncate"
+                  className="bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500 h-[36px] cursor-pointer max-w-[180px] truncate"
                   value={filterCampaign}
                   onChange={(e) => setFilterCampaign(e.target.value)}
                 >
-                  <option value="all" className="bg-[#070d09]">Tất cả chiến dịch</option>
+                  <option value="all" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">Tất cả chiến dịch</option>
                   {availableCampaigns.map(c => (
-                    <option key={c} value={c} className="bg-[#070d09]">{c}</option>
+                    <option key={c} value={c} className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">{c}</option>
                   ))}
                 </select>
               )}
 
               {/* Sort Selector */}
               <select
-                className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-400 h-[36px] cursor-pointer"
+                className="bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500 h-[36px] cursor-pointer"
                 value={sortField}
                 onChange={(e) => setSortField(e.target.value)}
               >
-                <option value="newest" className="bg-[#070d09]">Mới nhất trước</option>
-                <option value="deposit_desc" className="bg-[#070d09]">Tiền nạp cao nhất</option>
-                <option value="due_asc" className="bg-[#070d09]">Hạn chăm sóc gần nhất</option>
-                <option value="name_asc" className="bg-[#070d09]">Tên A-Z</option>
+                <option value="newest" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">Mới nhất trước</option>
+                <option value="deposit_desc" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">Tiền nạp cao nhất</option>
+                <option value="due_asc" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">Hạn chăm sóc gần nhất</option>
+                <option value="name_asc" className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">Tên A-Z</option>
               </select>
 
               {/* Reset Filters */}
@@ -6607,7 +6651,7 @@ function CRMModule({
                     setFilterCampaign('all');
                     setQuickFilter('all');
                   }}
-                  className="px-2.5 py-1 rounded-lg text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all flex items-center gap-1 cursor-pointer h-[36px]"
+                  className="px-2.5 py-1 rounded-lg text-xs bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20 transition-all flex items-center gap-1 cursor-pointer h-[36px]"
                   title="Xóa tất cả bộ lọc CRM"
                 >
                   <RotateCcw className="w-3 h-3" />
@@ -6617,11 +6661,11 @@ function CRMModule({
             </div>
 
             {/* View Mode Toggle (Kanban vs Table) */}
-            <div className="flex items-center bg-white/5 p-1 rounded-xl border border-white/10 self-end md:self-auto">
+            <div className="flex items-center bg-slate-100 dark:bg-white/5 p-1 rounded-xl border border-slate-200 dark:border-white/10 self-end md:self-auto">
               <button
                 onClick={() => setViewMode('kanban')}
                 className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer uppercase font-levents ${
-                  viewMode === 'kanban' ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md' : 'text-gray-400 hover:text-white'
+                  viewMode === 'kanban' ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md' : 'text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <Kanban className="w-3.5 h-3.5" /> Kanban
@@ -6629,7 +6673,7 @@ function CRMModule({
               <button
                 onClick={() => setViewMode('table')}
                 className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer uppercase font-levents ${
-                  viewMode === 'table' ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md' : 'text-gray-400 hover:text-white'
+                  viewMode === 'table' ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md' : 'text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <ListFilter className="w-3.5 h-3.5" /> Bảng Dữ Liệu
@@ -6639,14 +6683,14 @@ function CRMModule({
 
           {/* Quick Filter Chips */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs no-scrollbar">
-            <span className="text-gray-400 font-semibold text-[11px] flex-shrink-0">Lọc nhanh:</span>
+            <span className="text-slate-500 dark:text-gray-400 font-semibold text-[11px] flex-shrink-0">Lọc nhanh:</span>
             <button
               type="button"
               onClick={() => setQuickFilter('all')}
               className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer whitespace-nowrap ${
                 quickFilter === 'all'
-                  ? 'bg-white/20 text-white border border-white/30 font-bold'
-                  : 'bg-white/5 text-gray-400 hover:text-white'
+                  ? 'bg-slate-800 text-white dark:bg-white/20 dark:text-white border border-slate-700 dark:border-white/30 font-bold'
+                  : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white border border-slate-200/60 dark:border-transparent'
               }`}
             >
               Tất cả ({leads.length})
@@ -6656,11 +6700,11 @@ function CRMModule({
               onClick={() => setQuickFilter('hot')}
               className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                 quickFilter === 'hot'
-                  ? 'bg-red-500/20 text-red-300 border border-red-500/40 font-bold'
-                  : 'bg-white/5 text-gray-400 hover:text-red-300'
+                  ? 'bg-red-500/20 text-red-700 dark:text-red-300 border border-red-500/40 font-bold'
+                  : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-300 border border-slate-200/60 dark:border-transparent'
               }`}
             >
-              <Flame className="w-3.5 h-3.5 text-red-400" />
+              <Flame className="w-3.5 h-3.5 text-red-500 dark:text-red-400" />
               Lead Nóng ({leads.filter(l => l.priority === 'hot').length})
             </button>
             <button
@@ -6668,11 +6712,11 @@ function CRMModule({
               onClick={() => setQuickFilter('due_today')}
               className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                 quickFilter === 'due_today'
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold'
-                  : 'bg-white/5 text-gray-400 hover:text-amber-300'
+                  ? 'bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/40 font-bold'
+                  : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-gray-400 hover:text-amber-700 dark:hover:text-amber-300 border border-slate-200/60 dark:border-transparent'
               }`}
             >
-              <Clock className="w-3.5 h-3.5 text-amber-400" />
+              <Clock className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
               Hôm nay cần gọi ({leads.filter(l => l.followUpDate === new Date().toISOString().slice(0, 10)).length})
             </button>
             <button
@@ -6680,11 +6724,11 @@ function CRMModule({
               onClick={() => setQuickFilter('overdue')}
               className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                 quickFilter === 'overdue'
-                  ? 'bg-red-500/20 text-red-300 border border-red-500/40 font-bold'
-                  : 'bg-white/5 text-gray-400 hover:text-red-300'
+                  ? 'bg-red-500/20 text-red-700 dark:text-red-300 border border-red-500/40 font-bold'
+                  : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-300 border border-slate-200/60 dark:border-transparent'
               }`}
             >
-              <AlertCircle className="w-3.5 h-3.5 text-red-400" />
+              <AlertCircle className="w-3.5 h-3.5 text-red-500 dark:text-red-400" />
               Quá hạn ({leads.filter(l => l.followUpDate && l.followUpDate < new Date().toISOString().slice(0, 10)).length})
             </button>
             <button
@@ -6692,20 +6736,20 @@ function CRMModule({
               onClick={() => setQuickFilter('funded')}
               className={`px-3 py-1.5 rounded-xl font-medium transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                 quickFilter === 'funded'
-                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold'
-                  : 'bg-white/5 text-gray-400 hover:text-emerald-300'
+                  ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40 font-bold'
+                  : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-300 border border-slate-200/60 dark:border-transparent'
               }`}
             >
-              <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+              <DollarSign className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               Đã nạp tiền ({leads.filter(l => (parseFloat(l.deposit) || 0) > 0).length})
             </button>
           </div>
 
           {/* Bulk Actions Bar */}
           {selectedLeadIds.length > 0 && (
-            <div className="bg-gradient-to-r from-emerald-950/90 to-teal-950/90 border border-emerald-500/40 rounded-2xl p-3 px-4 shadow-2xl flex flex-wrap items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2 text-white font-bold font-levents uppercase">
-                <CheckSquare className="w-4 h-4 text-emerald-400" />
+            <div className="bg-emerald-50 dark:bg-gradient-to-r dark:from-emerald-950/90 dark:to-teal-950/90 border border-emerald-300 dark:border-emerald-500/40 rounded-2xl p-3 px-4 shadow-lg flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-emerald-800 dark:text-white font-bold font-levents uppercase">
+                <CheckSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 <span>Đã chọn {selectedLeadIds.length} khách hàng</span>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -6715,11 +6759,11 @@ function CRMModule({
                     handleBulkStageChange(e.target.value);
                     e.target.value = "";
                   }}
-                  className="bg-black/40 border border-white/20 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none cursor-pointer"
+                  className="bg-white dark:bg-black/40 border border-slate-300 dark:border-white/20 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none cursor-pointer"
                 >
-                  <option value="" disabled>Chuyển giai đoạn...</option>
+                  <option value="" disabled className="text-slate-400">Chuyển giai đoạn...</option>
                   {CRM_STAGES.map(s => (
-                    <option key={s.id} value={s.id} className="bg-[#070d09]">{s.label}</option>
+                    <option key={s.id} value={s.id} className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">{s.label}</option>
                   ))}
                 </select>
 
@@ -6730,11 +6774,11 @@ function CRMModule({
                       handleBulkAssign(e.target.value);
                       e.target.value = "";
                     }}
-                    className="bg-black/40 border border-white/20 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none cursor-pointer"
+                    className="bg-white dark:bg-black/40 border border-slate-300 dark:border-white/20 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 dark:text-white focus:outline-none cursor-pointer"
                   >
-                    <option value="" disabled>Gán nhân sự...</option>
+                    <option value="" disabled className="text-slate-400">Gán nhân sự...</option>
                     {profiles.map(p => (
-                      <option key={p.id} value={p.id} className="bg-[#070d09]">{p.name}</option>
+                      <option key={p.id} value={p.id} className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">{p.name}</option>
                     ))}
                   </select>
                 )}
@@ -6742,7 +6786,7 @@ function CRMModule({
                 <button
                   type="button"
                   onClick={handleBulkExport}
-                  className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium flex items-center gap-1 cursor-pointer"
+                  className="px-3 py-1.5 rounded-xl bg-white dark:bg-white/10 hover:bg-slate-100 dark:hover:bg-white/20 text-slate-800 dark:text-white font-medium flex items-center gap-1 border border-slate-200 dark:border-white/10 cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5" /> Xuất CSV
                 </button>
@@ -6750,7 +6794,7 @@ function CRMModule({
                 <button
                   type="button"
                   onClick={handleBulkDelete}
-                  className="px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-300 font-medium flex items-center gap-1 cursor-pointer"
+                  className="px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-700 dark:text-red-300 font-medium flex items-center gap-1 border border-red-500/20 cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Xóa đã chọn
                 </button>
@@ -6758,7 +6802,7 @@ function CRMModule({
                 <button
                   type="button"
                   onClick={() => setSelectedLeadIds([])}
-                  className="px-2.5 py-1.5 rounded-xl text-gray-400 hover:text-white font-medium cursor-pointer"
+                  className="px-2.5 py-1.5 rounded-xl text-slate-500 hover:text-slate-800 dark:text-gray-400 dark:hover:text-white font-medium cursor-pointer"
                 >
                   Bỏ chọn
                 </button>
@@ -6769,8 +6813,8 @@ function CRMModule({
           {/* KANBAN BOARD VIEW */}
           {viewMode === 'kanban' ? (
             <div>
-              <div className="flex items-center gap-1.5 text-[11px] text-gray-400 xl:hidden mb-2 px-1">
-                <Sparkles className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-gray-400 xl:hidden mb-2 px-1">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                 <span>Vuốt ngang 👈 👉 để lướt qua 6 giai đoạn phễu CRM</span>
               </div>
               <div className="flex flex-row overflow-x-auto gap-3.5 pb-4 items-start no-scrollbar touch-scroll-x snap-x snap-mandatory xl:grid xl:grid-cols-6 xl:overflow-x-visible">
@@ -6780,20 +6824,20 @@ function CRMModule({
                   return (
                     <div 
                       key={stage.id} 
-                      className="min-w-[285px] sm:min-w-[320px] w-[82vw] sm:w-[340px] xl:w-auto xl:min-w-0 flex-shrink-0 snap-start insure-glass rounded-2xl sm:rounded-3xl flex flex-col max-h-[75vh] shadow-2xl overflow-hidden border border-emerald-500/15"
+                      className="min-w-[285px] sm:min-w-[320px] w-[82vw] sm:w-[340px] xl:w-auto xl:min-w-0 flex-shrink-0 snap-start bg-slate-100/80 dark:bg-[#0d1810]/95 backdrop-blur-md rounded-2xl sm:rounded-3xl flex flex-col max-h-[75vh] shadow-md dark:shadow-2xl overflow-hidden border border-slate-200 dark:border-emerald-500/15"
                     >
                     {/* Column Header */}
-                    <div className="p-3.5 border-b border-white/10 bg-white/[0.02]">
+                    <div className="p-3.5 border-b border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/[0.02]">
                       <div className="flex items-center justify-between mb-1.5">
                         <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border font-levents ${stage.color}`}>
                           {stage.label}
                         </span>
-                        <span className="text-xs font-mono font-bold text-white bg-white/10 px-2 py-0.5 rounded-full">
+                        <span className="text-xs font-mono font-bold text-slate-700 dark:text-white bg-slate-200 dark:bg-white/10 px-2 py-0.5 rounded-full">
                           {stageLeads.length}
                         </span>
                       </div>
                       {stageTotalDeposit > 0 && (
-                        <p className="text-xs font-mono text-emerald-400 font-bold">
+                        <p className="text-xs font-mono text-emerald-600 dark:text-emerald-400 font-bold">
                           ${stageTotalDeposit.toLocaleString()}
                         </p>
                       )}
@@ -6802,7 +6846,7 @@ function CRMModule({
                     {/* Column Cards Container */}
                     <div className="p-2.5 space-y-2.5 overflow-y-auto flex-1 touch-scroll-y">
                       {stageLeads.length === 0 ? (
-                        <div className="p-6 text-center text-xs text-gray-500 border border-dashed border-white/10 rounded-2xl">
+                        <div className="p-6 text-center text-xs text-slate-400 dark:text-gray-500 border border-dashed border-slate-200 dark:border-white/10 rounded-2xl">
                           Chưa có khách
                         </div>
                       ) : (
@@ -6814,19 +6858,19 @@ function CRMModule({
                           return (
                             <div 
                               key={lead.id} 
-                              className="bg-[#0b1610]/80 hover:bg-[#102217]/90 border border-emerald-500/15 hover:border-emerald-500/50 rounded-2xl p-3.5 transition-all duration-200 shadow-md group relative cursor-pointer"
+                              className="bg-white dark:bg-[#0b1610]/90 hover:bg-slate-50 dark:hover:bg-[#102217]/90 border border-slate-200/90 dark:border-emerald-500/20 hover:border-emerald-400 dark:hover:border-emerald-500/50 rounded-2xl p-3.5 transition-all duration-200 shadow-sm hover:shadow-md dark:shadow-md group relative cursor-pointer"
                               onClick={() => onOpenLeadDetail && onOpenLeadDetail(lead)}
                             >
                               <div className="flex items-start justify-between gap-2 mb-2">
                                 <div className="min-w-0 flex items-center gap-1.5">
                                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                    lead.priority === 'hot' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' :
-                                    lead.priority === 'warm' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
-                                    'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                    lead.priority === 'hot' ? 'bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30' :
+                                    lead.priority === 'warm' ? 'bg-amber-50 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30' :
+                                    'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30'
                                   }`}>
                                     {lead.priority === 'hot' ? '🔥 Hot' : lead.priority === 'warm' ? '⚡ Warm' : '❄️ Cold'}
                                   </span>
-                                  <h4 className="font-bold text-xs text-white group-hover:text-emerald-300 transition-colors truncate font-levents">
+                                  <h4 className="font-bold text-xs text-slate-800 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors truncate font-levents">
                                     {lead.name}
                                   </h4>
                                 </div>
@@ -6834,7 +6878,7 @@ function CRMModule({
                                   {canEditLead && (
                                     <button
                                       onClick={() => onEditLead(lead)}
-                                      className="p-1 text-gray-400 hover:text-white transition-colors cursor-pointer"
+                                      className="p-1 text-slate-400 hover:text-slate-700 dark:text-gray-400 dark:hover:text-white transition-colors cursor-pointer"
                                       title="Sửa thông tin"
                                     >
                                       <Edit3 className="w-3 h-3" />
@@ -6843,7 +6887,7 @@ function CRMModule({
                                   {canDeleteLead && (
                                     <button
                                       onClick={() => handleDeleteLead(lead.id)}
-                                      className="p-1 text-gray-400 hover:text-red-400 transition-colors cursor-pointer"
+                                      className="p-1 text-slate-400 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition-colors cursor-pointer"
                                       title="Xóa khách"
                                     >
                                       <Trash2 className="w-3 h-3" />
@@ -6853,18 +6897,18 @@ function CRMModule({
                               </div>
 
                               {/* Contact & Source */}
-                              <div className="space-y-1 mb-2 text-[11px] text-gray-400">
+                              <div className="space-y-1 mb-2 text-[11px] text-slate-600 dark:text-gray-400">
                                 {lead.phone && (
-                                  <div className="flex items-center justify-between text-gray-300">
+                                  <div className="flex items-center justify-between text-slate-700 dark:text-gray-300">
                                     <div className="flex items-center gap-1.5">
-                                      <Phone className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+                                      <Phone className="w-3 h-3 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                                       <span className="font-mono">{canViewSensitive ? lead.phone : maskPhoneNumber(lead.phone)}</span>
                                     </div>
                                     {canViewSensitive && (
                                       <a
                                         href={`tel:${lead.phone}`}
                                         onClick={(e) => e.stopPropagation()}
-                                        className="text-[10px] text-emerald-400 hover:underline"
+                                        className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline font-semibold"
                                       >
                                         Gọi
                                       </a>
@@ -6872,17 +6916,17 @@ function CRMModule({
                                   </div>
                                 )}
                                 {lead.email && (
-                                  <div className="flex items-center gap-1.5 truncate">
-                                    <Mail className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+                                  <div className="flex items-center gap-1.5 truncate text-slate-600 dark:text-gray-300">
+                                    <Mail className="w-3 h-3 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                                     <span className="truncate">{canViewSensitive ? lead.email : maskEmail(lead.email)}</span>
                                   </div>
                                 )}
                                 <div className="flex items-center justify-between text-[10px] pt-1">
-                                  <span className="px-1.5 py-0.5 bg-white/5 rounded text-gray-400 truncate max-w-[110px]">
+                                  <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-white/5 rounded text-slate-600 dark:text-gray-400 border border-slate-200 dark:border-white/5 truncate max-w-[110px]">
                                     {lead.source}
                                   </span>
                                   {parseFloat(lead.deposit) > 0 && (
-                                    <span className="font-mono font-bold text-emerald-300 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                                    <span className="font-mono font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-500/20">
                                       +${lead.deposit.toLocaleString()}
                                     </span>
                                   )}
@@ -6896,7 +6940,7 @@ function CRMModule({
                                         e.stopPropagation();
                                         onOpenAdPost(getAdPostForLead(lead));
                                       }}
-                                      className="text-[10px] text-emerald-400 hover:text-emerald-300 hover:underline flex items-center gap-1 cursor-pointer"
+                                      className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:underline flex items-center gap-1 cursor-pointer font-medium"
                                       title="Xem bài post quảng cáo Facebook tương ứng"
                                     >
                                       <Layers className="w-3 h-3" /> Bài post ads
@@ -6906,9 +6950,9 @@ function CRMModule({
 
                                 {lead.followUpDate && (
                                   <div className={`text-[10px] flex items-center gap-1 font-mono pt-0.5 ${
-                                    isDueToday ? 'text-amber-300 font-bold' :
-                                    isOverdue ? 'text-red-400 font-bold' :
-                                    'text-gray-400'
+                                    isDueToday ? 'text-amber-700 dark:text-amber-300 font-bold' :
+                                    isOverdue ? 'text-red-600 dark:text-red-400 font-bold' :
+                                    'text-slate-500 dark:text-gray-400'
                                   }`}>
                                     <Clock className="w-3 h-3" />
                                     {isDueToday ? 'Hôm nay hẹn gọi' : isOverdue ? `Quá hạn (${lead.followUpDate})` : `Hẹn: ${lead.followUpDate}`}
@@ -6918,7 +6962,7 @@ function CRMModule({
                                 {lead.tags && lead.tags.length > 0 && (
                                   <div className="flex flex-wrap gap-1 pt-1">
                                     {lead.tags.slice(0, 2).map((t, idx) => (
-                                      <span key={idx} className="text-[9px] bg-white/5 border border-white/10 px-1.5 py-0.2 rounded text-gray-300">
+                                      <span key={idx} className="text-[9px] bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 px-1.5 py-0.2 rounded text-slate-600 dark:text-gray-300">
                                         #{t}
                                       </span>
                                     ))}
@@ -6928,15 +6972,15 @@ function CRMModule({
 
                               {/* Notes */}
                               {lead.notes && (
-                                <p className="text-[10px] text-gray-400 italic bg-white/[0.02] p-1.5 rounded border border-white/5 mb-2 line-clamp-2">
+                                <p className="text-[10px] text-slate-600 dark:text-gray-400 italic bg-slate-50 dark:bg-white/[0.02] p-1.5 rounded border border-slate-200/80 dark:border-white/5 mb-2 line-clamp-2">
                                   "{lead.notes}"
                                 </p>
                               )}
 
                               {/* Footer: Assigned & Stage Transition */}
-                              <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-1 text-[10px]" onClick={(e) => e.stopPropagation()}>
+                              <div className="pt-2 border-t border-slate-100 dark:border-white/5 flex items-center justify-between gap-1 text-[10px]" onClick={(e) => e.stopPropagation()}>
                                 {enableCrmMembers ? (
-                                  <div className="flex items-center gap-1 text-gray-400 truncate">
+                                  <div className="flex items-center gap-1 text-slate-600 dark:text-gray-400 truncate">
                                     <span className={`w-4 h-4 rounded-full ${assignedProf ? assignedProf.avatarBg : 'bg-emerald-600'} flex items-center justify-center text-[8px] font-bold text-white flex-shrink-0`}>
                                       {assignedProf ? assignedProf.name.charAt(0).toUpperCase() : 'U'}
                                     </span>
@@ -6950,12 +6994,12 @@ function CRMModule({
 
                                 {/* Quick Stage Selector */}
                                 <select
-                                  className="bg-white/5 border border-white/10 rounded px-1 py-0.5 text-[9px] text-gray-300 focus:outline-none cursor-pointer"
+                                  className="bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded px-1 py-0.5 text-[9px] text-slate-700 dark:text-gray-300 focus:outline-none cursor-pointer"
                                   value={lead.status}
                                   onChange={(e) => handleStageChange(lead.id, e.target.value)}
                                 >
                                   {CRM_STAGES.map(s => (
-                                    <option key={s.id} value={s.id} className="bg-[#070d09]">{s.label}</option>
+                                    <option key={s.id} value={s.id} className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-gray-200">{s.label}</option>
                                   ))}
                                 </select>
                               </div>
@@ -6971,17 +7015,17 @@ function CRMModule({
             </div>
           ) : (
             /* DATA TABLE VIEW */
-            <div className="bg-[#070d09]/90 border border-emerald-500/20 rounded-2xl shadow-xl overflow-hidden">
+            <div className="bg-white dark:bg-[#070d09]/90 border border-slate-200 dark:border-emerald-500/20 rounded-2xl shadow-md dark:shadow-xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs whitespace-nowrap">
-                  <thead className="bg-black/40 text-gray-400 uppercase text-[10px] tracking-wider border-b border-white/10">
+                  <thead className="bg-slate-100 dark:bg-black/40 text-slate-600 dark:text-gray-400 uppercase text-[10px] tracking-wider border-b border-slate-200 dark:border-white/10">
                     <tr>
                       <th className="px-4 py-3 w-8">
                         <input
                           type="checkbox"
                           checked={sortedLeads.length > 0 && selectedLeadIds.length === sortedLeads.length}
                           onChange={toggleSelectAll}
-                          className="rounded bg-white/10 border-white/20 text-emerald-500 focus:ring-0 cursor-pointer"
+                          className="rounded bg-slate-100 dark:bg-white/10 border-slate-300 dark:border-white/20 text-emerald-600 focus:ring-0 cursor-pointer"
                         />
                       </th>
                       <th className="px-4 py-3">Khách Hàng</th>
@@ -6995,10 +7039,10 @@ function CRMModule({
                       <th className="px-4 py-3 text-center">Thao Tác</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5">
+                  <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                     {sortedLeads.length === 0 ? (
                       <tr>
-                        <td colSpan={enableCrmMembers ? 10 : 9} className="px-4 py-8 text-center text-gray-500">
+                        <td colSpan={enableCrmMembers ? 10 : 9} className="px-4 py-8 text-center text-slate-400 dark:text-gray-500">
                           Không tìm thấy khách hàng nào phù hợp với bộ lọc.
                         </td>
                       </tr>
@@ -7008,81 +7052,81 @@ function CRMModule({
                         const stageObj = CRM_STAGES.find(s => s.id === lead.status) || CRM_STAGES[0];
                         const isOverdue = lead.followUpDate && new Date(lead.followUpDate) < new Date(new Date().setHours(0,0,0,0));
                         return (
-                          <tr key={lead.id} className={`hover:bg-white/[0.02] transition-colors ${selectedLeadIds.includes(lead.id) ? 'bg-emerald-500/10' : ''}`}>
+                          <tr key={lead.id} className={`hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors ${selectedLeadIds.includes(lead.id) ? 'bg-emerald-500/10' : ''}`}>
                             <td className="px-4 py-3">
                               <input
                                 type="checkbox"
                                 checked={selectedLeadIds.includes(lead.id)}
                                 onChange={() => toggleSelectLead(lead.id)}
-                                className="rounded bg-white/10 border-white/20 text-emerald-500 focus:ring-0 cursor-pointer"
+                                className="rounded bg-slate-100 dark:bg-white/10 border-slate-300 dark:border-white/20 text-emerald-600 focus:ring-0 cursor-pointer"
                               />
                             </td>
                             <td className="px-4 py-3">
                               <div>
                                 <button
                                   onClick={() => onOpenLeadDetail && onOpenLeadDetail(lead)}
-                                  className="font-semibold text-white hover:text-emerald-400 transition-colors text-left flex items-center gap-1 group cursor-pointer"
+                                  className="font-semibold text-slate-800 dark:text-white hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors text-left flex items-center gap-1 group cursor-pointer"
                                 >
                                   {lead.name}
-                                  <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-emerald-400" />
+                                  <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-emerald-600 dark:text-emerald-400" />
                                 </button>
                                 {lead.tags && lead.tags.length > 0 && (
                                   <div className="flex flex-wrap gap-1 mt-1">
                                     {lead.tags.map((t, idx) => (
-                                      <span key={idx} className="px-1.5 py-0.2 text-[9px] bg-white/5 border border-white/10 rounded text-gray-400">
+                                      <span key={idx} className="px-1.5 py-0.2 text-[9px] bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded text-slate-600 dark:text-gray-400">
                                         {t}
                                       </span>
                                     ))}
                                   </div>
                                 )}
                                 {lead.notes && (
-                                  <p className="text-[10px] font-normal text-gray-400 truncate max-w-xs mt-0.5">{lead.notes}</p>
+                                  <p className="text-[10px] font-normal text-slate-500 dark:text-gray-400 truncate max-w-xs mt-0.5">{lead.notes}</p>
                                 )}
                               </div>
                             </td>
                             <td className="px-4 py-3">
                               <div className="flex flex-col gap-1 items-start">
                                 {lead.priority === 'hot' && (
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 flex items-center gap-1">
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 dark:bg-red-500/10 text-rose-700 dark:text-red-400 border border-rose-200 dark:border-red-500/20 flex items-center gap-1">
                                     <Flame className="w-3 h-3 text-red-500" /> Hot
                                   </span>
                                 )}
                                 {lead.priority === 'warm' && (
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 flex items-center gap-1">
                                     ⚡ Warm
                                   </span>
                                 )}
                                 {(!lead.priority || lead.priority === 'cold') && (
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 flex items-center gap-1">
                                     ❄️ Cold
                                   </span>
                                 )}
                                 {lead.followUpDate ? (
-                                  <span className={`text-[10px] flex items-center gap-1 font-mono ${isOverdue ? 'text-rose-400 font-bold' : 'text-gray-400'}`}>
+                                  <span className={`text-[10px] flex items-center gap-1 font-mono ${isOverdue ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-500 dark:text-gray-400'}`}>
                                     <Clock className="w-2.5 h-2.5" />
                                     {lead.followUpDate} {isOverdue && '(Trễ)'}
                                   </span>
                                 ) : (
-                                  <span className="text-[10px] text-gray-600 italic">Chưa hẹn</span>
+                                  <span className="text-[10px] text-slate-400 dark:text-gray-600 italic">Chưa hẹn</span>
                                 )}
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-gray-300">
+                            <td className="px-4 py-3 text-slate-700 dark:text-gray-300">
                               <p className="font-mono">{canViewSensitive ? (lead.phone || '-') : maskPhoneNumber(lead.phone)}</p>
-                              <p className="text-[10px] text-gray-500">{canViewSensitive ? (lead.email || '-') : maskEmail(lead.email)}</p>
+                              <p className="text-[10px] text-slate-500 dark:text-gray-500">{canViewSensitive ? (lead.email || '-') : maskEmail(lead.email)}</p>
                             </td>
                             <td className="px-4 py-3">
-                              <span className="px-2 py-0.5 bg-white/5 border border-white/10 rounded text-[11px] text-gray-300">
+                              <span className="px-2 py-0.5 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded text-[11px] text-slate-700 dark:text-gray-300">
                                 {lead.source}
                               </span>
                               {lead.campaign && (
-                                <p className="text-[10px] text-gray-400 mt-0.5 font-medium break-words leading-tight" title={lead.campaign}>{lead.campaign}</p>
+                                <p className="text-[10px] text-slate-500 dark:text-gray-400 mt-0.5 font-medium break-words leading-tight" title={lead.campaign}>{lead.campaign}</p>
                               )}
                               {canViewAdCreatives && (
                                 <button
                                   type="button"
                                   onClick={() => onOpenAdPost(getAdPostForLead(lead))}
-                                  className="text-[10px] text-emerald-400 hover:underline flex items-center gap-1 mt-1 cursor-pointer"
+                                  className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 mt-1 cursor-pointer font-medium"
                                   title="Xem mẫu quảng cáo Facebook của lead này"
                                 >
                                   <Layers className="w-2.5 h-2.5" /> Xem Post Ads
@@ -7097,11 +7141,11 @@ function CRMModule({
                                 onChange={(e) => handleStageChange(lead.id, e.target.value)}
                               >
                                 {CRM_STAGES.map(s => (
-                                  <option key={s.id} value={s.id} className="bg-[#070d09] text-white">{s.label}</option>
+                                  <option key={s.id} value={s.id} className="bg-white dark:bg-[#070d09] text-slate-800 dark:text-white">{s.label}</option>
                                 ))}
                               </select>
                             </td>
-                            <td className="px-4 py-3 text-right font-mono font-bold text-emerald-400">
+                            <td className="px-4 py-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
                               ${(lead.deposit || 0).toLocaleString()}
                             </td>
                             {enableCrmMembers && (
@@ -7110,18 +7154,18 @@ function CRMModule({
                                   <span className={`w-5 h-5 rounded-full ${assignedProf ? assignedProf.avatarBg : 'bg-blue-500'} flex items-center justify-center text-[9px] font-bold text-white`}>
                                     {assignedProf ? assignedProf.name.charAt(0).toUpperCase() : 'U'}
                                   </span>
-                                  <span className="text-gray-300">{assignedProf ? assignedProf.name : 'Chưa gán'}</span>
+                                  <span className="text-slate-700 dark:text-gray-300">{assignedProf ? assignedProf.name : 'Chưa gán'}</span>
                                 </div>
                               </td>
                             )}
-                            <td className="px-4 py-3 text-gray-500 font-mono text-[11px]">
+                            <td className="px-4 py-3 text-slate-500 dark:text-gray-500 font-mono text-[11px]">
                               {lead.createdAt}
                             </td>
                             <td className="px-4 py-3 text-center">
                               <div className="flex items-center justify-center gap-1.5">
                                 <button
                                   onClick={() => onOpenLeadDetail && onOpenLeadDetail(lead)}
-                                  className="p-1.5 text-gray-400 hover:text-emerald-400 transition-colors cursor-pointer"
+                                  className="p-1.5 text-slate-400 hover:text-emerald-600 dark:text-gray-400 dark:hover:text-emerald-400 transition-colors cursor-pointer"
                                   title="Chi tiết lead & Kịch bản AI"
                                 >
                                   <ExternalLink className="w-3.5 h-3.5" />
@@ -7129,7 +7173,7 @@ function CRMModule({
                                 {canEditLead && (
                                   <button
                                     onClick={() => onEditLead(lead)}
-                                    className="p-1.5 text-gray-400 hover:text-emerald-400 transition-colors cursor-pointer"
+                                    className="p-1.5 text-slate-400 hover:text-emerald-600 dark:text-gray-400 dark:hover:text-emerald-400 transition-colors cursor-pointer"
                                     title="Chỉnh sửa"
                                   >
                                     <Edit3 className="w-3.5 h-3.5" />
@@ -7138,7 +7182,7 @@ function CRMModule({
                                 {canDeleteLead && (
                                   <button
                                     onClick={() => handleDeleteLead(lead.id)}
-                                    className="p-1.5 text-gray-400 hover:text-red-400 transition-colors cursor-pointer"
+                                    className="p-1.5 text-slate-400 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 transition-colors cursor-pointer"
                                     title="Xóa"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
@@ -7454,16 +7498,16 @@ function LeadModal({ isOpen, editingLead, profiles, campaigns, crmCurrency = 'VN
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
-      <div className="bg-[#070d09] border border-emerald-500/25 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/10">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2 uppercase font-levents">
-            <PlusCircle className="w-5 h-5 text-emerald-400" />
+    <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-[#070d09] border border-slate-200 dark:border-emerald-500/25 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-200 dark:border-white/10">
+          <h2 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2 uppercase font-levents">
+            <PlusCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
             {editingLead ? 'Chỉnh Sửa Thông Tin Khách Hàng' : 'Thêm Khách Hàng / Lead Mới'}
           </h2>
           <button 
             onClick={onClose}
-            className="text-gray-400 hover:text-white text-lg p-1"
+            className="text-slate-400 hover:text-slate-700 dark:text-gray-400 dark:hover:text-white text-lg p-1"
           >
             ✕
           </button>
@@ -7471,47 +7515,47 @@ function LeadModal({ isOpen, editingLead, profiles, campaigns, crmCurrency = 'VN
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div>
-            <label className="block text-gray-300 font-semibold mb-1">Tên Khách Hàng *</label>
+            <label className="block text-slate-700 dark:text-gray-300 font-semibold mb-1">Tên Khách Hàng *</label>
             <input 
               type="text" 
               required
               placeholder="VD: Nguyễn Văn A"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-[#0b1610] border border-white/15 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-emerald-400"
+              className="w-full bg-slate-100 dark:bg-[#0b1610] border border-slate-200 dark:border-white/15 rounded-xl px-3.5 py-2 text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-gray-300 font-semibold mb-1">Số Điện Thoại</label>
+              <label className="block text-slate-700 dark:text-gray-300 font-semibold mb-1">Số Điện Thoại</label>
               <input 
                 type="text" 
                 placeholder="VD: 0912 345 678"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full bg-[#0b1610] border border-white/15 rounded-xl px-3.5 py-2 text-white font-mono focus:outline-none focus:border-emerald-400"
+                className="w-full bg-slate-100 dark:bg-[#0b1610] border border-slate-200 dark:border-white/15 rounded-xl px-3.5 py-2 text-slate-800 dark:text-white font-mono focus:outline-none focus:border-emerald-500"
               />
             </div>
             <div>
-              <label className="block text-gray-300 font-semibold mb-1">Email</label>
+              <label className="block text-slate-700 dark:text-gray-300 font-semibold mb-1">Email</label>
               <input 
                 type="email" 
                 placeholder="VD: email@gmail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-[#0b1610] border border-white/15 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-emerald-400"
+                className="w-full bg-slate-100 dark:bg-[#0b1610] border border-slate-200 dark:border-white/15 rounded-xl px-3.5 py-2 text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-gray-300 font-semibold mb-1">Nguồn Khách Hàng</label>
+              <label className="block text-slate-700 dark:text-gray-300 font-semibold mb-1">Nguồn Khách Hàng</label>
               <select
                 value={source}
                 onChange={(e) => setSource(e.target.value)}
-                className="w-full bg-[#0b1610] border border-white/15 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-emerald-400 cursor-pointer"
+                className="w-full bg-slate-100 dark:bg-[#0b1610] border border-slate-200 dark:border-white/15 rounded-xl px-3.5 py-2 text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
               >
                 <option value="Facebook Ads / Form">Facebook Ads / Form</option>
                 <option value="Website / Funnel">Website / Funnel</option>
@@ -7522,24 +7566,24 @@ function LeadModal({ isOpen, editingLead, profiles, campaigns, crmCurrency = 'VN
               </select>
             </div>
             <div>
-              <label className="block text-gray-300 font-semibold mb-1">Chiến Dịch Ads Liên Quan</label>
+              <label className="block text-slate-700 dark:text-gray-300 font-semibold mb-1">Chiến Dịch Ads Liên Quan</label>
               <input 
                 type="text" 
                 placeholder="Tên chiến dịch"
                 value={campaign}
                 onChange={(e) => setCampaign(e.target.value)}
-                className="w-full bg-[#0b1610] border border-white/15 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-emerald-400"
+                className="w-full bg-slate-100 dark:bg-[#0b1610] border border-slate-200 dark:border-white/15 rounded-xl px-3.5 py-2 text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-gray-300 font-semibold mb-1">Giai Đoạn Phễu</label>
+              <label className="block text-slate-700 dark:text-gray-300 font-semibold mb-1">Giai Đoạn Phễu</label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full bg-[#0b1610] border border-white/15 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-400 cursor-pointer"
+                className="w-full bg-slate-100 dark:bg-[#0b1610] border border-slate-200 dark:border-white/15 rounded-xl px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
               >
                 {CRM_STAGES.map(st => (
                   <option key={st.id} value={st.id}>{st.label}</option>
@@ -7548,15 +7592,15 @@ function LeadModal({ isOpen, editingLead, profiles, campaigns, crmCurrency = 'VN
             </div>
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-gray-300 font-semibold">Tiền Nạp ($ USD)</label>
+                <label className="text-slate-700 dark:text-gray-300 font-semibold">Tiền Nạp ($ USD)</label>
                 {crmCurrency !== 'USD' && (
-                  <span className="text-emerald-300 font-mono text-[10px]">
+                  <span className="text-emerald-600 dark:text-emerald-300 font-mono text-[10px]">
                     ≈ {((parseFloat(deposit) || 0) * (customRates[crmCurrency] || 1)).toLocaleString()} {crmCurrency}
                   </span>
                 )}
               </div>
               <div className="relative">
-                <span className="absolute left-3 top-2 text-emerald-400 font-bold">$</span>
+                <span className="absolute left-3 top-2 text-emerald-600 dark:text-emerald-400 font-bold">$</span>
                 <input 
                   type="number" 
                   min="0"
@@ -7564,17 +7608,17 @@ function LeadModal({ isOpen, editingLead, profiles, campaigns, crmCurrency = 'VN
                   value={deposit}
                   onChange={(e) => setDeposit(e.target.value)}
                   placeholder="0.00"
-                  className="w-full bg-[#0b1610] border border-white/15 rounded-xl pl-7 pr-3 py-2 text-white font-mono focus:outline-none focus:border-emerald-400"
+                  className="w-full bg-slate-100 dark:bg-[#0b1610] border border-slate-200 dark:border-white/15 rounded-xl pl-7 pr-3 py-2 text-slate-800 dark:text-white font-mono focus:outline-none focus:border-emerald-500"
                 />
               </div>
             </div>
             {ENABLE_CRM_MEMBERS && (
               <div>
-                <label className="block text-gray-300 font-semibold mb-1">Người Phụ Trách</label>
+                <label className="block text-slate-700 dark:text-gray-300 font-semibold mb-1">Người Phụ Trách</label>
                 <select
                   value={assignedTo}
                   onChange={(e) => setAssignedTo(e.target.value)}
-                  className="w-full bg-[#0b1610] border border-white/15 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-400 cursor-pointer"
+                  className="w-full bg-slate-100 dark:bg-[#0b1610] border border-slate-200 dark:border-white/15 rounded-xl px-3 py-2 text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
                 >
                   {profiles.map(p => (
                     <option key={p.id} value={p.id}>{p.name} ({p.role})</option>
@@ -7585,27 +7629,27 @@ function LeadModal({ isOpen, editingLead, profiles, campaigns, crmCurrency = 'VN
           </div>
 
           <div>
-            <label className="block text-gray-300 font-semibold mb-1">Ghi Chú Tư Vấn / Lịch Hẹn</label>
+            <label className="block text-slate-700 dark:text-gray-300 font-semibold mb-1">Ghi Chú Tư Vấn / Lịch Hẹn</label>
             <textarea 
               rows={3}
               placeholder="VD: Khách hàng hỏi về phí swap, hẹn tối nay tư vấn qua Zalo..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full bg-[#0b1610] border border-white/15 rounded-xl px-3.5 py-2 text-white focus:outline-none focus:border-emerald-400"
+              className="w-full bg-slate-100 dark:bg-[#0b1610] border border-slate-200 dark:border-white/15 rounded-xl px-3.5 py-2 text-slate-800 dark:text-white focus:outline-none focus:border-emerald-500"
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-3 border-t border-white/10">
+          <div className="flex justify-end gap-3 pt-3 border-t border-slate-200 dark:border-white/10">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 transition-all font-medium cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-gray-300 transition-all font-medium cursor-pointer"
             >
               Hủy
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold uppercase font-levents shadow-lg shadow-emerald-950/40 hover:opacity-90 transition-all cursor-pointer"
+              className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold uppercase font-levents shadow-md hover:opacity-90 transition-all cursor-pointer"
             >
               Lưu Khách Hàng
             </button>
